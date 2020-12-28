@@ -1,5 +1,5 @@
 // Created by CuriousTorvald on 2020-05-19
-// Version 1.0 Release Date 202?-??-??
+// Version 1.0 Release Date 2020-12-28
 
 /*
 Copyright (c) 2020 CuriousTorvald
@@ -3037,6 +3037,26 @@ bF.tron = function(args) {
 };
 bF.troff = function(args) {
     TRACEON = false;
+};
+bF.delete = function(args) {
+    if (args.length != 2 && args.length != 3) throw lang.syntaxfehler();
+    
+    // stupid Javascript can't even Array.prototype.remove(int)
+    let start = 0; let end = 0;
+    if (args.length == 2) {
+        if (!isNumable(args[1])) throw lang.badFunctionCallFormat();
+        start = args[1]|0;
+        end = args[1]|0;
+    }
+    else {
+        if (!isNumable(args[1]) && !isNumable(args[2])) throw lang.badFunctionCallFormat();
+        start = args[1]|0;
+        end = args[2]|0;
+    }
+    
+    let newcmdbuf = [];
+    cmdbuf.forEach((v,i) => {if (i < start || i > end) newcmdbuf[i]=v});
+    cmdbuf = newcmdbuf;
 };
 bF.prescanStmts = ["DATA","LABEL"];
 bF.run = function(args) { // RUN function

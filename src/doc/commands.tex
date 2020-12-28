@@ -4,6 +4,11 @@ This chapter describes commands accepted by the \tbas\ editor.
 
 When you first launch the \tbas, all you can see is some generic welcome text and two letters: \code{Ok}. Sure, you can just start type away your programs and type \code{run} to execute them, there's more things you can do with.
 
+\subsection{DELETE}
+    \codeline{\textbf{DELETE} LINE}
+    \codeline{\textbf{DELETE} LINE\_START LINE\_END}\par
+    Deletes a given line. If two arguments were given, deletes any lines between them, start- and end-inclusive.
+
 \subsection{LOAD}
     \codeline{\textbf{LOAD} FILENAME}\par
     Loads BASIC program by the file name. Default working directory for \tbas\ is \code{/home/basic}.\footnote{This is a directory within the emulated disk. On the host machine, this directory is typically \code{PWD/assets/diskN/home/basic}, where \code{PWD} is working directory for the \thismachine, \code{diskN} is a number of the disk.}
@@ -15,7 +20,7 @@ When you first launch the \tbas, all you can see is some generic welcome text an
     
 \subsection{NEW}
     \codeline{\textbf{NEW}}\par
-    Immediately deletes the program that currently has been typed.
+    Immediately deletes the program that currently has been typed and resets the environment: wipes out \code{DATA}, variables and line labels, and resets \code{DATA} cursor and \code{OPTIONBASE} to zero
     
 \subsection{RENUM}
     \codeline{\textbf{RENUM}}\par
