@@ -1,0 +1,17 @@
+This is a plotter that draws a graph of a function.
+
+\code{ZEROLINE} specifies which column of the text screen is $y=0$, and \code{AMP} specifies the Y-zoom of the plotter, line 100 controls the plotting range of $x$.
+
+This example program uses sinc function as an example, specified in line 10. You can re-define the function with whatever you want, then modify line 110 to call your function i.e. \code{PRINT PLOTLINE(YOUR\_FUNCTION\_HERE,I)}.
+
+\begin{lstlisting}
+1 ZEROLINE=10
+2 AMP=20
+10 DEFUN SINC(P)=IF P==0 THEN 1.0 ELSE SIN(P)/P
+20 DEFUN TOCHAR(P,X)=IF (X==ROUND(ZEROLINE+P*AMP)) THEN "@" ELSE IF (X==ZEROLINE) THEN "|" ELSE CHR(250)
+30 DEFUN SCONCAT(ACC,S)=ACC+S
+40 DEFUN PLOTLINE(F,X)=FOLD(SCONCAT,"",MAP(TOCHAR~<F(X),1 TO ZEROLINE+AMP))
+100 FOR I=-40 TO 40
+110 PRINT PLOTLINE(SINC,I)
+120 NEXT
+\end{lstlisting}

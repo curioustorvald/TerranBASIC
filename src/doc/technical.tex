@@ -1,0 +1,57 @@
+\section{Resolving Variables}
+
+This section describes all use cases of \code{BasicVar}.
+
+When a variable is \code{resolve}d, an object with instance of \code{BasicVar} is returned. A \code{bvType} of Javascript value is determined using \code{JStoBASICtype}.
+
+\begin{tabulary}{\textwidth}{R|LL}
+Typical User Input & TYPEOF(\textbf{Q}) & Instanceof \\
+\hline
+\code{\textbf{Q}=42.195} & {\ttfamily num} & \emph{primitive} \\
+\code{\textbf{Q}=42>21} & {\ttfamily boolean} & \emph{primitive} \\
+\code{\textbf{Q}="BASIC!"} & {\ttfamily string} & \emph{primitive} \\
+\code{\textbf{Q}=DIM(12)} & {\ttfamily array} & Array (JS) \\
+\code{\textbf{Q}=1 TO 9 STEP 2} & {\ttfamily generator} & ForGen \\
+\code{DEFUN \textbf{Q}(X)=X+3} & {\ttfamily usrdefun} & BasicAST \\
+\end{tabulary}
+
+\subsection*{Notes}
+\begin{itemlist}
+\item \code{TYPEOF(\textbf{Q})} is identical to the variable's bvType; the function simply returns \code{BasicVar.bvType}.
+\item Do note that all resolved variables have \code{troType} of \code{Lit}, see next section for more information.
+\end{itemlist}
+
+\section{Unresolved Values}
+
+Unresolved variables has JS-object of \code{troType}, with \emph{instanceof} \code{SyntaxTreeReturnObj}. Its properties are defined as follows:
+
+\begin{tabulary}{\textwidth}{RL}
+Properties & Description \\
+\hline
+{\ttfamily troType} & Type of the TRO (Tree Return Object) \\
+{\ttfamily troValue} & Value of the TRO \\
+{\ttfamily troNextLine} & Pointer to next instruction, array of: [\#line, \#statement] \\
+\end{tabulary}
+
+Following table shows which BASIC object can have which \code{troType}:
+
+\begin{tabulary}{\textwidth}{RLL}
+BASIC Type & troType \\
+\hline
+Any Variable & {\ttfamily lit} \\
+Boolean & {\ttfamily bool} \\
+Generator & {\ttfamily generator} \\
+Array & {\ttfamily array} \\
+Number & {\ttfamily num} \\
+String & {\ttfamily string} \\
+DEFUN'd Function & {\ttfamily internal\_lambda} \\
+Array Indexing & {\ttfamily internal\_arrindexing\_lazy} \\
+Assignment & {\ttfamily internal\_assignment\_object} \\
+\end{tabulary}
+
+\subsection*{Notes}
+\begin{itemlist}
+\item All type that is not \code{lit} only appear when the statement returns such values, e.g. \code{internal\_lambda} only get returned by DEFUN statements as the statement itself returns defined function as well as assign them to given BASIC variable.
+\item As all variables will have \code{troType} of \code{lit} when they are not resolved, the property must not be used to determine the type of the variable; you must \code{resolve} it first.
+\item The type string \code{function} should not appear outside of TRO and \code{astType}; if you do see them in the wild, please check your JS code because you probably meant \code{usrdefun}.
+\end{itemlist}

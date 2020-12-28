@@ -1,0 +1,272 @@
+\newcommand{\intrange}{\hl{[$0..2^{53}-1$]}}
+
+This chapter describes the \tbas\ language.
+
+\section{Metasyntax}
+
+In the descriptions of BASIC syntax, these conventions apply.
+
+\begin{itemlist}
+\item \codebf{VERBATIM} --- Type exactly as shown
+\item \code{IDENTIFIER} --- Replace \emph{identifier} with appropriate metavariable
+\item \code{[a]} --- Words within square brackets are optional
+\item \code{\{a|b\}} --- Choose either \code{a} or \code{b}
+\item \code{[a|b]} --- Optional version of the above
+\item \code{a\ldots} --- The preceding entity can be repeated
+\end{itemlist}
+
+\section{Definitions}
+
+A \emph{Program Line} consists of a line number followed by a \emph{Statements}. Program Lines are terminated by a line break or by the end-of-the-file.
+
+A \emph{Line Number} is an integer within the range of \intrange.
+
+A \emph{Statement} is special form of code which has special meaning. A program line can be composed of 1 or more statements, separated by colons. For the details of statements available in \tbas , see \ref{statements}.
+
+\codeline{STATEMENT [: STATEMENT]\ldots}
+
+An \emph{Expression} is rather normal program lines, e.g. mathematical equations and function calles. The expression takes one of the following forms. For the details of functions available in \tbas , see \ref{functions}.
+
+\codeline{VARIABLE\_OR\_FUNCTION}\\
+\codeline{( EXPRESSION )}\\
+\codeline{\textbf{IF} EXPRESSION \textbf{THEN} EXPRESSION [\textbf{ELSE} EXPRESSION]}\\
+\codeline{FUNCTION \textbf{(} [EXPRESSION \{\textbf{,}|\textbf{;}\} [\{\textbf{,}|\textbf{;}\}]] \textbf{)}}\\
+\codeline{FUNCTION [EXPRESSION \{\textbf{,}|\textbf{;}\} [\{\textbf{,}|\textbf{;}\}]]}\\
+\codeline{EXPRESSION BINARY\_OPERATOR EXPRESSION}\\
+\codeline{UNARY\_OPERATOR EXPRESSION}
+
+An \emph{Array} takes following form:
+
+\codeline{ARRAY\_NAME \textbf{(} EXPRESSION [\textbf{,} EXPRESSION]\ldots\ \textbf{)}}
+
+\section{Literals}
+\subsection{String Literals}
+
+String literals take the following form:
+
+\codeline{\textbf{"} [CHARACTERS] \textbf{"}}
+
+where \code{CHARACTERS} is a 1- or more repetition of ASCII-printable letters.\footnote{In other words, \code{0x20..0x7E}}
+
+To print out graphical letters outside of ASCII-printable, use string concatenation with \code{CHR} function, or use \code{EMIT} function.
+
+\subsection{Numeric Literals} 
+
+Numeric literals take one of the following forms:
+
+\codeline{[\textbf{+}|\textbf{-}][\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots\ [\textbf{.}][\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots}\\
+\codeline{\textbf{0}\{\textbf{x}|\textbf{X}\}[\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots}\\
+\codeline{\textbf{0}\{\textbf{b}|\textbf{B}\}[\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots}
+
+Hexadecimal and binary literals are always interpreted as \emph{unsigned} integers. They must range between \intrange.
+
+\subsection{Variables} 
+
+Variable names must start with a letter and all characters of the name must be letters \code{A-Z}, figures \code{0-9}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
+
+Unlike conventional BASIC dialects (especially GW-BASIC), name pool of variables are shared between all the types. For example, if you have a numeric variable \code{A}, and define an array named \code{A} later in the program, the new array will overwrite your numeric \code{A}.
+
+Furthermore, \emph{sigils} are not used in the \tbas\ and attempting to use one will raise syntax-error or undefined behaviour.
+
+\subsection{Types}
+
+Types of data recognised by \tbas\ are distinguished by some arcane magic of Javascript auto-casing mumbo-jumbo
+
+\begin{tabulary}{\textwidth}{rCL}
+Type & Range & Precision \\
+\hline
+String & As many as the machine can handle & \, \\
+Integer & $ \pm 2^{53}-1 $ & exact within the range \\
+Float & $ \pm 4.9406564584124654 \times 10^{-324} $ -- $ \pm 1.7976931348623157 \times 10^{308} $ & about 16 significant figures \\
+\end{tabulary}
+
+\section{Operators}
+\subsection{Order of Precedence}
+
+The order of precedence of the operators is as shown below, lower numbers means they have higher precedence (more tightly bound)
+
+\begin{longtable}{*{2}{m{\textwidth}}}\hline
+\endfirsthead
+\endhead
+
+\endfoot
+\hline
+\endlastfoot
+\centering
+\begin{tabulary}{\textwidth}{cCc}
+Order & Op & Associativity \\
+\hline
+1 & \basicexp & Right \\
+2 & \ast\quad$/$\quad$\backslash$ & Left \\
+3 & \condensedfont{MOD} & Left \\
+4 & $+$\quad$-$ & Left \\
+5 & \condensedfont{NOT}\quad\condensedfont{BNOT} & Left \\
+6 & <\!<\quad>\!> & Left \\
+7 & <\enskip>\enskip=\!<\enskip<\!=\enskip=\!>\enskip>\!= & Left \\
+8 & ==\quad<\!>\quad>\!< & Left \\
+9 & \condensedfont{MIN}\quad\condensedfont{MAX} & Left \\
+10 & \condensedfont{BAND} & Left \\
+\end{tabulary}
+\begin{tabulary}{\textwidth}{cCc}
+Order & Op & Associativity \\
+\hline
+11 & \condensedfont{BXOR} & Left \\
+12 & \condensedfont{BOR} & Left \\
+13 & \condensedfont{AND} & Left \\
+14 & \condensedfont{OR} & Left \\
+15 & \condensedfont{TO}\quad\condensedfont{STEP} & Left \\
+16 & ! & Right \\
+17 & \sim & Left\\
+18 & \# & Left \\
+19 & \basiccurry & Left \\
+%19.5 & \basicclosure & Right \\
+20 & = & Right \\
+\end{tabulary}
+\end{longtable}
+
+\subsubsection*{Examples}
+\begin{itemlist}
+\item Exponentiation is more tightly bound than negation: \code{-1\basicexp 2 == -(1\basicexp 2) == -1} but \code{(-1)\basicexp 2 == 1}
+\item Exponentiation is right-associative: \code{4\basicexp 3\basicexp 2 == 4\basicexp (3\basicexp 2) == 262144}. This behaviour is \emph{different} from GW-BASIC in which its exponentiation is left-associative.
+\end{itemlist}
+
+\subsection{Mathematical Operators}
+
+Mathematical operators operate on expressions that returns numeric value only, except for the \code{+} operator which will take the action of string concatenation if either of the operand is non-numeric.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Operation & Result \\
+\hline
+\emph{x} $=$ \emph{y} & Assignment & Assigns \emph{y} into \emph{x} \\
+\emph{x} $\basicexp$ \emph{y} & Exponentiation & \emph{x} raised to the \emph{y}th power \\
+\emph{x} $\ast$ \emph{y} & Multiplication & Product of \emph{x} and \emph{y} \\
+\emph{x} $/$ \emph{y} & Division & Quotient of \emph{x} and \emph{y} \\
+\emph{x} $\backslash$ \emph{y} & Truncated Division & Integer quotient of \emph{x} and \emph{y} \\
+\emph{x} \condensedfont{MOD} \emph{y} & Modulo & Integer remainder of \emph{x} and \emph{y} with sign of \emph{x} \\
+\emph{x} $+$ \emph{y} & Addition & Sum of \emph{x} and \emph{y} \\
+\emph{x} $-$ \emph{y} & Subtraction & Difference of \emph{x} and \emph{y} \\
+$+$ \emph{x} & Unary Plus & Value of \emph{x} \\
+$-$ \emph{x} & Unary Minus & Negative value of \emph{x} \\
+\emph{x} \condensedfont{MIN} \emph{y} & Minimum & Lesser value of two \\
+\emph{x} \condensedfont{MAX} \emph{y} & Maximum & Greater value of two \\
+
+\end{tabulary}
+
+\subsubsection*{Notes}
+\begin{itemlist}
+\item Type conversion rule follows underlying Javascript implementation. In other words, \emph{only the god knows.}
+\item The expression \code{0\basicexp 0} will return \code{1}, even though the expression is indeterminant.
+\end{itemlist}
+
+\subsubsection*{Errors}
+\begin{itemlist}
+\item Any expression that results \code{NaN} or \code{Infinity} in Javascript will return some kind of errors, mainly \code{Division by zero}.
+\item If \code{\emph{x}<0} and \code{\emph{y}} is not integer, \code{\emph{x}\basicexp\emph{y}} will raise \code{Illegal function call}.
+\end{itemlist}
+
+\subsection{Comparison Operators}
+
+Comparison operator can operate on numeric and string operands. String operands will be automatically converted to numeric value if they can be; if one operand is numeric and other is non-numeric string, the former will be converted to string value.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Operation & Result \\
+\hline
+\emph{x} == \emph{y} & Equal & True if \emph{x} equals \emph{y} \\
+\emph{x} <\!> \emph{y} \quad \emph{x} >\!< \emph{y} & Not equal & False if \emph{x} equals \emph{y} \\
+\emph{x} < \emph{y} & Less than & True if \emph{x} is less than \emph{y} \\
+\emph{x} > \emph{y} & Greater than & True if \emph{x} is greater than \emph{y} \\
+\emph{x} <\!= \emph{y} \quad \emph{x} =\!< \emph{y} & Less than or equal & False if \emph{x} is greater than \emph{y} \\
+\emph{x} >\!= \emph{y} \quad \emph{x} =\!> \emph{y} & Greater than or equal & False if \emph{x} is less than \emph{y} \\
+\end{tabulary}
+
+When comparing strings, the ordering is as follows:
+
+\begin{itemlist}
+\item Two strings are equal only when they are of the same length and every codepoint of the first string is identical to that of the second. This includes any whitespace or unprintable characters. 
+\item Each character position of the string is compared starting from the leftmost character. When a pair of different characters is encountered, the string with the character of lesser codepoint is less than the string with the character of greater codepoint. 
+\item If the strings are of different length, but equal up to the length of the shorter string, then the shorter string is less than the longer string.
+\end{itemlist}
+
+\subsection{Bitwise Operators}
+
+Bitwise operators operate on unsigned integers only. Floating points are truncated\footnote{truncated towards zero} to integers.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Operation & Result \\
+\hline
+\emph{x}  <\!< \emph{y} & Bitwise Shift Left & Shifts entire bits of \emph{x} by \emph{y} \\
+\emph{x}  >\!> \emph{y} & Bitwise Shift Right & Shift entire bits \emph{x} by \emph{y}, including sign bit \\
+\condensedfont{BNOT} \emph{x} & Ones' complement & $-\emph{x}-1$ \\
+\emph{x}  \condensedfont{BAND} \emph{y} & Bitwise conjunction & Bitwise AND of \emph{x} and \emph{y} \\
+\emph{x}  \condensedfont{BOR} \emph{y} & Bitwise disjunction & Bitwise OR of \emph{x} and \emph{y} \\
+\emph{x}  \condensedfont{BXOR} \emph{y} & Bitwise add-with-no-carry & Bitwise XOR of \emph{x} and \emph{y} \\
+\end{tabulary}
+
+\subsection{Boolean Operators}
+
+Boolean operators operate on boolean values. If one of the operand is not boolean, it will be cast to appropriate boolean value. See \ref{valuesandtypes} for casting rules.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Operation & Result \\
+\hline
+\condensedfont{NOT} \emph{x} & Logical negation & True if \emph{x} is false and vice versa \\
+\emph{x} \condensedfont{AND} \emph{y} & Bitwise conjunction & True if \emph{x} and \emph{y} are both true \\
+\emph{x} \condensedfont{OR} \emph{y} & Bitwise disjunction & True if \emph{x} or \emph{y} is true, or  both are true \\
+\end{tabulary}
+
+\subsection{Generator Operators}
+
+Generator operators operate on numeric values and generators to create and modify a generator.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Result \\
+\hline
+\emph{x} \condensedfont{TO} \emph{y} & Creates an generator that counts from \emph{x} to \emph{y} \\
+\emph{x} \condensedfont{STEP} \emph{y} & Modifies an counting stride of the generator \emph{x} into \emph{y} \\
+\end{tabulary}
+
+\subsection{Array Operators}
+
+Array operators operate on arrays and numeric values.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Operation & Result \\
+\hline
+\emph{x} $!$ \emph{y} & Cons & Prepends a value of \emph{x} into an array of \emph{y} \\
+\emph{x} $\sim$ \emph{y} & Push & Appends a value of \emph{y} into an array of \emph{x} \\
+\emph{x} $\#$ \emph{y} & Concat & Concatenates two arrays \\
+\end{tabulary}
+
+Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
+
+\subsection{Function Operators}
+
+Function operators operate on functions and some values.
+
+\begin{tabulary}{\textwidth}{clL}
+Code & Operation & Result \\
+\hline
+\emph{f} \basiccurry\ \emph{x} & Curry & Apply \emph{x} into the first parameter of the function \emph{f} \\
+%{[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
+\end{tabulary}
+
+\emph{Currying}\footnote{\emph{Partial Application} should be more appropriate for this operator, but oh well: \emph{currying} is less mouthful.} is an operation that returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
+
+\section{Constants}
+
+Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.
+
+\begin{tabulary}{\textwidth}{rllL}
+Name & Type & Value & Description \\
+\hline
+NIL & Array & Empty Array & Used to construct arbitrary array using CONS-operator \\
+PI & Number & $3.141592653589793$ & $\pi$ \\
+TAU & Number & $6.283185307179586$ & $2 \pi$ \\
+EULER & Number & $2.718281828459045$ & Euler's number $e$ \\
+\end{tabulary}
+
+\section{Syntax In EBNF}
+
+If you're \emph{that} into the language theory of computer science, texts above are just waste of bytes/inks/pixel-spaces/whatever; this little section should be more than enough!
+
+\verbatiminput{syntax.txt}

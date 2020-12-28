@@ -1,0 +1,244 @@
+ 
+% !TEX TS-program = LuaLaTeX
+
+%% Copyright (c) 2020 CuriousTorvald and the contributors.
+
+\documentclass[10pt, stock, openany, chapter]{memoir}
+
+
+\usepackage{fontspec}
+\setmainfont[Ligatures=TeX]{TeX Gyre Heros}
+\newfontfamily\condensedfont{TeX Gyre Heros Cn}
+\newfontfamily\monofont{TeX Gyre Cursor}
+
+
+
+
+\usepackage{fapapersize}
+\usefapapersize{148mm,210mm,15mm,15mm,20mm,15mm} % A5 paper
+\usepackage{afterpage}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tabulary}
+\usepackage{longtable}
+\usepackage[table]{xcolor}
+\usepackage{ltablex}
+\usepackage{parskip}
+\usepackage{multicol}
+\usepackage{soul}
+\usepackage{verbatim}
+\usepackage{etoolbox}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{amsmath,amssymb}
+\usepackage{calc}
+\usepackage{ifthen}
+
+\usepackage{lineno} % debug
+
+
+\makeatletter
+\newlength{\mytextsize}
+\setlength{\mytextsize}{\f@size pt}
+\newlength{\mybaselineskip}
+\setlength{\mybaselineskip}{1.3\mytextsize}
+\patchcmd{\verbatim@input}{\@verbatim}{\scriptsize\@verbatim}{}{}
+\makeatother
+\setlength{\baselineskip}{\mybaselineskip}
+
+\frenchspacing
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\mytextsize}
+\setsecnumdepth{subsection}
+
+%% More compact itemize %%
+\newenvironment{itemlist}{\vspace{0pt}\itemize}{\enditemize}
+
+%% Idioms %%
+\hyphenation{Java-script}
+\hyphenation{ECMA-script}
+
+\newcommand\forceindent{\hskip1.5em}
+
+%% BASIC operators %%
+\newcommand\basicexp{\raisebox{0.25ex}{\scriptsize\wedge}}
+\newcommand\basiccurry{$\sim\!<$}
+\newcommand\basicclosure{$\sim\!>$}
+
+% Title styling
+\pretitle{\begin{flushright}}
+\posttitle{\par\end{flushright}}
+\preauthor{\begin{flushright}}
+\postauthor{\par\end{flushright}}
+
+% new sections are new page
+%\let\oldsection\chapter
+%\renewcommand\chapter{\clearpage\oldsection}
+
+% shorten spaces before section header
+\setbeforesubsecskip{\mytextsize}
+\setbeforesubsubsecskip{\mytextsize}
+
+% extra space for table
+\setlength{\extrarowheight}{0.166ex}
+
+% chapter title -- no now page after
+\renewcommand\chapterheadstart{} % kill the drop
+\renewcommand\afterchapternum{\vskip 0.5em} % space between number and title
+\setlength{\afterchapskip}{\baselineskip} % reduce space after chapter title
+\makeatletter
+\renewcommand\memendofchapterhook{%
+\m@mindentafterchapter\@afterheading}
+\makeatother
+
+
+\definecolor{lgrey}{HTML}{eeeeee}
+\sethlcolor{lgrey}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\newcommand{\code}[1]{{\monofont\hl{\,#1\,}}}
+\newcommand{\codebf}[1]{{\monofont \textbf{\hl{\,#1\,}}}}
+%%\newcommand{\codeline}[1]{{\monofont\hl{\,#1\,}}}
+\newcommand{\codeline}[1]{%
+\colorbox{lgrey}{%
+\begin{tabular*}{\textwidth}{l}%
+\monofont #1 \\% TODO fill the cell with \hl colour
+\end{tabular*}%
+}}
+
+\newtcolorbox{lgreybox}[1][]{%
+  breakable,
+  enhanced,
+  colback=lgrey,
+  attach title to upper,
+  fontupper=\monofont,
+  #1
+}
+
+\definecolor{sourcecomment}{HTML}{888888}
+
+\lstset{frame=tb,
+  language=[Visual]Basic,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\textbf,
+  keywordstyle=,
+  commentstyle=\color{sourcecomment},
+  stringstyle=\textbf,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\newcommand{\cnttoenglish}[2]{{%
+\ifthenelse{#1=1}{One}{%
+\ifthenelse{#1=2}{Two}{%
+\ifthenelse{#1=3}{Three}{%
+\ifthenelse{#1=4}{Four}{%
+\ifthenelse{#1=5}{Five}{%
+\ifthenelse{#1=6}{Six}{%
+\ifthenelse{#1=7}{Seven}{%
+\ifthenelse{#1=8}{Eight}{%
+\ifthenelse{#1=9}{Nine}{%
+\ifthenelse{#1=10}{Ten}{%
+\ifthenelse{#1=11}{Eleven}{%
+\ifthenelse{#1=12}{Twelve}{%
+\arabic{#1}%
+}}}}}}}}}}}}} \ifthenelse{#1=1}{#2}{#2s}}
+
+\addtocontents{toc}{\protect\thispagestyle{empty}} % no page number for the TOC header page
+\aliaspagestyle{part}{empty} % aliasing PART as empty so that page number would not be printed
+\aliaspagestyle{chapter}{section} % aliasing CHAPTER as section so that page numbering style would be the same as section
+
+
+% The title
+\newcommand{\tbas}{Terran BASIC}
+\newcommand{\thismachine}{TSVM}
+\newcommand{\tbasver}{1.0}
+\newcommand{\theedition}{First Edition}
+\newcommand{\oreallypress}{\large\textbf{O'REALLY\raisebox{1ex}{\scriptsize ?}} \normalsize Press}
+
+\title{\HUGE\textbf{\MakeUppercase{\tbas} \\ REFERENCE MANUAL} \\ \Large \vspace{1em} For Language Version \tbasver\hspace{0.75em}|\hspace{0.75em}\theedition}
+\date{}
+\author{Minjae Song (CuriousTorvald) \\ 2020-12-28}
+\hypersetup{
+	pdfauthor={CuriousTorvald},
+	pdftitle={\tbas\ Reference Manual For Language Version \tbasver, \theedition},
+	unicode=true,
+	pdfkeywords={BASIC} {Functional Programming} {Improper Hierarchy},
+	pdfcreator=\oreallypress
+}
+
+\begin{document}
+\begin{titlingpage}
+\maketitle{}
+\vfill
+\oreallypress
+\end{titlingpage}
+
+\setcounter{page}{3}
+\tableofcontents*
+
+
+%\linenumbers % debug
+
+\openright
+\chapter{Introduction}
+\input{intro}
+
+\openany
+\part{Language}
+
+\chapter{Basic Concepts}
+\input{concepts}
+
+\chapter{Language Guide}
+\input{langguide}
+
+\chapter{Language Reference}
+\input{langref}
+
+\chapter{Commands}
+\input{commands}
+
+\chapter{Statements}
+\input{statements}
+
+\chapter{Functions}
+\input{functions}
+
+\part{Implementation}
+
+\chapter{Technical Reference}
+\input{technical}
+
+\chapter{Implementation Details}
+\input{Implementation}
+
+\part{More Goodies}
+
+\chapter{99 Bottles of Beer}
+\input{sample_99}
+
+\chapter{Amazing}
+\input{sample_amazing}
+
+\chapter{Hamurabi}
+\input{sample_hamurabi}
+
+\chapter{Plotter}
+\input{sample_plotter}
+
+\chapter{Bibliography}
+\input{bibliography}
+
+\chapter*{Disclaimers}
+
+\oreallypress{} is entirely fictional publishing entity; \oreallypress{} has no affiliation whatsoever with any of the real-world publishers.
+
+\afterpage{\pagestyle{empty}\null\newpage}
+
+\end{document}

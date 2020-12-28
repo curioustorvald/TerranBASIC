@@ -1,0 +1,117 @@
+digraph g {
+	concentrate=true;
+    splines=true;
+    newrank=true;
+    overlap=false;
+
+	LITERAL [shape=box]
+	QUOTE [shape=box]
+	PAREN [shape=box]
+	SEP [shape=diamond]
+	OPERATOR [shape=diamond]
+	OPERATOR2 [shape=diamond] // needs second pass to rename it as "OPERATOR"
+	NUMBER [shape=diamond]
+	numbersep [style=filled]
+	NUMBER2 [shape=diamond] // needs second pass to rename it as "NUMBER"
+	limbo [style=filled]
+	escape [style=filled]
+	quote_end [style=filled]
+	start [shape=Mdiamond]
+	error [shape=Msquare,style=filled]
+
+
+	subgraph clusternum {
+		shape=none;
+		NUMBER; NUMBER2; numbersep;
+	}
+
+	subgraph clusterops {
+		shape=none;
+		OPERATOR; OPERATOR2;
+	}
+
+
+	start -> LITERAL
+
+    LITERAL -> QUOTE [label="\""]
+	LITERAL -> PAREN [label="()[]"]
+	LITERAL -> limbo [label=_]
+	LITERAL -> SEP [label=","]
+	LITERAL -> OPERATOR [label="^*/+->=<"]
+	LITERAL -> LITERAL [label=otherwise]
+
+	NUMBER -> NUMBER [label="0..9_"]
+	NUMBER -> numbersep [label="xXbB."]
+	NUMBER -> QUOTE [label="\""]
+	NUMBER -> limbo [label=" "]
+	NUMBER -> PAREN [label="()[]"]
+	NUMBER -> SEP [label=","]
+	NUMBER -> OPERATOR [label="^*/+->=<"]
+	NUMBER -> LITERAL [label=otherwise]
+
+	numbersep -> NUMBER2 [label="0..9_"]
+	numbersep -> error [label=otherwise]
+
+	NUMBER2 -> NUMBER2 [label="0..9_"]
+    NUMBER2 -> QUOTE [label="\""]
+    NUMBER2 -> limbo [label=" "]
+    NUMBER2 -> PAREN [label="()[]"]
+    NUMBER2 -> SEP [label=","]
+    NUMBER2 -> OPERATOR [label="^*/+->=<"]
+    NUMBER2 -> LITERAL [label=otherwise]
+
+	OPERATOR -> OPERATOR2 [label=">=<"]
+    OPERATOR -> error [label="^*/+-"]
+	OPERATOR -> NUMBER [label="0..9"]
+	OPERATOR -> QUOTE [label="\""]
+	OPERATOR -> limbo [label=" "]
+	OPERATOR -> PAREN [label="()[]"]
+	OPERATOR -> SEP [label=","]
+	OPERATOR -> LITERAL [label=otherwise]
+
+	OPERATOR2 -> error [label="^*/+->=<"]
+    OPERATOR2 -> NUMBER [label="0..9"]
+    OPERATOR2 -> QUOTE [label="\""]
+    OPERATOR2 -> limbo [label=" "]
+    OPERATOR2 -> PAREN [label="()[]"]
+    OPERATOR2 -> SEP [label=","]
+    OPERATOR2 -> LITERAL [label=otherwise]
+
+	QUOTE -> quote_end [label="\""]
+	QUOTE -> escape [label="\\"]
+	QUOTE -> QUOTE [label=otherwise]
+
+	escape -> QUOTE [label=any]
+
+	quote_end -> limbo [label=_]
+	quote_end -> QUOTE [label="\""]
+	quote_end -> PAREN [label="()[]"]
+	quote_end -> SEP [label=","]
+	quote_end -> NUMBER [label="0..9"]
+	quote_end -> OPERATOR [label="^*/+->=<"]
+	quote_end -> LITERAL [label=otherwise]
+
+	limbo -> limbo [label=_]
+	limbo -> QUOTE [label="\""]
+	limbo -> PAREN [label="()[]"]
+	limbo -> SEP [label=","]
+	limbo -> NUMBER [label="0..9"]
+	limbo -> OPERATOR [label="^*/+->=<"]
+	limbo -> LITERAL [label=otherwise]
+
+	PAREN -> limbo [label=_]
+	PAREN -> QUOTE [label="\""]
+	PAREN -> PAREN [label="()[]"]
+	PAREN -> SEP [label=","]
+	PAREN -> NUMBER [label="0..9"]
+	PAREN -> OPERATOR [label="^*/+->=<"]
+	PAREN -> LITERAL [label=otherwise]
+
+	SEP -> limbo [label=_]
+	SEP -> QUOTE [label="\""]
+	SEP -> PAREN [label="()[]"]
+	SEP -> SEP [label=","]
+	SEP -> NUMBER [label="0..9"]
+	SEP -> OPERATOR [label="^*/+->=<"]
+	SEP -> LITERAL [label=otherwise]
+}

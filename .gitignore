@@ -1,0 +1,43 @@
+# Build-related
+out/*
+bin/*
+build/*
+.gradle/*
+TerrarumBuild.jar
+
+# Java native errors
+hs_err_pid*
+replay_pid*
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+.directory
+*/.directory
+
+# IntelliJ
+workspace.xml
+
+# Temporary files
+.tmp*
+tmp_*
+## Microsoft Office
+~$*
+## Generic temp files in Linux
+*~
+## Vim temp files
+*.swp
+*.swo
+## Kate temp swap file
+*.kate-swp
+
+# TeX outputs
+src/doc/*.aux
+src/doc/*.log
+src/doc/*.out
+src/doc/*.pdf
+src/doc/*.toc
+
+# Release work directory
+release/*

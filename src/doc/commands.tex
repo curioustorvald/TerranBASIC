@@ -1,0 +1,34 @@
+This chapter describes commands accepted by the \tbas\ editor.
+
+\section{The Editor}
+
+When you first launch the \tbas, all you can see is some generic welcome text and two letters: \code{Ok}. Sure, you can just start type away your programs and type \code{run} to execute them, there's more things you can do with.
+
+\subsection{LOAD}
+    \codeline{\textbf{LOAD} FILENAME}\par
+    Loads BASIC program by the file name. Default working directory for \tbas\ is \code{/home/basic}.\footnote{This is a directory within the emulated disk. On the host machine, this directory is typically \code{PWD/assets/diskN/home/basic}, where \code{PWD} is working directory for the \thismachine, \code{diskN} is a number of the disk.}
+    
+\subsection{LIST}
+    \codeline{\textbf{LIST} [LINE\_NUMBER]}
+    \codeline{\textbf{LIST} [LINE\_FROM LINE\_TO]}\par
+    Displays BASIC program that currently has been typed. When no arguments were given, shows entire program; when single line number was given, displays that line; when range of line numbers were given, displays those lines.
+    
+\subsection{NEW}
+    \codeline{\textbf{NEW}}\par
+    Immediately deletes the program that currently has been typed.
+    
+\subsection{RENUM}
+    \codeline{\textbf{SAVE} FILENAME}\par
+    Re-numbers program line starting from 10 and incrementing by 10s. Jump targets will be re-numbered accordingly. Nonexisting jump targets will be replaced with \code{undefined}.\footnote{This behaviour is simply Javascript's null-value leaking into the BASIC. This is nonstandard behaviour and other \tbas\ implementations may act differently.}
+    
+\subsection{RUN}
+    \codeline{\textbf{RUN}}\par
+    Executes BASIC program that currently has been typed. Execution can be arbitrarily terminated with Ctrl-C key combination (except in \code{INPUT} mode).
+    
+\subsection{SAVE}
+    \codeline{\textbf{SAVE} FILENAME}\par
+    Saves BASIC program that currently has been typed. Existing files are overwritten \emph{silently}.
+
+\subsection{SYSTEM}
+    \codeline{\textbf{SYSTEM}}\par
+    Exits \tbas.

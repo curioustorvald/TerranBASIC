@@ -1,0 +1,47 @@
+\label{statements}
+
+A Program line is composed of a line number and one or more statements. Multiple statements are separated by colons \code{:}.
+
+\section{IF}
+
+\codeline{\textbf{IF} TRUTH\_VALUE \textbf{THEN} TRUE\_EXPRESSION [\textbf{ELSE} FALSE\_EXPERSSION]}
+
+If \code{TRUTH\_VALUE} is truthy, executes \code{TRUE\_EXPRESSION}. If \code{TRUTH\_VALUE} is falsy and \code{FALSE\_EXPERSSION} is specified, executes that expression; otherwise next line or next statement will be executed.
+
+\subsubsection*{Notes}
+
+\begin{itemlist}
+\item \codebf{IF} is both statement and expression. You can use IF-clause after \codebf{ELSE}, or within functions as well, for example.
+\item \codebf{THEN} is \emph{not} optional, this behaviour is different from most of the BASIC dialects.
+\item Also unlike the most dialects, \codebf{GOTO} cannot be omitted; doing so will make the number be returned to its parent expression.
+\end{itemlist}
+
+\section{ON}
+
+\codeline{\textbf{ON} INDEX\_EXPRESSION \{\textbf{GOTO}|\textbf{GOSUB}\} LINE0 [\textbf{,} LINE1]\ldots}
+
+Jumps to the line number returned by the \code{INDEX\_EXPRESSION}. If the result is outside of range of the arguments, no jump will be performed.
+
+\subsubsection*{Parameters}
+
+\begin{itemlist}
+\item \code{LINEn} can be a number, numeric expression (aka equations) or a line label.
+\item When \code{OPTIONBASE 1} is used within the program, \code{LINEn} starts from 1 instead of 0.
+\end{itemlist}
+
+\section{DEFUN}
+
+\emph{There it is, the} DEFUN. \emph{All those new-fangled parser\footnote{a computer program that translates program code entered by you into some data bits that only it can understand} and paradigms\footnote{a guidance to in which way you must think to assimilate your brain into the computer-overlord} are tied to this very statement on \tbas, and only Wally knows its secrets\ldots}
+
+\codeline{\textbf{DEFUN} NAME \textbf{(} [ARGS0 [\textbf{,} ARGS1]\ldots] \textbf{)} \textbf{=} EXPRESSION }
+
+With the aid of other statements\footnote{Actually, only the IF is useful, unless you want to \emph{transcend} from the \emph{dung} of mortality by using DEFUN within DEFUN (a little modification of the source code is required)} and functions, DEFUN will allow you to ascend from traditional BASIC and do godly things such as \emph{recursion}\footnote{see recursion} and \emph{functional programming}.
+
+Oh, and you can define your own function, in traditional \code{DEF FN} sense.
+
+\subsubsection*{Parameters}
+
+\begin{itemlist}
+\item \code{NAME} must be a valid variable name.
+\item \code{ARGSn} must be valid variable names, but can be a name of variables already used within the BASIC program; their value will not be affected nor be used.
+\end{itemlist}

@@ -1,0 +1,267 @@
+\label{functions}
+
+Functions are a form of expression that may taks input arguments surrounded by parentheses. Most of the traditional BASIC \emph{statements} that does not return a value are \emph{functions} in \tbas , and like those, while \tbas\ functions can be called without parentheses, it is highly \emph{discouraged} because of the ambiguities in syntax. \textbf{Always use parentheses on function call!}
+
+\section{Mathematical}
+
+    \subsection{ABS}
+        \codeline{Y \textbf{= ABS(}X\textbf{)}}\par
+        Returns absolute value of \code{X}.
+    \subsection{ACO}
+        \codeline{Y \textbf{= ACO(}X\textbf{)}}\par
+        Returns inverse cosine of \code{X}.
+    \subsection{ASN}
+        \codeline{Y \textbf{= ASN(}X\textbf{)}}\par
+        Returns inverse sine of \code{X}.
+    \subsection{ATN}
+        \codeline{Y \textbf{= ATN(}X\textbf{)}}\par
+        Returns inverse tangent of \code{X}.
+    \subsection{CBR}
+        \codeline{Y \textbf{= CBR(}X\textbf{)}}\par
+        Returns cubic root of \code{X}.
+    \subsection{CEIL}
+        \codeline{Y \textbf{= CEIL(}X\textbf{)}}\par
+        Returns integer value of \code{X}, truncated towards positive infinity.
+    \subsection{COS}
+        \codeline{Y \textbf{= COS(}X\textbf{)}}\par
+        Returns cosine of \code{X}.
+    \subsection{COSH}
+        \codeline{Y \textbf{= COSH(}X\textbf{)}}\par
+        Returns hyperbolic cosine of \code{X}.
+    \subsection{EXP}
+        \codeline{Y \textbf{= EXP(}X\textbf{)}}\par
+        Returns exponential of \code{X}, i.e. $e^X$.
+    \subsection{FIX}
+        \codeline{Y \textbf{= FIX(}X\textbf{)}}\par
+        Returns integer value of \code{X}, truncated towards zero.
+    \subsection{FLOOR, INT}
+        \codeline{Y \textbf{= FLOOR(}X\textbf{)}}
+        \codeline{Y \textbf{= INT(}X\textbf{)}}\par
+        Returns integer value of \code{X}, truncated towards negative infinity.
+    \subsection{LEN}
+        \codeline{Y \textbf{= LEN(}X\textbf{)}}\par
+        Returns length of \code{X}. \code{X} can be either a string or an array.
+    \subsection{LOG}
+        \codeline{Y \textbf{= LOG(}X\textbf{)}}\par
+        Returns natural logarithm of \code{X}.
+    \subsection{ROUND}
+        \codeline{Y \textbf{= ROUND(}X\textbf{)}}\par
+        Returns closest integer value of \code{X}, rounding towards positive infinity.
+    \subsection{RND}
+        \codeline{Y \textbf{= RND(}X\textbf{)}}\par
+        Returns a random number within the range of $[0..1)$. If \code{X} is zero, previous random number will be returned; otherwise new random number will be returned.
+    \subsection{SIN}
+        \codeline{Y \textbf{= SIN(}X\textbf{)}}\par
+        Returns sine of \code{X}.
+    \subsection{SINH}
+        \codeline{Y \textbf{= SINH(}X\textbf{)}}\par
+        Returns hyperbolic sine of \code{X}.
+    \subsection{SGN}
+        \codeline{Y \textbf{= SGN(}X\textbf{)}}\par
+        Returns sign of \code{X}: 1 for positive, -1 for negative, 0 otherwise.
+    \subsection{SQR}
+        \codeline{Y \textbf{= SQR(}X\textbf{)}}\par
+        Returns square root of \code{X}.
+    \subsection{TAN}
+        \codeline{Y \textbf{= TAN(}X\textbf{)}}\par
+        Returns tangent of \code{X}.
+    \subsection{TANH}
+        \codeline{Y \textbf{= TANH(}X\textbf{)}}\par
+        Returns hyperbolic tangent of \code{X}.
+
+\section{Input}
+
+    \subsection{CIN}
+        \codeline{S \textbf{= CIN()}}\par
+        Waits for the user input and returns it.
+    \subsection{DATA}
+        \codeline{\textbf{DATA} CONST0 [\textbf{,} CONST1]\ldots}\par
+        Adds data that can be read by \code{READ} function. \code{DATA} declarations need not be reacheable in the program flow.
+    \subsection{DGET}
+        \codeline{S \textbf{= DGET()}}\par
+        Fetches a data declared from \code{DATA} statements and returns it, incrementing the \code{DATA} position.
+    \subsection{DIM}
+        \codeline{Y \textbf{= DIM(}X\textbf{)}}\par
+        Returns array with size of \code{X}, all filled with zero.
+    \subsection{GETKEYSDOWN}
+        \codeline{K \textbf{= GETKEYSDOWN()}}\par
+        Stores array that contains keycode of keys held down into the given variable.\par
+        Actual keycode and the array length depends on the machine: in \thismachine , array length will be fixed to 8. For the list of available keycodes, see \ref{implementation}.
+    \subsection{INPUT}
+        \codeline{\textbf{INPUT} VARIABLE}\par
+        Prints out \code{? } to the console and waits for user input. Input can be any length and terminated with return key. The input will be stored to given variable.\par
+        This behaviour is to keep the compatibility with the traditional BASIC. For function-like usage, use \code{CIN} instead.
+    \subsection{READ}
+        \codeline{\textbf{READ} VARIABLE}\par
+        Assigns data declared from \code{DATA} statements to given variable. Reading starts at the current \code{DATA} position, and the data position will be incremented by one. The position is reset to the zero by the \code{RUN} command.\par
+        This behaviour is to keep the compatibility with the traditional BASIC. For function-like usage, use \code{DGET} instead.
+        
+\section{Output}
+
+    \subsection{EMIT}
+        \codeline{\textbf{EMIT(} EXPR [\{\textbf{,}|\textbf{;}\} EXPR]\ldots\ \textbf{)}}\par
+        Prints out characters corresponding to given number on the code page being used.\par
+        \code{EXPR} is numeric expression.
+    \subsection{PRINT}
+        \codeline{\textbf{PRINT(} EXPR [\{\textbf{,}|\textbf{;}\} EXPR]\ldots\ \textbf{)}}\par
+        Prints out given string expressions.\par
+        \code{EXPR} is a string, numeric expression, or array.\par
+        \code{PRINT} is one of the few function that differentiates two style of argument separator: \codebf{;} will simply concatenate two expressions (unlike traditional BASIC, numbers will not have surrounding spaces), \codebf{,} tabulates the expressions.
+
+\section{Program Manipulation}
+
+    \subsection{CLEAR}
+        \codeline{\textbf{CLEAR}}\par
+        Clears all declared variables.
+    \subsection{END}
+        \codeline{\textbf{END}}\par
+        Stops program execution and returns control to the user.
+    \subsection{FOR}
+        \codeline{\textbf{FOR} LOOPVAR \textbf{=} START \textbf{TO} STOP [\textbf{STEP} STEP]}
+        \codeline{\textbf{FOR} LOOPVAR \textbf{=} GENERATOR}\par
+        Starts a FOR--NEXT loop.\par
+        Initially, \code{LOOPVAR} is set to \code{START} then statements between the \code{FOR} statement and corresponding \code{NEXT} statements are executed and \code{LOOPVAR} is incremented by \code{STEP}, or by 1 if \code{STEP} is not specified. The program flow will continue to loop around until \code{LOOPVAR} is outside the range of \code{START}--\code{STOP}. The value of the \code{LOOPVAR} is equal to \code{STOP}$+$\code{STEP} when the looping finishes.
+    \subsection{FOREACH}
+        \codeline{\textbf{FOREACH} LOOPVAR \textbf{IN} ARRAY}\par
+        Same as \code{FOR} but fetches \code{LOOPVAR} from given \code{ARRAY}.
+    \subsection{GOSUB}
+        \codeline{\textbf{GOSUB} LINENUM}\par
+        Jumps to a subroutine at \code{LINENUM}. The next \code{RETURN} statements makes program flow to jump back to the statement after the \code{GOSUB}.\par
+        \code{LINENUM} can be either a numeric expression or a Label.
+    \subsection{GOTO}
+        \codeline{\textbf{GOTO} LINENUM}\par
+        Jumps to \code{LINENUM}.\par
+        \code{LINENUM} can be either a numeric expression or a Label.
+    \subsection{LABEL}
+        \codeline{\textbf{LABEL} NAME}\par
+        Puts a name onto the line numeber the statement is located. Jumping to the \code{NAME}
+        \subsubsection*{Notes}
+        \begin{itemlist}
+        \item \code{NAME} must be a valid variable name.
+        \end{itemlist}
+    \subsection{NEXT}
+        \codeline{\textbf{NEXT}}\par
+        Iterates FOR--NEXT loop and increments the loop variable from the most recent \code{FOR} statement and jumps to that statement.
+    \subsection{RESTORE}
+        \codeline{\textbf{RESTORE}}\par
+        Resets the \code{DATA} pointer.
+    \subsection{RETURN}
+        \codeline{\textbf{RETURN}}\par
+        Returns from the \code{GOSUB} statement.
+
+\section{String Manipulation}
+
+    \subsection{CHR}
+        \codeline{CHAR \textbf{= CHR(}X\textbf{)}}\par
+        Returns the character with code point of \code{X}. Code point is a numeric expression in the range of $[0-255]$.
+    \subsection{LEFT}
+        \codeline{SUBSTR \textbf{= LEFT(} STR \textbf{,} NUM\_CHARS \textbf{)}}\par
+        Returns the leftmost \code{NUM\_CHARS} characters of \code{STR}.
+    \subsection{MID}
+        \codeline{SUBSTR \textbf{= MID(} STR \textbf{,} POSITION \textbf{,} LENGTH \textbf{)}}\par
+        Returns a substring of \code{STR} starting at \code{POSITION} with specified \code{LENGTH}.\par
+        When \code{OPTIONBASE 1} is specified, the position starts from 1; otherwise it will start from 0. 
+    \subsection{RIGHT}
+        \codeline{SUBSTR \textbf{= RIGHT(} STR \textbf{,} NUM\_CHARS \textbf{)}}\par
+        Returns the rightmost \code{NUM\_CHARS} characters of \code{STR}.
+    \subsection{SPC}
+        \codeline{STR \textbf{= SPC(} STR \textbf{,} NUM\_CHARS \textbf{)}}\par
+        Returns a string of \code{NUM\_CHARS} spaces.
+
+\section{Array Manipulation}
+        
+    \subsection{HEAD}
+        \codeline{K \textbf{= HEAD(}X\textbf{)}}\par
+        Returns the head element of the array \code{X}.
+    \subsection{INIT}
+        \codeline{K \textbf{= INIT(}X\textbf{)}}\par
+        Constructs the new array from array \code{X} that has its last element removed.
+    \subsection{LAST}
+        \codeline{K \textbf{= LAST(}X\textbf{)}}\par
+        Returns the last element of the array \code{X}.
+    \subsection{TAIL}
+        \codeline{K \textbf{= TAIL(}X\textbf{)}}\par
+        Constructs the new array from array \code{X} that has its head element removed.
+        
+\section{Graphics}
+
+    \subsection{PLOT}
+        \codeline{\textbf{PLOT(} X\_POS \textbf{,} Y\_POS \textbf{,} COLOUR \textbf{)}}\par
+        Plots a pixel to the framebuffer of the display, at XY-position of \code{X\_POS} and \code{Y\_POS}, with colour of \code{COLOUR}.\par
+        Top-left corner of the pixel will be 1 if \code{OPTIONBASE 1} is specified; otherwise it will be 0.
+
+\section{Meta}
+
+    \subsection{OPTIONBASE}
+        \codeline{\textbf{OPTIONBASE} \{\textbf{0}|\textbf{1}\}}\par
+        Specifies at which number the array/string/pixel indices begin.
+    \subsection{OPTIONDEBUG}
+        \codeline{\textbf{OPTIONDEBUG} \{\textbf{0}|\textbf{1}\}}\par
+        Specifies whether or not the debugging messages should be printed out. The messages will be printed out to the \emph{serial debugging console}, or to the stdout.
+    \subsection{OPTIONTRACE}
+        \codeline{\textbf{OPTIONTRACE} \{\textbf{0}|\textbf{1}\}}\par
+        Specifies whether or not the line numbers should be printed out. The messages will be printed out to the \emph{serial debugging console}, or to the stdout.
+    \subsection{TYPEOF}
+        \codeline{X \textbf{= TYPEOF(} VALUE \textbf{)}}\par
+        Returns a type of given value.\par
+        \begin{longtable}{*{2}{m{\textwidth}}}\hline
+        \endfirsthead
+        \endhead
+
+        \endfoot
+        \hline
+        \endlastfoot
+        \centering
+        \begin{tabulary}{\textwidth}{rl}
+        BASIC Type & Returned Value \\
+        \hline
+        Number & \ttfamily{num} \\
+        Boolean & \ttfamily{bool} \\
+        String & \ttfamily{str} \\
+        \end{tabulary}
+        \begin{tabulary}{\textwidth}{rl}
+        BASIC Type & Returned Value \\
+        \hline
+        Array & \ttfamily{array} \\
+        Generator & \ttfamily{generator} \\
+        User Function & \ttfamily{usrdefun}
+        \end{tabulary}
+        \end{longtable}
+    
+\section{System}
+
+    \subsection{PEEK}
+        \codeline{BYTE \textbf{= PEEK(} MEM\_ADDR \textbf{)}}\par
+        Returns whatever the value stored in the \code{MEM\_ADDR} of the Scratchpad Memory.\par
+        Address mirroring, illegal access, etc. are entirely up to the virtual machine which the BASIC interpreter is running on.
+    \subsection{POKE}
+        \codeline{\textbf{POKE(} MEM\_ADDR \textbf{,} BYTE \textbf{)}}\par
+        Puts a \code{BYTE} into the \code{MEM\_ADDR} of the Scratchpad Memory.
+
+\section{Higher-order Function}
+
+    \subsection{DO}
+        \codeline{\textbf{DO(} EXPR0 [\textbf{;} EXPR1]\ldots\ \textbf{)}}\par
+        Executes \code{EXPRn}s sequentially.
+    \subsection{FILTER}
+        \codeline{NEWLIST \textbf{= FILTER(} FUNCTION \textbf{,} ITERABLE \textbf{)}}\par
+        Returns an array of values from the \code{ITERABLE} that passes the given function. i.e. values that makes \code{FUNCTION(VALUE\_FROM\_ITERABLE)} true.
+        \subsubsection*{Parameters}
+        \begin{itemlist}
+        \item \code{FUNCTION} is a user-defined function with single parameter.
+        \item \code{ITERABLE} is either an array or a generator.
+        \end{itemlist}
+    \subsection{FOLD}
+        \codeline{NEWVALUE \textbf{= FOLD(} FUNCTION \textbf{,} INIT\_VALUE \textbf{,} ITERABLE \textbf{)}}\par
+        Iteratively applies given function with accumulator and the value from the \code{ITERABLE}, returning the final accumulator. Accumulator will be set to \code{INIT\_VALUE} before iterating over the iterable. In the first execution, the accumulator will be set to \code{ACC=FUNCTION(ACC,ITERABLE(0))}, and the execution will continue to remaining values within the iterable until all values are consumed. The \code{ITERABLE} will not be modified after the execution.
+        \subsubsection*{Parameters}
+        \begin{itemlist}
+        \item \code{FUNCTION} is a user-defined function with two parameters: first parameter being accumulator and second being a value.
+        \end{itemlist}
+    \subsection{MAP}
+        \codeline{NEWLIST \textbf{= MAP(} FUNCTION \textbf{,} ITERABLE \textbf{)}}\par
+        Applies given function onto the every element in the iterable, and returns an array that contains such items. i.e. returns tranformation of \code{ITERABLE} of which the transformation is \code{FUNCTION}. The \code{ITERABLE} will not be modified after the execution.
+        \subsubsection*{Parameters}
+        \begin{itemlist}
+        \item \code{FUNCTION} is a user-defined function with single parameter.
+        \end{itemlist}

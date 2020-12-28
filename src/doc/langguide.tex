@@ -1,0 +1,208 @@
+\quad
+\chapterprecishere{``Begin at the beginning'', the King said gravely, ``and go on till you come to the end: then stop.''\par\raggedleft --- \textup{Lewis Carroll, } Alice in Wonderland}
+
+We'll begin at the beginning; how beginning? This:
+
+\begin{lstlisting}
+10 PRINT 2+2
+run
+4
+Ok
+\end{lstlisting}
+
+Oh \emph{boy} we just did a computation! It printed out \code{4} which is a correct answer for $2+2$ and it didn't crash!
+
+\section[GOTO]{GOTO here and there}
+
+\code{GOTO} is used a lot in BASIC, and so does in \tbas. \code{GOTO} is a simplest method of diverging a program flow: execute only the part of the program conditionally and perform a loop.
+
+Following program attempts to calculate a square root of the input value,  showing how \code{GOTO} can be used in such manner.
+
+\begin{lstlisting}
+10 X=1337
+20 Y=0.5*X
+30 Z=Y
+40 Y=Y-((Y^2)-X)/(2*Y)
+50 IF NOT(Z==Y) THEN GOTO 30 : REM 'NOT(Z==Y)' can be rewritten to 'Z<>Y' 
+100 PRINT "Square root of ";X;" is approximately ";Y
+\end{lstlisting}
+
+Here, \code{GOTO} in line 50 is used to perform a loop, which keeps looping until \code{Z} and \code{Y} becomes equal. This is a newtonian method of approximating a square root. 
+
+\section[Subroutine with GOSUB]{What If We Wanted to Go Back?}
+
+But \code{GOTO} only jumps, you can't jump \emph{back}. Well, not with that attitute; you \emph{can} go back with \code{GOSUB} and \code{RETURN} statement.
+
+This program will draw a triangle, where the actual drawing part is on line 100--160, and only get jumped into it when needed.
+
+\begin{lstlisting}
+10 GOTO 1000
+100 REM subroutine to draw a segment. Size is stored to 'Q'
+110 PRINT SPC(20-Q);
+120 Q1=1 : REM loop counter for this subroutine
+130 PRINT "*";
+140 Q1=Q1+1
+150 IF Q1<=Q*2-1 THEN GOTO 130
+160 PRINT : RETURN : REM this line will take us back from the jump
+1000 Q=1 : REM this is our loop counter
+1010 GOSUB 100
+1020 Q=Q+1
+1030 IF Q<=20 THEN GOTO 1010
+\end{lstlisting}
+
+\section[FOR--NEXT Loop]{FOR ever loop NEXT}
+
+As we've just seen, you can make loops using \code{GOTO}s here and there, but they \emph{totally suck}, too much spaghetti crashes your cerebral cortex faster than \emph{Crash Bandicoot 2}. Fortunately, there's a better way to go about that: the FOR--NEXT loop!
+
+\begin{lstlisting}
+10 GOTO 1000
+100 REM subroutine to draw a segment. Size is stored to 'Q'
+110 PRINT SPC(20-Q);
+120 FOR Q1=1 TO Q*2-1
+130 PRINT "*";
+140 NEXT : PRINT
+150 RETURN
+1000 FOR Q=1 TO 20
+1010 GOSUB 100
+1020 NEXT
+\end{lstlisting}
+
+When executed, this program print out \emph{exactly the same} triangle, but code is much more straightforward thanks to the \code{FOR} statement.
+
+\section[Get User INPUT]{Isn't It Nice To Have a Computer That Will Question You?}
+
+What fun is the program if it won't talk with you? You can make that happen with \code{INPUT} statement.
+
+\begin{lstlisting}
+10 PRINT "WHAT IS YOUR NAME";
+20 INPUT NAME
+30 PRINT "HELLO, ";NAME
+\end{lstlisting}
+
+This short program will ask your name, and then it will greet you by the name you told to the computer.
+
+\section[Function]{Function}
+
+Consider the following code:
+
+\begin{lstlisting}
+10 DEFUN POW2(N)=2^N
+20 DEFUN DCOS(N)=COS(PI*N/180)
+30 FOR X=0 TO 8
+40 PRINT X,POW2(X)
+50 NEXT
+60 PRINT "----------------"
+70 FOREACH A=0!45!90!135!180!NIL
+80 PRINT A,DCOS(A)
+90 NEXT
+\end{lstlisting}
+
+Here, we have defined two functions to use in the program: \code{POW2} and \code{DCOS}. Also observe that functions are defined using variable \code{N}s, but we use them with \code{X} in line 40 and with \code{A} in line 80: yes, functions can have their local name so you don't have to carefully choose which variable name to use in your subroutine.
+
+Except a function can't have statements that spans two- or more BASIC lines; but there are ways to get around that, including \code{DO} statement and \emph{functional currying}\newcounter{curryingappearance}\setcounter{curryingappearance}{\value{page}}
+
+This sample program also shows \code{FOREACH} statement, which is same as \code{FOR} but works with arrays.
+
+\section[Recursion]{BRB: Bad Recursion BRB: Bad Recursion BRB: Bad Recursion BRB: Bad RecursionBRB: Bad Recursion BRBRangeError: Maximum call stack size exceeded}
+
+But don't get over-excited, as it's super-trivial to create unintentional infinite loop:
+
+\begin{lstlisting}
+10 DEFUN FAC(N)=N*FAC(N-1)
+20 FOR K=1 TO 6
+30 PRINT FAC(K)
+40 NEXT
+\end{lstlisting}
+
+(if you tried this and computer becomes unresponsive, hit Ctrl-C to terminate the execution)
+
+This failed attempt is to create a function that calculates a factorial of \code{N}. It didn't work because there is no \emph{halting condition}: didn't tell computer to when to escape from the loop.
+
+$n \times 1$ is always $n$, and $0!$ is $1$, so it would be nice to break out of the loop when \code{N} reaches $0$; here is the modified program:
+
+\begin{lstlisting}
+10 DEFUN FAC(N)=IF N==0 THEN 1 ELSE N*FAC(N-1)
+20 FOR K=1 TO 10
+30 PRINT FAC(K)
+40 NEXT
+\end{lstlisting}
+
+Since \code{IF-THEN-ELSE} can be chained to make third or more conditions --- \code{IF-THEN-ELSE IF-THEN} or something --- we can write a recursive Fibonacci function:
+
+\begin{lstlisting}
+10 DEFUN FIB(N)=IF N==0 THEN 0 ELSE IF N==1 THEN 1 ELSE FIB(N-1)+FIB(N-2)
+20 FOR K=1 TO 10
+30 PRINT FIB(K);" ";
+40 NEXT
+\end{lstlisting}
+
+\section[Higher-order Function]{The Functions of the High Order}
+
+Higher-order functions are functions that either takes another function as an argument, or returns a function. This sample program shows how higher-order functions can be constructed.
+
+\begin{lstlisting}
+10 DEFUN APPLY(F,X)=F(X)
+20 DEFUN FUN(X)=X^2
+30 K=APPLY(FUN,42)
+40 PRINT K
+\end{lstlisting}
+
+Here, \code{APPLY} takes a function \code{F} and value \code{X}, \emph{applies} a function \code{F} onto the value \code{X} and returns the value. Since \code{APPLY} takes a function, it's higher-order function.
+
+\section[MAPping]{Map}
+
+\code{MAP} is a higher-order function that takes a function (called \emph{transformation}) and an array to construct a new array that contains old array transformed with given \emph{transformation}.
+
+Or, think about the old \code{FAC} program before: it merely printed out the value of $1!$, $2!$ \ldots\ $10!$. What if we wanted to build an array that contains such values?
+
+\begin{lstlisting}
+10 DEFUN FAC(N)=IF N==0 THEN 1 ELSE N*FAC(N-1)
+20 K=MAP(FAC, 1 TO 10)
+30 PRINT K
+\end{lstlisting}
+
+Here, \code{K} holds the values of $1!$, $2!$ \ldots\ $10!$. Right now we're just printing out the array, but being an array, you can make actual use of it.
+
+\section[Currying]{Haskell Curry Wants to Know Your Location}
+\label{currying101}
+
+\newcounter{curryingselfref}
+\setcounter{curryingselfref}{\value{page} - \value{curryingappearance}}
+
+\cnttoenglish{\value{curryingselfref}}{page} ago there was a mentioning about something called \emph{functional currying}. So what the fsck is currying? Consider the following code:
+
+\begin{lstlisting}
+10 DEFUN F(K,T)=ABS(T)==K
+20 CF=F~<32
+30 PRINT CF(24) : REM will print 'false'
+40 PRINT CF(-32) : REM will print 'true'
+\end{lstlisting}
+
+% NOTE: you can't use \basiccurry within \code{}
+Here, \code{CF} is a curried function of \code{F}; built-in operator \code{$\sim\!<$} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
+
+\section[Wrapping-Up]{The Grand Unification}
+
+Using all the knowledge we have learned, it should be trivial\footnote{/s} to write a Quicksort function in \tbas, like this:
+
+\begin{lstlisting}
+10 DEFUN LESS(P,X)=X<P
+11 DEFUN GTEQ(P,X)=X>=P
+12 DEFUN QSORT(XS)=IF LEN(XS)<1 THEN NIL ELSE 
+    QSORT(FILTER(LESS~<HEAD(XS),TAIL(XS))) # HEAD(XS)!NIL # 
+    QSORT(FILTER(GTEQ~<HEAD(XS),TAIL(XS)))
+100 L=7!9!4!5!2!3!1!8!6!NIL
+110 PRINT L
+120 PRINT QSORT(L)
+\end{lstlisting}
+
+Line 12 implements quicksort algorithm, using \code{LESS} and \code{GTEQ} as helper functions. \code{LESS} is a user-function version of less-than operator, and \code{GTEQ} is similar. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}\footnote{stands for \emph{X's}} with \code{HEAD(XS)}, then utilises curried version of \code{LESS} and \code{GTEQ} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL(XS)} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Currying is exploited to give comparison functions a pivot-value to compare against, and also because \code{FILTER} wants a \emph{function} and not an \emph{expression}. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
+
+%Uncomment this if you finally decided to support a closure%
+%% Using \emph{closure}, the definition of \code{QSORT} can truly be a one-liner and be \emph{even more cryptic}:
+%% 
+%% \begin{lstlisting}
+%% 10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE 
+%%     QSORT(FILTER([K]~>K<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
+%%     QSORT(FILTER([K]~>K>=HEAD XS,TAIL XS))
+%% \end{lstlisting}
