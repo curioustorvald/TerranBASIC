@@ -1318,6 +1318,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return lh[lh.length - 1];
     });
 }},
+"CLS" : {f:function(lnum, stmtnum, args) {
+    con.clear();
+}},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
         if (lh != 0 && lh != 1) throw lang.syntaxfehler(line);
@@ -2640,7 +2643,7 @@ let SyntaxTreeReturnObj = function(type, value, nextLine) {
 
     this.troType = type;
     this.troValue = value;
-    this.troNextLine = nextLine; // TODO change format of troNextLine to [linenumber, stmtnumber]
+    this.troNextLine = nextLine;
 }
 let JumpObj = function(targetLnum, targetStmtNum, fromLnum, rawValue) {
     this.jmpNext = [targetLnum, targetStmtNum];
@@ -3058,6 +3061,9 @@ bF.delete = function(args) {
     cmdbuf.forEach((v,i) => {if (i < start || i > end) newcmdbuf[i]=v});
     cmdbuf = newcmdbuf;
 };
+bF.cls = function(args) {
+    con.clear();
+}
 bF.prescanStmts = ["DATA","LABEL"];
 bF.run = function(args) { // RUN function
     bF.new(false);
