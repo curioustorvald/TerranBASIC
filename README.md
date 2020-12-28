@@ -1,4 +1,4 @@
-Terran BASIC is a dialect of BASIC which embrace the concept of functional programming. In other words: *BASIC and Haskell living together, mass hysteria!*
+Terran BASIC is a dialect of BASIC which embraces the concept of functional programming. In other words: *BASIC and Haskell living together, mass hysteria!*
 
 Details of the language is fully described in `tbasman.pdf`, please check out!
 
@@ -42,7 +42,7 @@ But with Terran BASIC you can do, I don't know, recursion:
 40 PRINT K
 ```
 
-...or writing a Quicksort algorithm with currying:
+...or writing a Quicksort algorithm with currying!
 
 ```
 10 DEFUN LESS(P,X)=X<P
