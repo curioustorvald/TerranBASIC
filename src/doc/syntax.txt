@@ -20,6 +20,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
           because everything is global in BASIC *)
       lit
     | "(" , expr , ")"
+    | lambda
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     | kywd , expr - "(" (* also deals with FOR statement *)
     (* at this point, if OP is found in paren-level 0, skip function_call *)
@@ -28,6 +29,8 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     | op_uni , expr ;
     
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
+        
+lambda = "[" , ident , ["," , ident] , "]" ; , "~>" , expr ;
     
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
@@ -75,8 +78,8 @@ FOR (type: function, value: FOR)
 1. expr (normally (=) but not necessarily)
 
 DEFUN (type: function, value: DEFUN)
-1. funcname
-    1. arg0
+1. funcname (type: lit)
+    1. arg0 (type: lit)
     [2. arg1]
     [3. argN...]
 2. stmt
@@ -92,3 +95,10 @@ FUNCTION_CALL (type: function, value: PRINT or something)
 1. arg0
 2. arg1
 [3. argN...]
+
+LAMBDA (type: op, value: "~>")
+1. undefined (type: lit)
+    1. arg0 (type: lit)
+    [2. arg1]
+    [3. argN...]
+2. stmt
