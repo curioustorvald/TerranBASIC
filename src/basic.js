@@ -29,9 +29,9 @@ if (exec_args !== undefined && exec_args[1] !== undefined && exec_args[1].starts
     return 0;
 }
 
-const THEVERSION = "1.0";
+const THEVERSION = "1.1-dev";
 
-const PROD = true;
+const PROD = false;
 let INDEX_BASE = 0;
 let TRACEON = (!PROD) && true;
 let DBGON = (!PROD) && true;
@@ -239,16 +239,16 @@ let BasicVar = function(literal, type) {
 // Abstract Syntax Tree
 // creates empty tree node
 let astToString = function(ast, depth) {
-    let l__ = String.fromCharCode(0x2502,32);
+    let l__ = "|  ";
     let recDepth = depth || 0;
     if (ast === undefined || ast.astType === undefined) return "";
     var sb = "";
     var marker = ("lit" == ast.astType) ? "i" :
-                 ("op" == ast.astType) ? String.fromCharCode(0xB1) :
-                 ("string" == ast.astType) ? String.fromCharCode(0xB6) :
-                 ("num" == ast.astType) ? String.fromCharCode(0xA2) :
+                 ("op" == ast.astType) ? "+" :
+                 ("string" == ast.astType) ? "@" :
+                 ("num" == ast.astType) ? "$" :
                  ("array" == ast.astType) ? "[" :
-                 ("defun_args" === ast.astType) ? String.fromCharCode(0x3B4) : String.fromCharCode(0x192);
+                 ("defun_args" === ast.astType) ? "d" : "f";
     sb += l__.repeat(recDepth) + marker+" Line "+ast.astLnum+" ("+ast.astType+")\n";
     sb += l__.repeat(recDepth+1) + "leaves: "+(ast.astLeaves.length)+"\n";
     sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (type: "+typeof ast.astValue+")\n";
@@ -256,7 +256,7 @@ let astToString = function(ast, depth) {
         sb += astToString(ast.astLeaves[k], recDepth + 1);
         sb += l__.repeat(recDepth+1) + " " + ast.astSeps[k] + "\n";
     }
-    sb += l__.repeat(recDepth)+String.fromCharCode(0x2570)+String.fromCharCode(0x2500).repeat(13)+'\n';
+    sb += l__.repeat(recDepth)+"`"+"-".repeat(19)+'\n';
     return sb;
 }
 let BasicAST = function() {
@@ -339,6 +339,15 @@ let curryDefun = function(inputTree, inputValue) {
     });
 
     return exprTree;
+}
+let countArgs = function(defunTree) {
+    let cnt = -1;
+    bF._recurseApplyAST(defunTree, it => {
+        if (it.astType == "defun_args" && it.astValue > cnt)
+            cnt = it.astValue;
+    });
+    
+    return cnt+1;
 }
 let argCheckErr = function(lnum, o) {
     if (o === undefined || o.troType == "null") throw lang.refError(lnum, "(variable undefined)");
@@ -543,6 +552,9 @@ bStatus.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
         });
     };
 };
+/**
+ * @return a Javascript function that when called, evaluates the exprTree
+ */
 bStatus.getDefunThunk = function(lnum, stmtnum, exprTree) {
     if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
 
@@ -1321,6 +1333,16 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "CLS" : {f:function(lnum, stmtnum, args) {
     con.clear();
 }},
+// synopsis: ([a] ~> b) $ a, returns b
+"$" : {f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (fn, arg) => {
+        if (JStoBASICtype(fn) != "usrdefun") throw lang.illegalType(lnum, "LH:"+fn);
+        // check arg count for fn
+        if (countArgs(fn) != 1) throw lang.badFunctionCallFormat();
+        let thenewfunction = bStatus.getDefunThunk(lnum, stmtnum, fn);
+        return thenewfunction(lnum, stmtnum, [arg]);
+    });
+}},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
         if (lh != 0 && lh != 1) throw lang.syntaxfehler(line);
@@ -1375,7 +1397,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 Object.freeze(bStatus.builtin);
 let bF = {};
 bF._1os = {"!":1,"~":1,"#":1,"<":1,"=":1,">":1,"*":1,"+":1,"-":1,"/":1,"^":1,":":1,"$":1};
-bF._2os = {"<":1,"=":1,">":1,"~":1,"$":1,"*":1};
+bF._2os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1};
+bF._3os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1}
 bF._uos = {"+":1,"-":1,"NOT":1,"BNOT":1};
 bF._isNum = function(code) {
     return (code >= 0x30 && code <= 0x39) || code == 0x5F;
@@ -1391,6 +1414,9 @@ bF._is1o = function(code) {
 };
 bF._is2o = function(code) {
     return bF._2os[String.fromCharCode(code)]
+};
+bF._is3o = function(code) {
+    return bF._3os[String.fromCharCode(code)]
 };
 bF._isUnary = function(code) {
     return bF._uos[String.fromCharCode(code)]
@@ -1430,10 +1456,11 @@ bF._opPrc = {
     "#": 52, // array concat
     "~<": 100, // curry operator
     "~>": 101, // closure operator
+    "$": 200, // apply operator
     "=":999,
     "IN":1000
 };
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1}; // ~< and ~> cannot have same associativity
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {
     var _debugprintStateTransition = false;
@@ -1592,7 +1619,40 @@ bF._tokenise = function(lnum, cmd) {
             }
         }
         else if ("o2" == mode) {
-            if (bF._is1o(charCode)) {
+            if (bF._is3o(charCode)) {
+                sb += char;
+                mode = "o3";
+            }
+            else if (bF._is1o(charCode) || bF._is2o(charCode)) {
+                throw lang.syntaxfehler(lnum, lang.badOperatorFormat);
+            }
+            else if (bF._isNum(charCode)) {
+                tokens.push(sb); sb = "" + char; states.push("op");
+                mode = "num";
+            }
+            else if (0x22 == charCode) {
+                tokens.push(sb); sb = ""; states.push("op");
+                mode = "qot";
+            }
+            else if (" " == char) {
+                tokens.push(sb); sb = ""; states.push("op");
+                mode = "limbo";
+            }
+            else if (bF._isParen(charCode)) {
+                tokens.push(sb); sb = "" + char; states.push("op");
+                mode = "paren"
+            }
+            else if (bF._isSep(charCode)) {
+                tokens.push(sb); sb = "" + char; states.push("op");
+                mode = "sep";
+            }
+            else {
+                tokens.push(sb); sb = "" + char; states.push("op");
+                mode = "lit";
+            }
+        }
+        else if ("o3" == mode) {
+            if (bF._is1o(charCode) || bF._is2o(charCode) || bF._is3o(charCode)) {
                 throw lang.syntaxfehler(lnum, lang.badOperatorFormat);
             }
             else if (bF._isNum(charCode)) {
@@ -1788,7 +1848,7 @@ bF._tokenise = function(lnum, cmd) {
     }
     // clean up operator2 and number2
     for (k = 0; k < states.length; k++) {
-        if (states[k] == "o2") states[k] = "op";
+        if (states[k] == "o2" || states[k] == "o3") states[k] = "op";
         else if (states[k] == "n2" || states[k] == "nsep") states[k] = "num";
     }
 
@@ -1941,14 +2001,14 @@ bF.parserDoDebugPrint = (!PROD) && true;
 bF.parserPrintdbg = any => { if (bF.parserDoDebugPrint) serial.println(any) };
 bF.parserPrintdbg2 = function(icon, lnum, tokens, states, recDepth) {
     if (bF.parserDoDebugPrint) {
-        let treeHead = String.fromCharCode(0x2502,32).repeat(recDepth);
+        let treeHead = "|  ".repeat(recDepth);
         bF.parserPrintdbg(`${icon}${lnum} ${treeHead}${tokens.join(' ')}`);
         bF.parserPrintdbg(`${icon}${lnum} ${treeHead}${states.join(' ')}`);
     }
 }
 bF.parserPrintdbgline = function(icon, msg, lnum, recDepth) {
     if (bF.parserDoDebugPrint) {
-        let treeHead = String.fromCharCode(0x2502,32).repeat(recDepth);
+        let treeHead = "|  ".repeat(recDepth);
         bF.parserPrintdbg(`${icon}${lnum} ${treeHead}${msg}`);
     }
 }
