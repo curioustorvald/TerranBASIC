@@ -106,12 +106,12 @@ Order & Op & Associativity \\
 8 & ==\quad<\!>\quad>\!< & Left \\
 9 & \condensedfont{MIN}\quad\condensedfont{MAX} & Left \\
 10 & \condensedfont{BAND} & Left \\
-\ & \ & \ \\
+11 & \condensedfont{BXOR} & Left \\
+%\ & \ & \ \\
 \end{tabulary}
 \begin{tabulary}{\textwidth}{cCc}
 Order & Op & Associativity \\
 \hline
-11 & \condensedfont{BXOR} & Left \\
 12 & \condensedfont{BOR} & Left \\
 13 & \condensedfont{AND} & Left \\
 14 & \condensedfont{OR} & Left \\
@@ -120,9 +120,9 @@ Order & Op & Associativity \\
 17 & \sim & Left\\
 18 & \# & Left \\
 19 & \basiccurry & Left \\
-%19.5 & \basicclosure & Right \\
-20 & \$ & Right \\
-21 & = & Right \\
+20 & \basicclosure & Right \\
+21 & \$ & Right \\
+22 & = & Right \\
 \end{tabulary}
 \end{longtable}
 
@@ -250,10 +250,10 @@ Code & Operation & Result \\
 \hline
 \emph{f} \basiccurry\ \emph{x} & Curry & Partially apply \emph{x} into the first parameter of the function \emph{f} and returns that function \\
 \emph{f} \$ \emph{x} & Apply & Evaluates single-parameter function $ f(x) $ and returns the value \\
-%{[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
+{[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
 \end{tabulary}
 
-\emph{Currying}\footnote{\emph{Partial Application} should be more appropriate for this operator, but oh well: \emph{currying} is less mouthful.} is an operation that returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
+\emph{Currying}\footnote{\emph{Partial Application} ought to be more appropriate for this operator, but \emph{Partial Application} and \emph{Application} sound very much alike} is an operation that returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
 
 \section{Constants}
 

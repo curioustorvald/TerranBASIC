@@ -292,7 +292,7 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function because everything is global in BASIC *)
       lit
     | "(" , expr , ")"
-    | lambda
+    | tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     | kywd , expr - "(" (* also deals with FOR statement *)
     (* at this point, if OP is found in paren-level 0, skip function_call *)
@@ -377,10 +377,10 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
     
     // ## case for:
-    //    | lambda
+    //    | ident_tuple
     try {
-        bF.parserPrintdbgline('E', "Trying LAMBDA Expression...", lnum, recDepth);
-        return bF._parseLambda(lnum, tokens, states, recDepth + 1, false);
+        bF.parserPrintdbgline('E', "Trying Tuple...", lnum, recDepth);
+        return bF._parseTuple(lnum, tokens, states, recDepth + 1, false);
     }
     // if ParserError is raised, continue to apply other rules
     catch (e) {
@@ -584,15 +584,14 @@ bF._parseIfMode = function(lnum, tokens, states, recDepth, exprMode) {
 
 
 /** Parses following EBNF rule:
-lambda = "[" , ident , ["," , ident] , "]" ; , "~>" , expr ;
+ident_tuple = "[" , ident , ["," , ident] , "]" ;
  * @return: BasicAST
  */
-bF._parseLambda = function(lnum, tokens, states, recDepth) {
-    bF.parserPrintdbg2('\\', lnum, tokens, states, recDepth);
+bF._parseTuple = function(lnum, tokens, states, recDepth) {
+    bF.parserPrintdbg2(']', lnum, tokens, states, recDepth);
     
     /*************************************************************************/
 
-    let arrowPos = -1;
     let parenDepth = 0;
     let parenStart = -1;
     let parenEnd = -1;
@@ -612,52 +611,33 @@ bF._parseLambda = function(lnum, tokens, states, recDepth) {
             parenDepth -= 1;
         }
         
-        // where is the (~>)
-        if (parenDepth == 0 && tokens[k] == "~>" && states[k] == "op")
-            arrowPos = k;
         // where are the argument separators
         if (parenDepth == 1 && parenEnd == -1 && states[k] == "sep")
             argSeps.push(k);
         // break if we've got all the values we nedd
-        if (arrowPos != -1 && parenStart != -1 && parenEnd != -1)
+        if (parenStart != -1 && parenEnd != -1)
             break;
     }
 
     // unmatched brackets, duh!
     if (parenDepth != 0) throw lang.syntaxfehler(lnum, lang.unmatchedBrackets);
-    let parenUsed = (parenStart == 1);
-    // && parenEnd == tokens.length - 1);
-    // if starting paren is found, just use it
-    // this prevents "RND(~~)*K" to be parsed as [RND, (~~)*K]
 
-    if (parenStart != 0 || parenEnd == -1 || arrowPos == -1)
-        throw new ParserError("not a Lambda expression");
+    if (parenStart != 0 || parenEnd != tokens.length - 1)
+        throw new ParserError("not a Tuple expression");
     
     /*************************************************************************/
     
     let treeHead = new BasicAST();
     treeHead.astLnum = lnum;
-    treeHead.astValue = "~>";
-    treeHead.astType = "op";
-    treeHead.astLeaves[0] = new BasicAST();
-            treeHead.astLeaves[0].astLnum = lnum;
-            treeHead.astLeaves[0].astType = "lit";
-    
-    
-    // parse function arguments
-    bF.parserPrintdbgline('\\', 'LAMBDA arguments -- ', lnum, recDepth);
-    let defunArgDeclSeps = argSeps.map(i => i-1).concat([parenEnd - 1]);
-    bF.parserPrintdbgline('$', 'LAMBDA arguments comma position: '+defunArgDeclSeps, lnum, recDepth);
+    treeHead.astValue = undefined;
+    treeHead.astType = "tuple";
 
-    treeHead.astLeaves[0].astLeaves = defunArgDeclSeps.map(i=>bF._parseIdent(lnum, [tokens[i]], [states[i]], recDepth + 1));
-    
-    // parse function body
-    let parseFunction = (DEFUNS_BUILD_DEFUNS) ? bF._parseStmt : bF._parseExpr;
-    treeHead.astLeaves[1] = parseFunction(lnum,
-        tokens.slice(parenEnd + 2, tokens.length),
-        states.slice(parenEnd + 2, states.length),
-        recDepth + 1
-    );
+    // parse function arguments
+    bF.parserPrintdbgline(']', 'Tuple arguments -- ', lnum, recDepth);
+    let defunArgDeclSeps = argSeps.map(i => i-1).concat([parenEnd - 1]);
+    bF.parserPrintdbgline(']', 'Tuple comma position: '+defunArgDeclSeps, lnum, recDepth);
+
+    treeHead.astLeaves = defunArgDeclSeps.map(i=>bF._parseIdent(lnum, [tokens[i]], [states[i]], recDepth + 1));
     
     return treeHead;
 }
@@ -931,10 +911,15 @@ let states17 = ["lit","paren","lit","op","lit","lit","sep","lit","lit","paren"];
 let tokens18 = ["[","X",",","Y","]","~>","(","X","+","Y",")","/","2"];
 let states18 = ["paren","lit","sep","lit","paren","op","paren","lit","op","lit","paren","op","num"]
 
+// [X]~>[Y]~>(X+Y)/2
+// should be identical to: [X]~>([Y]~>(X+Y)/2)
+let tokens19 = ["[","X","]","~>","[","Y","]","~>","(","X","+","Y",")","/","2"];
+let states19 = ["paren","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
+
 try  {
     let trees = bF._parseTokens(lnum,
-        tokens18,
-        states18
+        tokens19,
+        states19
     );
     trees.forEach((t,i) => {
         serial.println("\nParsed Statement #"+(i+1));

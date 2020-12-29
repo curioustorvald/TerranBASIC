@@ -20,7 +20,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
           because everything is global in BASIC *)
       lit
     | "(" , expr , ")"
-    | lambda
+    | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     | kywd , expr - "(" (* also deals with FOR statement *)
     (* at this point, if OP is found in paren-level 0, skip function_call *)
@@ -30,7 +30,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
         
-lambda = "[" , ident , ["," , ident] , "]" ; , "~>" , expr ;
+ident_tuple = "[" , ident , ["," , ident] , "]" ;
     
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
@@ -97,7 +97,7 @@ FUNCTION_CALL (type: function, value: PRINT or something)
 [3. argN...]
 
 LAMBDA (type: op, value: "~>")
-1. undefined (type: lit)
+1. undefined (type: tuple, value: undefined)
     1. arg0 (type: lit)
     [2. arg1]
     [3. argN...]
