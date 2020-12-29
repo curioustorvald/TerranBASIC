@@ -630,7 +630,7 @@ bF._parseTuple = function(lnum, tokens, states, recDepth) {
     let treeHead = new BasicAST();
     treeHead.astLnum = lnum;
     treeHead.astValue = undefined;
-    treeHead.astType = "tuple";
+    treeHead.astType = "closure_args";
 
     // parse function arguments
     bF.parserPrintdbgline(']', 'Tuple arguments -- ', lnum, recDepth);
@@ -913,8 +913,8 @@ let states18 = ["paren","lit","sep","lit","paren","op","paren","lit","op","lit",
 
 // [X]~>[Y]~>(X+Y)/2
 // should be identical to: [X]~>([Y]~>(X+Y)/2)
-let tokens19 = ["[","X","]","~>","[","Y","]","~>","(","X","+","Y",")","/","2"];
-let states19 = ["paren","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
+let tokens19 = ["K","=","[","X","]","~>","[","Y","]","~>","(","X","+","Y",")","/","2"];
+let states19 = ["lit","op","paren","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
 
 try  {
     let trees = bF._parseTokens(lnum,

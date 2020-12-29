@@ -97,7 +97,7 @@ FUNCTION_CALL (type: function, value: PRINT or something)
 [3. argN...]
 
 LAMBDA (type: op, value: "~>")
-1. undefined (type: tuple, value: undefined)
+1. undefined (type: closure_args, value: undefined)
     1. arg0 (type: lit)
     [2. arg1]
     [3. argN...]
