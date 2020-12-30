@@ -803,12 +803,12 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         // test print new tree
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] closure debug info");
-            serial.println("[Parser.PRUNE.~>] closure name tree: ");
-            serial.println(astToString(nameTree));
+            //serial.println("[Parser.PRUNE.~>] closure debug info");
+            //serial.println("[Parser.PRUNE.~>] closure name tree: ");
+            //serial.println(astToString(nameTree));
             serial.println("[Parser.PRUNE.~>] closure renaming map: "+Object.entries(defunRenamingMap));
-            serial.println("[Parser.PRUNE.~>] closure expression tree:");
-            serial.println(astToString(exprTree));
+            //serial.println("[Parser.PRUNE.~>] closure expression tree:");
+            //serial.println(astToString(exprTree));
         }
         
         // rename the parameters
@@ -981,7 +981,7 @@ let states16 = ["lit","lit","paren","lit","paren","op","lit","lit","op","num","l
 let tokens17 = ["FILTER","(","FN","<~","HEAD","XS",",","TAIL","XS",")"];
 let states17 = ["lit","paren","lit","op","lit","lit","sep","lit","lit","paren"];
 
-// [X,Y]~>(X+Y)/2
+// K=[X,Y]~>(X+Y)/2
 let tokens18 = ["K","=","[","X",",","Y","]","~>","(","X","+","Y",")","/","2"];
 let states18 = ["lit","op","paren","lit","sep","lit","paren","op","paren","lit","op","lit","paren","op","num"]
 
@@ -990,10 +990,14 @@ let states18 = ["lit","op","paren","lit","sep","lit","paren","op","paren","lit",
 let tokens19 = ["K","=","[","X","]","~>","[","Y","]","~>","(","X","+","Y",")","/","2"];
 let states19 = ["lit","op","paren","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
 
+// [X]~>MAP([Y]~>Y<5,X)
+let tokens20 = ["[","X","]","~>","MAP","(","[","Y","]","~>","Y","<","5",",","X",")"];
+let states20 = ["paren","lit","paren","op","lit","paren","paren","lit","paren","op","lit","op","num","sep","lit","paren"];
+
 try  {
     let rawTrees = bF._parseTokens(lnum,
-        tokens18,
-        states18
+        tokens20,
+        states20
     );
     let trees = rawTrees.map(it => bF._pruneTree(lnum, it, 0));
     trees.forEach((t,i) => {
