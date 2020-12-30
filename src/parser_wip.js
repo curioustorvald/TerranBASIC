@@ -303,7 +303,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
  * @return: BasicAST
  */
 bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
-    bF.parserPrintdbg2('E', lnum, tokens, states, recDepth);
+    bF.parserPrintdbg2('e', lnum, tokens, states, recDepth);
 
     /*************************************************************************/
 
@@ -327,7 +327,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    lit
     if (!bF._EquationIllegalTokens.includes(headTkn) && tokens.length == 1) {
-        bF.parserPrintdbgline('E', 'Literal Call', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'Literal Call', lnum, recDepth);
         return bF._parseLit(lnum, tokens, states, recDepth + 1);
     }
 
@@ -379,13 +379,13 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | ident_tuple
     try {
-        bF.parserPrintdbgline('E', "Trying Tuple...", lnum, recDepth);
+        bF.parserPrintdbgline('e', "Trying Tuple...", lnum, recDepth);
         return bF._parseTuple(lnum, tokens, states, recDepth + 1, false);
     }
     // if ParserError is raised, continue to apply other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
-        bF.parserPrintdbgline('E', 'It was NOT!', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
     }
     
     /*************************************************************************/
@@ -393,7 +393,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | "(" , expr , ")"
     if (parenStart == 0 && parenEnd == tokens.length - 1) {
-        bF.parserPrintdbgline('E', '( Expr )', lnum, recDepth);
+        bF.parserPrintdbgline('e', '( Expr )', lnum, recDepth);
 
         return bF._parseExpr(lnum,
             tokens.slice(parenStart + 1, parenEnd),
@@ -407,13 +407,13 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     try {
-        bF.parserPrintdbgline('E', "Trying IF Expression...", lnum, recDepth);
+        bF.parserPrintdbgline('e', "Trying IF Expression...", lnum, recDepth);
         return bF._parseIfMode(lnum, tokens, states, recDepth + 1, false);
     }
     // if ParserError is raised, continue to apply other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
-        bF.parserPrintdbgline('E', 'It was NOT!', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
     }
 
     /*************************************************************************/
@@ -423,7 +423,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     if (bStatus.builtin[headTkn] && headSta == "lit" && !bF._opPrc[headTkn] &&
         states[1] != "paren"
     ) {
-        bF.parserPrintdbgline('E', 'Builtin Function Call w/o Paren', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'Builtin Function Call w/o Paren', lnum, recDepth);
 
         return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
     }
@@ -435,13 +435,13 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     //    | function_call ;
     if (topmostOp === undefined) { // don't remove this IF statement!
         try {
-            bF.parserPrintdbgline('E', "Trying Function Call...", lnum, recDepth);
+            bF.parserPrintdbgline('e', "Trying Function Call...", lnum, recDepth);
             return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
         }
         // if ParserError is raised, continue to apply other rules
         catch (e) {
             if (!(e instanceof ParserError)) throw e;
-            bF.parserPrintdbgline('E', 'It was NOT!', lnum, recDepth);
+            bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
         }
     }
 
@@ -452,7 +452,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     //    | op_uni , expr
     // if operator is found, split by the operator and recursively parse the LH and RH
     if (topmostOp !== undefined) {
-        bF.parserPrintdbgline('E', 'Operators', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'Operators', lnum, recDepth);
 
         if (ifMode && topmostOp == "=") throw lang.syntaxfehler(lnum, "'=' used on IF, did you mean '=='?");
         if (ifMode && topmostOp == ":") throw lang.syntaxfehler(lnum, "':' used on IF");
@@ -788,7 +788,7 @@ let astToString = function(ast, depth) {
                  ("defun_args" === ast.astType) ? "d" : "f";
     sb += l__.repeat(recDepth) + marker+" Line "+ast.astLnum+" ("+ast.astType+")\n";
     sb += l__.repeat(recDepth+1) + "leaves: "+(ast.astLeaves.length)+"\n";
-    sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (type: "+typeof ast.astValue+")\n";
+    sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (typeof "+typeof ast.astValue+")\n";
     for (var k = 0; k < ast.astLeaves.length; k++) {
         sb += astToString(ast.astLeaves[k], recDepth + 1);
         sb += l__.repeat(recDepth+1) + " " + ast.astSeps[k] + "\n";

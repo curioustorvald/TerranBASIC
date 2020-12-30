@@ -251,7 +251,7 @@ let astToString = function(ast, depth) {
                  ("defun_args" === ast.astType) ? "d" : "f";
     sb += l__.repeat(recDepth) + marker+" Line "+ast.astLnum+" ("+ast.astType+")\n";
     sb += l__.repeat(recDepth+1) + "leaves: "+(ast.astLeaves.length)+"\n";
-    sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (type: "+typeof ast.astValue+")\n";
+    sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (typeof "+typeof ast.astValue+")\n";
     for (var k = 0; k < ast.astLeaves.length; k++) {
         sb += astToString(ast.astLeaves[k], recDepth + 1);
         sb += l__.repeat(recDepth+1) + " " + ast.astSeps[k] + "\n";
@@ -1358,7 +1358,22 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "RESOLVE" : {f:function(lnum, stmtnum, args) {
     if (DBGON) {
         return oneArg(lnum, stmtnum, args, (it) => {
-            println(it);
+            if (it.astValue !== undefined) {
+                println(lnum+" RESOLVE PRINTTREE")
+                println(astToString(it));
+                if (typeof it.astValue == "object") {
+                    if (it.astValue.astValue !== undefined) {
+                        println(lnum+" RESOLVE PRINTTREE ASTVALUE PRINTTREE");
+                        println(astToString(it.astValue));
+                    }
+                    else {
+                        println(lnum+" RESOLVE PRINTTREE ASTVALUE");
+                        println(it.astValue);
+                    }
+                }
+            }
+            else
+                println(it);
         });
     }
     else {
@@ -2293,7 +2308,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
  * @return: BasicAST
  */
 bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
-    bF.parserPrintdbg2('E', lnum, tokens, states, recDepth);
+    bF.parserPrintdbg2('e', lnum, tokens, states, recDepth);
 
     /*************************************************************************/
 
@@ -2317,7 +2332,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    lit
     if (!bF._EquationIllegalTokens.includes(headTkn) && tokens.length == 1) {
-        bF.parserPrintdbgline('E', 'Literal Call', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'Literal Call', lnum, recDepth);
         return bF._parseLit(lnum, tokens, states, recDepth + 1);
     }
 
@@ -2369,13 +2384,13 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | ident_tuple
     try {
-        bF.parserPrintdbgline('E', "Trying Tuple...", lnum, recDepth);
+        bF.parserPrintdbgline('e', "Trying Tuple...", lnum, recDepth);
         return bF._parseTuple(lnum, tokens, states, recDepth + 1, false);
     }
     // if ParserError is raised, continue to apply other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
-        bF.parserPrintdbgline('E', 'It was NOT!', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
     }
     
     /*************************************************************************/
@@ -2383,7 +2398,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | "(" , expr , ")"
     if (parenStart == 0 && parenEnd == tokens.length - 1) {
-        bF.parserPrintdbgline('E', '( Expr )', lnum, recDepth);
+        bF.parserPrintdbgline('e', '( Expr )', lnum, recDepth);
 
         return bF._parseExpr(lnum,
             tokens.slice(parenStart + 1, parenEnd),
@@ -2397,13 +2412,13 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     try {
-        bF.parserPrintdbgline('E', "Trying IF Expression...", lnum, recDepth);
+        bF.parserPrintdbgline('e', "Trying IF Expression...", lnum, recDepth);
         return bF._parseIfMode(lnum, tokens, states, recDepth + 1, false);
     }
     // if ParserError is raised, continue to apply other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
-        bF.parserPrintdbgline('E', 'It was NOT!', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
     }
 
     /*************************************************************************/
@@ -2413,7 +2428,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     if (bStatus.builtin[headTkn] && headSta == "lit" && !bF._opPrc[headTkn] &&
         states[1] != "paren"
     ) {
-        bF.parserPrintdbgline('E', 'Builtin Function Call w/o Paren', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'Builtin Function Call w/o Paren', lnum, recDepth);
 
         return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
     }
@@ -2425,13 +2440,13 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     //    | function_call ;
     if (topmostOp === undefined) { // don't remove this IF statement!
         try {
-            bF.parserPrintdbgline('E', "Trying Function Call...", lnum, recDepth);
+            bF.parserPrintdbgline('e', "Trying Function Call...", lnum, recDepth);
             return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
         }
         // if ParserError is raised, continue to apply other rules
         catch (e) {
             if (!(e instanceof ParserError)) throw e;
-            bF.parserPrintdbgline('E', 'It was NOT!', lnum, recDepth);
+            bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
         }
     }
 
@@ -2442,7 +2457,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     //    | op_uni , expr
     // if operator is found, split by the operator and recursively parse the LH and RH
     if (topmostOp !== undefined) {
-        bF.parserPrintdbgline('E', 'Operators', lnum, recDepth);
+        bF.parserPrintdbgline('e', 'Operators', lnum, recDepth);
 
         if (ifMode && topmostOp == "=") throw lang.syntaxfehler(lnum, "'=' used on IF, did you mean '=='?");
         if (ifMode && topmostOp == ":") throw lang.syntaxfehler(lnum, "':' used on IF");
@@ -2640,7 +2655,7 @@ function_call =
  * @return: BasicAST
  */
 bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
-    bF.parserPrintdbg2(String.fromCharCode(0x192), lnum, tokens, states, recDepth);
+    bF.parserPrintdbg2('F', lnum, tokens, states, recDepth);
 
     /*************************************************************************/
 
@@ -2682,7 +2697,7 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     // ## case for:
     //      ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
     //    | ident , expr , {argsep , expr} , [argsep] ;
-    bF.parserPrintdbgline(String.fromCharCode(0x192), `Function Call (parenUsed: ${parenUsed})`, lnum, recDepth);
+    bF.parserPrintdbgline('F', `Function Call (parenUsed: ${parenUsed})`, lnum, recDepth);
 
     let treeHead = new BasicAST();
     treeHead.astLnum = lnum;
@@ -2692,20 +2707,20 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
 
     // 5 8 11 [end]
     let argSeps = parenUsed ? _argsepsOnLevelOne : _argsepsOnLevelZero; // choose which "sep tray" to use
-    bF.parserPrintdbgline(String.fromCharCode(0x192), "argSeps = "+argSeps, lnum, recDepth);
+    bF.parserPrintdbgline('F', "argSeps = "+argSeps, lnum, recDepth);
     // 1 6 9 12
     let argStartPos = [1 + (parenUsed)].concat(argSeps.map(k => k+1));
-    bF.parserPrintdbgline(String.fromCharCode(0x192), "argStartPos = "+argStartPos, lnum, recDepth);
+    bF.parserPrintdbgline('F', "argStartPos = "+argStartPos, lnum, recDepth);
     // [1,5) [6,8) [9,11) [12,end)
     let argPos = argStartPos.map((s,i) => {return{start:s, end:(argSeps[i] || (parenUsed ? parenEnd : tokens.length) )}}); // use end of token position as separator position
-    bF.parserPrintdbgline(String.fromCharCode(0x192), "argPos = "+argPos.map(it=>`${it.start}/${it.end}`), lnum, recDepth);
+    bF.parserPrintdbgline('F', "argPos = "+argPos.map(it=>`${it.start}/${it.end}`), lnum, recDepth);
 
     // check for trailing separator
 
 
     // recursively parse function arguments
     treeHead.astLeaves = argPos.map((x,i) => {
-        bF.parserPrintdbgline(String.fromCharCode(0x192), 'Function Arguments #'+(i+1), lnum, recDepth);
+        bF.parserPrintdbgline('F', 'Function Arguments #'+(i+1), lnum, recDepth);
 
         // check for empty tokens
         if (x.end - x.start < 0) throw new ParserError("not a function call because it's malformed");
@@ -2718,7 +2733,7 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     );
     treeHead.astType = "function";
     treeHead.astSeps = argSeps.map(i => tokens[i]);
-    bF.parserPrintdbgline(String.fromCharCode(0x192), "astSeps = "+treeHead.astSeps, lnum, recDepth);
+    bF.parserPrintdbgline('F', "astSeps = "+treeHead.astSeps, lnum, recDepth);
 
     return treeHead;
 }
@@ -2741,7 +2756,7 @@ bF._parseIdent = function(lnum, tokens, states, recDepth) {
  * @return: BasicAST
  */
 bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
-    bF.parserPrintdbg2(String.fromCharCode(0xA2), lnum, tokens, states, recDepth);
+    bF.parserPrintdbg2('i', lnum, tokens, states, recDepth);
 
     if (!Array.isArray(tokens) && !Array.isArray(states)) throw new ParserError("Tokens and states are not array");
     if (tokens.length != 1) throw new ParserError("parseLit 1");
@@ -2813,9 +2828,9 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     // array indexing in the tree (caused by indexing array within recursive DEFUN)
     else if (syntaxTree.astType == "array" && syntaxTree.astLeaves[0] !== undefined) {
         let indexer = bStatus.getArrayIndexFun(lnum, stmtnum, "substituted array", syntaxTree.astValue);
-        let indices = syntaxTree.astLeaves.map(it=>bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
-        let retVal = indexer(lnum, stmtnum, indices);
-        if (_debugExec) serial.println(recWedge+`indexing substituted array(${Object.entries(indices)}) = ${Object.entries(retVal)}`);
+        let args = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
+        let retVal = indexer(lnum, stmtnum, args);
+        if (_debugExec) serial.println(recWedge+`indexing substituted array(${Object.entries(args)}) = ${Object.entries(retVal)}`);
         return new SyntaxTreeReturnObj(
                 JStoBASICtype(retVal),
                 retVal,
@@ -2827,10 +2842,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     // if tree has leaves:
     else if (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined) {
         let oldTree = syntaxTree.astValue;
-        let argsTro = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
+        let args = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
         let newTree = oldTree; // curryDefun() will make a clone of it for us
-        for (let k = 0; k < argsTro.length; k++) {
-            newTree = curryDefun(oldTree, argsTro[k].troValue);
+        for (let k = 0; k < args.length; k++) {
+            newTree = curryDefun(oldTree, args[k].troValue);
         }
 
         // make a javascript function out of the new tree, thess lines are now basically the same as above function calling lines
@@ -2838,7 +2853,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
 
         // call whatever the 'func' has whether it's builtin or we just made shit up right above
         try {
-            //let funcCallResult = func(lnum, stmtnum, argsTro, syntaxTree.astSeps);
+            //let funcCallResult = func(lnum, stmtnum, args, syntaxTree.astSeps);
             let funcCallResult = func(lnum, stmtnum, [], syntaxTree.astSeps);
 
             if (funcCallResult instanceof SyntaxTreeReturnObj) return funcCallResult;
@@ -2891,7 +2906,12 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             serial.println(astToString(exprTree));
         }
         
-        return new SyntaxTreeReturnObj("internal_lambda", exprTree, [lnum, stmtnum + 1]);
+        let encapsulatedTree = new BasicAST();
+        encapsulatedTree.astLnum = lnum;
+        encapsulatedTree.astValue = exprTree;
+        encapsulatedTree.astType = "usrdefun";
+        
+        return new SyntaxTreeReturnObj("internal_lambda", encapsulatedTree, [lnum, stmtnum + 1]);
     }
     else if (syntaxTree.astType == "function" || syntaxTree.astType == "op") {
         if (_debugExec) serial.println(recWedge+"function|operator");
@@ -2992,8 +3012,8 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             }
         }
         else {
-            var args = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
-
+            let args = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
+            
             if (_debugExec) {
                 serial.println(recWedge+"fn call name: "+funcName);
                 serial.println(recWedge+"fn call args: "+(args.map(it => it.troType+" "+it.troValue)).join(", "));
