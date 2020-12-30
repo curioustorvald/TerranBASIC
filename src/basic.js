@@ -479,7 +479,7 @@ let ForGen = function(s,e,t) {
     // mutableVar: the actual number stored into the FOR-Variable, because BASIC's FOR-Var is mutable af
     // returns undefined if there is no next()
     this.getNext = function(mutated) {
-        //if (mutated === undefined) throw "InternalError: parametre is missing";
+        //if (mutated === undefined) throw "InternalError: parameter is missing";
         if (mutated !== undefined) this.current = (mutated|0);
         this.current += this.step;
         //serial.println(`[BASIC.FORGEN] ${(mutated|0)} -> ${this.current}`);
@@ -2820,6 +2820,8 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
         serial.println(astToString(syntaxTree));
     }
 
+    // TODO executeTree merely runs the tree and should not modify it; parser is responsible to produce 'compete tree'
+    
     if (syntaxTree == undefined) return bF._troNOP(lnum, stmtnum);
     else if (syntaxTree.astValue == undefined) { // empty meaningless parens
         if (syntaxTree.astLeaves.length > 1) throw Error("WTF");
@@ -2884,10 +2886,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             return defunRenamingMap[it.astValue] = i;
         });
         
-        // rename the parametres
+        // rename the parameters
         bF._recurseApplyAST(exprTree, (it) => {
             if (it.astType == "lit" || it.astType == "function") {
-                // check if parametre name is valid
+                // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
                 if (defunRenamingMap[it.astValue] !== undefined) {
                     it.astType = "defun_args";
@@ -2951,7 +2953,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             let nameTree = syntaxTree.astLeaves[0];
             let exprTree = syntaxTree.astLeaves[1];
 
-            // create parametres map
+            // create parameters map
             // NOTE: firstmost param ('x' as in foo(x,y,z)) gets index 0
             let defunName = nameTree.astValue.toUpperCase();
             let defunRenamingMap = {};
@@ -2960,10 +2962,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 return defunRenamingMap[it.astValue] = i;
             });
 
-            // rename the parametres
+            // rename the parameters
             bF._recurseApplyAST(exprTree, (it) => {
                 if (it.astType == "lit" || it.astType == "function") {
-                    // check if parametre name is valid
+                    // check if parameter name is valid
                     // if the name is invalid, regard it as a global variable (i.e. do nothing)
                     if (defunRenamingMap[it.astValue] !== undefined) {
                         it.astType = "defun_args";

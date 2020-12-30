@@ -5,6 +5,7 @@ class ParserError extends Error {
     }
 }
 var DEFUNS_BUILD_DEFUNS = false;
+var DBGON = true;
 let bF = {};
 bF.parserPrintdbg = any => serial.println(any);
 bF.parserPrintdbg2 = function(icon, lnum, tokens, states, recDepth) {
@@ -16,10 +17,19 @@ bF.parserPrintdbgline = function(icon, msg, lnum, recDepth) {
     let treeHead = "|  ".repeat(recDepth);
     bF.parserPrintdbg(`${icon}${lnum} ${treeHead}${msg}`);
 }
+bF._recurseApplyAST = function(tree, action) {
+    if (tree.astLeaves === undefined || tree.astLeaves[0] === undefined)
+        return action(tree);
+    else {
+        action(tree);
+        tree.astLeaves.forEach(it => bF._recurseApplyAST(it, action))
+    }
+}
 let lang = {};
 lang.syntaxfehler = function(line, reason) {
     return Error("Syntax error" + ((line !== undefined) ? (" in "+line) : "") + ((reason !== undefined) ? (": "+reason) : ""));
 };
+lang.aG = " arguments were given";
 
 /**
  * @return ARRAY of BasicAST
@@ -767,6 +777,70 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 }
 
 
+/**
+ * @return: BasicAST
+ */
+bF._pruneTree = function(lnum, tree, recDepth) {    
+    // depth-first run
+    if (tree.astLeaves[0] != undefined) {
+        tree.astLeaves.forEach(it => bF._pruneTree(lnum, it, recDepth + 1));
+    }
+    
+    
+    if (tree.astType == "op" && tree.astValue == "~>") {
+        
+        if (tree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum, tree.astLeaves.length+lang.aG);
+        
+        let nameTree = tree.astLeaves[0];
+        let exprTree = tree.astLeaves[1];
+        
+        // build renaming map
+        let defunRenamingMap = {};
+        nameTree.astLeaves.forEach((it, i) => {
+            if (it.astType !== "lit") throw lang.syntaxfehler(lnum, "4");
+            return defunRenamingMap[it.astValue] = i;
+        });
+        
+        // test print new tree
+        if (DBGON) {
+            serial.println("[Parser.PRUNE.~>] closure debug info");
+            serial.println("[Parser.PRUNE.~>] closure name tree: ");
+            serial.println(astToString(nameTree));
+            serial.println("[Parser.PRUNE.~>] closure renaming map: "+Object.entries(defunRenamingMap));
+            serial.println("[Parser.PRUNE.~>] closure expression tree:");
+            serial.println(astToString(exprTree));
+        }
+        
+        // rename the parameters
+        bF._recurseApplyAST(exprTree, (it) => {
+            if (it.astType == "lit" || it.astType == "function") {
+                // check if parameter name is valid
+                // if the name is invalid, regard it as a global variable (i.e. do nothing)
+                if (defunRenamingMap[it.astValue] !== undefined) {
+                    it.astType = "defun_args";
+                    it.astValue = defunRenamingMap[it.astValue];
+                }
+            }
+        });
+        
+        tree.astType = "usrdefun";
+        tree.astValue = exprTree;
+        tree.astLeaves = [];
+    }
+    
+    if (DBGON) {
+        serial.println("[Parser.PRUNE] pruned subtree:");
+        serial.println(astToString(tree));
+        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+            serial.println("[Parser.PRUNE] unpacking astValue:");
+            serial.println(astToString(tree.astValue));
+        }
+    }
+    
+    return tree;
+}
+
+
 bF._EquationIllegalTokens = ["IF","THEN","ELSE","DEFUN","ON"];
 bF.isSemanticLiteral = function(token, state) {
     return undefined == token || "]" == token || ")" == token ||
@@ -908,8 +982,8 @@ let tokens17 = ["FILTER","(","FN","<~","HEAD","XS",",","TAIL","XS",")"];
 let states17 = ["lit","paren","lit","op","lit","lit","sep","lit","lit","paren"];
 
 // [X,Y]~>(X+Y)/2
-let tokens18 = ["[","X",",","Y","]","~>","(","X","+","Y",")","/","2"];
-let states18 = ["paren","lit","sep","lit","paren","op","paren","lit","op","lit","paren","op","num"]
+let tokens18 = ["K","=","[","X",",","Y","]","~>","(","X","+","Y",")","/","2"];
+let states18 = ["lit","op","paren","lit","sep","lit","paren","op","paren","lit","op","lit","paren","op","num"]
 
 // [X]~>[Y]~>(X+Y)/2
 // should be identical to: [X]~>([Y]~>(X+Y)/2)
@@ -917,10 +991,11 @@ let tokens19 = ["K","=","[","X","]","~>","[","Y","]","~>","(","X","+","Y",")","/
 let states19 = ["lit","op","paren","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
 
 try  {
-    let trees = bF._parseTokens(lnum,
-        tokens19,
-        states19
+    let rawTrees = bF._parseTokens(lnum,
+        tokens18,
+        states18
     );
+    let trees = rawTrees.map(it => bF._pruneTree(lnum, it, 0));
     trees.forEach((t,i) => {
         serial.println("\nParsed Statement #"+(i+1));
         serial.println(astToString(t));
