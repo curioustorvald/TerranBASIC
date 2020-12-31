@@ -266,7 +266,7 @@ let BasicAST = function() {
     this.astValue = undefined;
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
 }
-let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun", "closure_args"];
+let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun"];
 /*
 @param variable SyntaxTreeReturnObj, of which  the 'troType' is defined in BasicAST.
 @return a value, if the input type if string or number, its literal value will be returned. Otherwise will search the
@@ -2770,10 +2770,51 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 
     return treeHead;
 }
+let lambdaBoundVars = []; // format: [[a,b],[c]] for "[c]~>[a,b]~>expr"
+/**
+ * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
+ */
+bF._findDeBruijnIndex = function(varname) {
+    let recurseIndex = -1;
+    let orderlyIndex = -1;
+    for (recurseIndex = 0; recurseIndex < lambdaBoundVars.length; recurseIndex++) {
+        orderlyIndex = lambdaBoundVars[recurseIndex].findIndex(it => it == varname);
+        if (orderlyIndex != -1)
+            return [recurseIndex, orderlyIndex];
+    }
+    throw new ParserError("Unbound variable: "+varname);
+}
 /**
  * @return: BasicAST
  */
 bF._pruneTree = function(lnum, tree, recDepth) {    
+    if (DBGON) {
+        serial.println("[Parser.PRUNE] pruning following subtree:");
+        serial.println(astToString(tree));
+        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+            serial.println("[Parser.PRUNE] unpacking astValue:");
+            serial.println(astToString(tree.astValue));
+        }
+    }
+    
+    
+    // catch all the bound variables for function definition
+    if (tree.astType == "op" && tree.astValue == "~>") {
+        let nameTree = tree.astLeaves[0];
+        let vars = [];
+        nameTree.astLeaves.forEach((it, i) => {
+            if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToSTring(nameTree));
+            vars.push(it.astValue);
+        });
+        
+        lambdaBoundVars.unshift(vars);
+        
+        if (DBGON) {
+            serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
+        }
+    }
+    
+    
     // depth-first run
     if (tree.astLeaves[0] != undefined) {
         tree.astLeaves.forEach(it => bF._pruneTree(lnum, it, recDepth + 1));
@@ -2787,21 +2828,9 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         let nameTree = tree.astLeaves[0];
         let exprTree = tree.astLeaves[1];
         
-        // build renaming map
-        let defunRenamingMap = {};
-        nameTree.astLeaves.forEach((it, i) => {
-            if (it.astType !== "lit") throw lang.syntaxfehler(lnum, "4");
-            return defunRenamingMap[it.astValue] = i;
-        });
-        
         // test print new tree
         if (DBGON) {
-            //serial.println("[Parser.PRUNE.~>] closure debug info");
-            //serial.println("[Parser.PRUNE.~>] closure name tree: ");
-            //serial.println(astToString(nameTree));
-            serial.println("[Parser.PRUNE.~>] closure renaming map: "+Object.entries(defunRenamingMap));
-            //serial.println("[Parser.PRUNE.~>] closure expression tree:");
-            //serial.println(astToString(exprTree));
+            serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
         }
         
         // rename the parameters
@@ -2809,16 +2838,19 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             if (it.astType == "lit" || it.astType == "function") {
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
-                if (defunRenamingMap[it.astValue] !== undefined) {
+                try {
+                    it.astValue = bF._findDeBruijnIndex(it.astValue);
                     it.astType = "defun_args";
-                    it.astValue = defunRenamingMap[it.astValue];
                 }
+                catch (_) {}
             }
         });
         
         tree.astType = "usrdefun";
         tree.astValue = exprTree;
         tree.astLeaves = [];
+        
+        lambdaBoundVars.shift();
     }
     
     if (DBGON) {
@@ -2828,6 +2860,8 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
             serial.println(astToString(tree.astValue));
         }
+        
+        serial.println("======================================================\n");
     }
     
     return tree;
@@ -2876,7 +2910,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     let _debugPrintCurrentLine = (!PROD) && true;
     let recWedge = ">".repeat(recDepth) + " ";
 
-    if (_debugExec || _debugPrintCurrentLine) serial.println(recWedge+"@@ EXECUTE @@");
+    if (_debugExec || _debugPrintCurrentLine) serial.println(recWedge+`@@ EXECUTE ${lnum}:${stmtnum} @@`);
     if (_debugPrintCurrentLine && recDepth == 0) {
         serial.println("Syntax Tree in "+lnum+":");
         serial.println(astToString(syntaxTree));
@@ -2905,77 +2939,22 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     // apply given arguments (syntaxTree.astLeaves) to the expression tree and evaluate it
     // if tree has leaves:
     else if (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined) {
-        let oldTree = syntaxTree.astValue;
-        let args = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
-        let newTree = oldTree; // curryDefun() will make a clone of it for us
-        for (let k = 0; k < args.length; k++) {
-            newTree = curryDefun(oldTree, args[k].troValue);
-        }
-
-        // make a javascript function out of the new tree, thess lines are now basically the same as above function calling lines
-        let func = bStatus.getDefunThunk(lnum, stmtnum, newTree);
-
-        // call whatever the 'func' has whether it's builtin or we just made shit up right above
-        try {
-            //let funcCallResult = func(lnum, stmtnum, args, syntaxTree.astSeps);
-            let funcCallResult = func(lnum, stmtnum, [], syntaxTree.astSeps);
-
-            if (funcCallResult instanceof SyntaxTreeReturnObj) return funcCallResult;
-
-            let retVal = (funcCallResult instanceof JumpObj) ? funcCallResult.jmpReturningValue : funcCallResult;
-
-            return new SyntaxTreeReturnObj(
-                    JStoBASICtype(retVal),
-                    retVal,
-                    (funcCallResult instanceof JumpObj) ? funcCallResult.jmpNext : [lnum, stmtnum + 1]
-            );
-        }
-        catch (e) {
-            serial.printerr(`${e}\n${e.stack || "Stack trace undefined"}`);
-            throw lang.errorinline(lnum, (funcName === undefined) ? "undefined" : funcName, (e === undefined) ? "undefined" : e);
-        }
+        // register bound variables
+        let thisLevelBoundVars = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
+        lambdaBoundVars.unshift(thisLevelBoundVars);
+        
+        let expression = syntaxTree.astValue;
+        let ret = bF._executeSyntaxTree(lnum, stmtnum, expression, recDepth + 1);
+        
+        // unregister used bound variables
+        lambdaBoundVars.shift();
+        
+        return ret;
     }
     // closure
     // type: closure_args ~> (expr)
     else if (syntaxTree.astType == "op" && syntaxTree.astValue == "~>") {
-        if (syntaxTree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum);
-        let nameTree = syntaxTree.astLeaves[0];
-        let exprTree = syntaxTree.astLeaves[1];        
-        
-        let defunRenamingMap = {};
-        nameTree.astLeaves.forEach((it, i) => {
-            if (it.astType !== "lit") throw lang.syntaxfehler(lnum, "4");
-            return defunRenamingMap[it.astValue] = i;
-        });
-        
-        // rename the parameters
-        bF._recurseApplyAST(exprTree, (it) => {
-            if (it.astType == "lit" || it.astType == "function") {
-                // check if parameter name is valid
-                // if the name is invalid, regard it as a global variable (i.e. do nothing)
-                if (defunRenamingMap[it.astValue] !== undefined) {
-                    it.astType = "defun_args";
-                    it.astValue = defunRenamingMap[it.astValue];
-                }
-            }
-        });
-
-        // test print new tree
-        if (DBGON) {
-            serial.println("[BASIC.CLOSURE] closure debug info");
-            serial.println("[BASIC.CLOSURE] closure name tree: ");
-            serial.println(astToString(nameTree));
-            serial.println("[BASIC.CLOSURE] closure renaming map: "+Object.entries(defunRenamingMap));
-            serial.println("[BASIC.CLOSURE] closure expression tree:");
-            serial.println(astToString(exprTree));
-        }
-        
-        let encapsulatedTree = new BasicAST();
-        encapsulatedTree.astLnum = lnum;
-        encapsulatedTree.astValue = exprTree;
-        encapsulatedTree.astType = "usrdefun";
-        
-        return new SyntaxTreeReturnObj("internal_lambda", encapsulatedTree, [lnum, stmtnum + 1]);
+        throw new InternalError("Untended closure");
     }
     else if (syntaxTree.astType == "function" || syntaxTree.astType == "op") {
         if (_debugExec) serial.println(recWedge+"function|operator");
@@ -3011,6 +2990,8 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             }
         }
         else if ("DEFUN" == funcName) {
+            throw new InternalError("Undefined control sequence");
+            
             if (syntaxTree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum, "DEFUN 1");
             let nameTree = syntaxTree.astLeaves[0];
             let exprTree = syntaxTree.astLeaves[1];
@@ -3130,6 +3111,19 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             }
         }
     }
+    else if (syntaxTree.astType == "defun_args") {
+        if (_debugExec) {
+            serial.println(recWedge+"lambda bound vars: "+lambdaBoundVars);
+            serial.println(recWedge+"defun args: "+syntaxTree.astValue);
+        }
+        let recIndex = syntaxTree.astValue[0];
+        let varIndex = syntaxTree.astValue[1];
+        let theVar = lambdaBoundVars[recIndex, varIndex];
+        if (_debugExec) {
+            serial.println(recWedge+"the var: "+theVar);
+        }
+        return theVar;
+    }
     else if (syntaxTree.astType == "num") {
         if (_debugExec) serial.println(recWedge+"num "+((syntaxTree.astValue)*1));
         return new SyntaxTreeReturnObj(syntaxTree.astType, (syntaxTree.astValue)*1, [lnum, stmtnum + 1]);
@@ -3167,7 +3161,11 @@ bF._interpretLine = function(lnum, cmd) {
     bF._parserElaboration(lnum, tokens, states);
 
     // PARSING (SYNTAX ANALYSIS)
-    let syntaxTrees = bF._parseTokens(lnum, tokens, states).map(it => bF._pruneTree(lnum, it, 0));
+    let syntaxTrees = bF._parseTokens(lnum, tokens, states).map(it => {
+        if (lambdaBoundVars.length != 0)
+            throw new ParserError();
+        return bF._pruneTree(lnum, it, 0)
+    });
 
     // syntax tree pruning
 
@@ -3208,6 +3206,7 @@ bF._executeAndGet = function(lnum, stmtnum, syntaxTree) {
 
     // EXECUTE
     try {
+        if (lambdaBoundVars.length != 0) throw new InternalError();
         var execResult = bF._executeSyntaxTree(lnum, stmtnum, syntaxTree, 0);
 
         if (DBGON) serial.println(`Line ${lnum} TRO: ${Object.entries(execResult)}`);
