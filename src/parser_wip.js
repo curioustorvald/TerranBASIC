@@ -777,10 +777,51 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 }
 
 
+let lambdaBoundVars = []; // format: [[a,b],[c]] for "[c]~>[a,b]~>expr"
+/**
+ * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
+ */
+bF._findDeBruijnIndex = function(varname) {
+    let recurseIndex = -1;
+    let orderlyIndex = -1;
+    for (recurseIndex = 0; recurseIndex < lambdaBoundVars.length; recurseIndex++) {
+        orderlyIndex = lambdaBoundVars[recurseIndex].findIndex(it => it == varname);
+        if (orderlyIndex != -1)
+            return [recurseIndex, orderlyIndex];
+    }
+    throw new ParserError("Unbound variable: "+varname);
+}
 /**
  * @return: BasicAST
  */
 bF._pruneTree = function(lnum, tree, recDepth) {    
+    if (DBGON) {
+        serial.println("[Parser.PRUNE] pruning following subtree:");
+        serial.println(astToString(tree));
+        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+            serial.println("[Parser.PRUNE] unpacking astValue:");
+            serial.println(astToString(tree.astValue));
+        }
+    }
+    
+    
+    // catch all the bound variables for function definition
+    if (tree.astType == "op" && tree.astValue == "~>") {
+        let nameTree = tree.astLeaves[0];
+        let vars = [];
+        nameTree.astLeaves.forEach((it, i) => {
+            if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToSTring(nameTree));
+            vars.push(it.astValue);
+        });
+        
+        lambdaBoundVars.unshift(vars);
+        
+        if (DBGON) {
+            serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
+        }
+    }
+    
+    
     // depth-first run
     if (tree.astLeaves[0] != undefined) {
         tree.astLeaves.forEach(it => bF._pruneTree(lnum, it, recDepth + 1));
@@ -794,21 +835,9 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         let nameTree = tree.astLeaves[0];
         let exprTree = tree.astLeaves[1];
         
-        // build renaming map
-        let defunRenamingMap = {};
-        nameTree.astLeaves.forEach((it, i) => {
-            if (it.astType !== "lit") throw lang.syntaxfehler(lnum, "4");
-            return defunRenamingMap[it.astValue] = i;
-        });
-        
         // test print new tree
         if (DBGON) {
-            //serial.println("[Parser.PRUNE.~>] closure debug info");
-            //serial.println("[Parser.PRUNE.~>] closure name tree: ");
-            //serial.println(astToString(nameTree));
-            serial.println("[Parser.PRUNE.~>] closure renaming map: "+Object.entries(defunRenamingMap));
-            //serial.println("[Parser.PRUNE.~>] closure expression tree:");
-            //serial.println(astToString(exprTree));
+            serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
         }
         
         // rename the parameters
@@ -816,16 +845,19 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             if (it.astType == "lit" || it.astType == "function") {
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
-                if (defunRenamingMap[it.astValue] !== undefined) {
+                try {
+                    it.astValue = bF._findDeBruijnIndex(it.astValue);
                     it.astType = "defun_args";
-                    it.astValue = defunRenamingMap[it.astValue];
                 }
+                catch (_) {}
             }
         });
         
         tree.astType = "usrdefun";
         tree.astValue = exprTree;
         tree.astLeaves = [];
+        
+        lambdaBoundVars.shift();
     }
     
     if (DBGON) {
@@ -835,6 +867,8 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
             serial.println(astToString(tree.astValue));
         }
+        
+        serial.println("======================================================\n");
     }
     
     return tree;
@@ -985,19 +1019,18 @@ let states17 = ["lit","paren","lit","op","lit","lit","sep","lit","lit","paren"];
 let tokens18 = ["K","=","[","X",",","Y","]","~>","(","X","+","Y",")","/","2"];
 let states18 = ["lit","op","paren","lit","sep","lit","paren","op","paren","lit","op","lit","paren","op","num"]
 
-// [X]~>[Y]~>(X+Y)/2
-// should be identical to: [X]~>([Y]~>(X+Y)/2)
-let tokens19 = ["K","=","[","X","]","~>","[","Y","]","~>","(","X","+","Y",")","/","2"];
-let states19 = ["lit","op","paren","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
+// [A,B]~>[X]~>(X+A)/2
+let tokens19 = ["K","=","[","A",",","B","]","~>","[","X","]","~>","(","X","+","A",")","/","2"];
+let states19 = ["lit","op","paren","lit","sep","lit","paren","op","paren","lit","paren","op","paren","lit","op","lit","paren","op","num"];
 
-// [X]~>MAP([Y]~>Y<5,X)
-let tokens20 = ["[","X","]","~>","MAP","(","[","Y","]","~>","Y","<","5",",","X",")"];
-let states20 = ["paren","lit","paren","op","lit","paren","paren","lit","paren","op","lit","op","num","sep","lit","paren"];
+// [A,B]~>MAP([C]~>C<B,A)
+let tokens20 = ["[","A",",","B","]","~>","MAP","(","[","C","]","~>","C","<","B",",","A",")"];
+let states20 = ["paren","lit","sep","lit","paren","op","lit","paren","paren","lit","paren","op","lit","op","lit","sep","lit","paren"];
 
 try  {
     let rawTrees = bF._parseTokens(lnum,
-        tokens20,
-        states20
+        tokens19,
+        states19
     );
     let trees = rawTrees.map(it => bF._pruneTree(lnum, it, 0));
     trees.forEach((t,i) => {
