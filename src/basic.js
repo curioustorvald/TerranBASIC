@@ -2770,6 +2770,68 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 
     return treeHead;
 }
+/**
+ * @return: BasicAST
+ */
+bF._pruneTree = function(lnum, tree, recDepth) {    
+    // depth-first run
+    if (tree.astLeaves[0] != undefined) {
+        tree.astLeaves.forEach(it => bF._pruneTree(lnum, it, recDepth + 1));
+    }
+    
+    
+    if (tree.astType == "op" && tree.astValue == "~>") {
+        
+        if (tree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum, tree.astLeaves.length+lang.aG);
+        
+        let nameTree = tree.astLeaves[0];
+        let exprTree = tree.astLeaves[1];
+        
+        // build renaming map
+        let defunRenamingMap = {};
+        nameTree.astLeaves.forEach((it, i) => {
+            if (it.astType !== "lit") throw lang.syntaxfehler(lnum, "4");
+            return defunRenamingMap[it.astValue] = i;
+        });
+        
+        // test print new tree
+        if (DBGON) {
+            //serial.println("[Parser.PRUNE.~>] closure debug info");
+            //serial.println("[Parser.PRUNE.~>] closure name tree: ");
+            //serial.println(astToString(nameTree));
+            serial.println("[Parser.PRUNE.~>] closure renaming map: "+Object.entries(defunRenamingMap));
+            //serial.println("[Parser.PRUNE.~>] closure expression tree:");
+            //serial.println(astToString(exprTree));
+        }
+        
+        // rename the parameters
+        bF._recurseApplyAST(exprTree, (it) => {
+            if (it.astType == "lit" || it.astType == "function") {
+                // check if parameter name is valid
+                // if the name is invalid, regard it as a global variable (i.e. do nothing)
+                if (defunRenamingMap[it.astValue] !== undefined) {
+                    it.astType = "defun_args";
+                    it.astValue = defunRenamingMap[it.astValue];
+                }
+            }
+        });
+        
+        tree.astType = "usrdefun";
+        tree.astValue = exprTree;
+        tree.astLeaves = [];
+    }
+    
+    if (DBGON) {
+        serial.println("[Parser.PRUNE] pruned subtree:");
+        serial.println(astToString(tree));
+        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+            serial.println("[Parser.PRUNE] unpacking astValue:");
+            serial.println(astToString(tree.astValue));
+        }
+    }
+    
+    return tree;
+}
 
 
 // @return is defined in BasicAST
@@ -3105,7 +3167,7 @@ bF._interpretLine = function(lnum, cmd) {
     bF._parserElaboration(lnum, tokens, states);
 
     // PARSING (SYNTAX ANALYSIS)
-    let syntaxTrees = bF._parseTokens(lnum, tokens, states);
+    let syntaxTrees = bF._parseTokens(lnum, tokens, states).map(it => bF._pruneTree(lnum, it, 0));
 
     // syntax tree pruning
 
