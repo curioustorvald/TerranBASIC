@@ -6,6 +6,7 @@ class ParserError extends Error {
 }
 var DEFUNS_BUILD_DEFUNS = false;
 var DBGON = true;
+let lambdaBoundVars = []; // format: [[a,b],[c]] for "[c]~>[a,b]~>expr"
 let bF = {};
 bF.parserPrintdbg = any => serial.println(any);
 bF.parserPrintdbg2 = function(icon, lnum, tokens, states, recDepth) {
@@ -777,7 +778,6 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 }
 
 
-let lambdaBoundVars = []; // format: [[a,b],[c]] for "[c]~>[a,b]~>expr"
 /**
  * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
  */
@@ -810,7 +810,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         let nameTree = tree.astLeaves[0];
         let vars = [];
         nameTree.astLeaves.forEach((it, i) => {
-            if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToSTring(nameTree));
+            if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToString(nameTree));
             vars.push(it.astValue);
         });
         
