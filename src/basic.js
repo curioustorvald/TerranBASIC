@@ -1381,7 +1381,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     return twoArg(lnum, stmtnum, args, (fn, arg) => {
         if (JStoBASICtype(fn) != "usrdefun") throw lang.illegalType(lnum, "LH:"+fn);
         // check arg count for fn
-        if (countArgs(fn) != 1) throw lang.badFunctionCallFormat();
+        let fnArgCount = countArgs(fn);
+        if (fnArgCount != 1) throw lang.badFunctionCallFormat("The function must accept only one parameter but this function wants "+fnArgCount);
         let thenewfunction = bStatus.getDefunThunk(lnum, stmtnum, fn);
         return thenewfunction(lnum, stmtnum, [arg]);
     });
