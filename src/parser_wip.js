@@ -97,8 +97,6 @@ bF._parseTokens = function(lnum, tokens, states) {
         return tree;
     });
 }
-
-
 /** Parses following EBNF rule:
 stmt =
       "IF" , expr_sans_asgn , "THEN" , stmt , ["ELSE" , stmt]
@@ -308,8 +306,6 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
 
     throw new ParserError("Statement cannot be parsed in "+lnum);
 } // END of STMT
-
-
 /** Parses following EBNF rule:
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function because everything is global in BASIC *)
       lit
@@ -518,8 +514,6 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
     throw new ParserError("Expression cannot be parsed in "+lnum);
 } // END of EXPR
-
-
 /** Parses following EBNF rule:
       "IF" , expr_sans_asgn , "THEN" , stmt , ["ELSE" , stmt]
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
@@ -603,8 +597,6 @@ bF._parseIfMode = function(lnum, tokens, states, recDepth, exprMode) {
 
     throw new ParserError("not an IF "+(exprMode) ? "expression" : "statement");
 } // END of IF
-
-
 /** Parses following EBNF rule:
 ident_tuple = "[" , ident , ["," , ident] , "]" ;
  * @return: BasicAST
@@ -663,8 +655,6 @@ bF._parseTuple = function(lnum, tokens, states, recDepth) {
     
     return treeHead;
 }
-
-
 /** Parses following EBNF rule:
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
@@ -763,8 +753,6 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
 
     return treeHead;
 }
-
-
 bF._parseIdent = function(lnum, tokens, states, recDepth) {
     bF.parserPrintdbg2('i', lnum, tokens, states, recDepth);
 
@@ -796,8 +784,6 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 
     return treeHead;
 }
-
-
 /**
  * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
  */

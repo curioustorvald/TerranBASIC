@@ -2074,14 +2074,18 @@ bF.parserPrintdbgline = function(icon, msg, lnum, recDepth) {
     }
 }
 
+// ## USAGE OF lambdaBoundVars IN PARSEMODE STARTS HERE ##
+
 /**
  * @return ARRAY of BasicAST
  */
 bF._parseTokens = function(lnum, tokens, states) {
+    if (tokens.length !== states.length) throw Error("unmatched tokens and states length");
+    
     bF.parserPrintdbg2('Line ', lnum, tokens, states, 0);
 
     if (tokens.length !== states.length) throw lang.syntaxfehler(lnum);
-    if (tokens[0] == "REM" && states[0] != "qot") return;
+    if (tokens[0].toUpperCase() == "REM" && states[0] != "qot") return;
 
     /*************************************************************************/
 
@@ -2089,7 +2093,7 @@ bF._parseTokens = function(lnum, tokens, states) {
     let parenStart = -1;
     let parenEnd = -1;
     let seps = [];
-
+    
     // scan for parens and (:)s
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
@@ -2106,17 +2110,17 @@ bF._parseTokens = function(lnum, tokens, states) {
         if (parenDepth == 0 && tokens[k] == ":" && states[k] == "seq")
             seps.push(k);
     }
-
+    
     let startPos = [0].concat(seps.map(k => k+1));
     let stmtPos = startPos.map((s,i) => {return{start:s, end:(seps[i] || tokens.length)}}); // use end of token position as separator position
-
+    
     return stmtPos.map((x,i) => {
         if (stmtPos.length > 1)
             bF.parserPrintdbgline('Line ', 'Statement #'+(i+1), lnum, 0);
-
+        
         // check for empty tokens
         if (x.end - x.start <= 0) throw new ParserError("Malformed Line");
-
+        
         let tree = bF._parseStmt(lnum,
             tokens.slice(x.start, x.end),
             states.slice(x.start, x.end),
@@ -2128,8 +2132,6 @@ bF._parseTokens = function(lnum, tokens, states) {
         return tree;
     });
 }
-
-
 /** Parses following EBNF rule:
 stmt =
       "IF" , expr_sans_asgn , "THEN" , stmt , ["ELSE" , stmt]
@@ -2211,8 +2213,8 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
     }
     // if ParserError is raised, continue to apply other rules
     catch (e) {
-        bF.parserPrintdbgline('$', 'It was NOT!', lnum, recDepth);
         if (!(e instanceof ParserError)) throw e;
+        bF.parserPrintdbgline('$', 'It was NOT!', lnum, recDepth);
     }
 
     /*************************************************************************/
@@ -2339,14 +2341,14 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
 
     throw new ParserError("Statement cannot be parsed in "+lnum);
 } // END of STMT
-
-
 /** Parses following EBNF rule:
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function because everything is global in BASIC *)
       lit
     | "(" , expr , ")"
+    | tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
-    | kywd , expr (* also deals with FOR statement; kywd = ? words that exists on the list of predefined function that are not operators ? ; *)
+    | kywd , expr - "(" (* also deals with FOR statement *)
+    (* at this point, if OP is found in paren-level 0, skip function_call *)
     | function_call
     | expr , op , expr
     | op_uni , expr ;
@@ -2547,8 +2549,6 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
     throw new ParserError("Expression cannot be parsed in "+lnum);
 } // END of EXPR
-
-
 /** Parses following EBNF rule:
       "IF" , expr_sans_asgn , "THEN" , stmt , ["ELSE" , stmt]
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
@@ -2632,8 +2632,6 @@ bF._parseIfMode = function(lnum, tokens, states, recDepth, exprMode) {
 
     throw new ParserError("not an IF "+(exprMode) ? "expression" : "statement");
 } // END of IF
-
-
 /** Parses following EBNF rule:
 ident_tuple = "[" , ident , ["," , ident] , "]" ;
  * @return: BasicAST
@@ -2692,8 +2690,6 @@ bF._parseTuple = function(lnum, tokens, states, recDepth) {
     
     return treeHead;
 }
-
-
 /** Parses following EBNF rule:
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
@@ -2701,7 +2697,7 @@ function_call =
  * @return: BasicAST
  */
 bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
-    bF.parserPrintdbg2('F', lnum, tokens, states, recDepth);
+    bF.parserPrintdbg2("F", lnum, tokens, states, recDepth);
 
     /*************************************************************************/
 
@@ -2710,24 +2706,31 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     let parenEnd = -1;
     let _argsepsOnLevelZero = []; // argseps collected when parenDepth == 0
     let _argsepsOnLevelOne = []; // argseps collected when parenDepth == 1
-
+    let currentParenMode = []; // a stack; must be able to distinguish different kinds of parens as closures use [ this paren ]
+    let depthsOfRoundParen = [];
+    
     // Scan for unmatched parens and mark off the right operator we must deal with
     // every function_call need to re-scan because it is recursively called
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "(" && states[k] != "qot") {
-            parenDepth += 1;
+        if (bF._isParenOpen(tokens[k]) && states[k] == "paren") {
+            parenDepth += 1; currentParenMode.unshift(tokens[k]);
+            if (currentParenMode[0] == '(') depthsOfRoundParen.push(parenDepth);
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
         // decrease paren depth
-        else if (tokens[k] == ")" && states[k] != "qot") {
+        else if (bF._isParenClose(tokens[k]) && states[k] == "paren") {
+            if (!bF._isMatchingParen(currentParenMode[0], tokens[k]))
+                throw lang.syntaxfehler(lnum, `Opening paren: ${currentParenMode[0]}, closing paren: ${tokens[k]}`); 
+            
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
-            parenDepth -= 1;
+            if (currentParenMode[0] == '(') depthsOfRoundParen.pop();
+            parenDepth -= 1; currentParenMode.shift();
         }
 
-        if (parenDepth == 0 && states[k] == "sep")
+        if (parenDepth == 0 && states[k] == "sep" && currentParenMode[0] === undefined)
             _argsepsOnLevelZero.push(k);
-        if (parenDepth == 1 && states[k] == "sep")
+        if (parenDepth == depthsOfRoundParen[0] && states[k] == "sep" && currentParenMode[0] == "(")
             _argsepsOnLevelOne.push(k);
     }
 
@@ -2738,12 +2741,14 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     // if starting paren is found, just use it
     // this prevents "RND(~~)*K" to be parsed as [RND, (~~)*K]
 
+    bF.parserPrintdbgline("F", `parenStart: ${parenStart}, parenEnd: ${parenEnd}`, lnum, recDepth);
+    
     /*************************************************************************/
 
     // ## case for:
     //      ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
     //    | ident , expr , {argsep , expr} , [argsep] ;
-    bF.parserPrintdbgline('F', `Function Call (parenUsed: ${parenUsed})`, lnum, recDepth);
+    bF.parserPrintdbgline("F", `Function Call (parenUsed: ${parenUsed})`, lnum, recDepth);
 
     let treeHead = new BasicAST();
     treeHead.astLnum = lnum;
@@ -2753,20 +2758,20 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
 
     // 5 8 11 [end]
     let argSeps = parenUsed ? _argsepsOnLevelOne : _argsepsOnLevelZero; // choose which "sep tray" to use
-    bF.parserPrintdbgline('F', "argSeps = "+argSeps, lnum, recDepth);
+    bF.parserPrintdbgline("F", "argSeps = "+argSeps, lnum, recDepth);
     // 1 6 9 12
     let argStartPos = [1 + (parenUsed)].concat(argSeps.map(k => k+1));
-    bF.parserPrintdbgline('F', "argStartPos = "+argStartPos, lnum, recDepth);
+    bF.parserPrintdbgline("F", "argStartPos = "+argStartPos, lnum, recDepth);
     // [1,5) [6,8) [9,11) [12,end)
     let argPos = argStartPos.map((s,i) => {return{start:s, end:(argSeps[i] || (parenUsed ? parenEnd : tokens.length) )}}); // use end of token position as separator position
-    bF.parserPrintdbgline('F', "argPos = "+argPos.map(it=>`${it.start}/${it.end}`), lnum, recDepth);
+    bF.parserPrintdbgline("F", "argPos = "+argPos.map(it=>`${it.start}/${it.end}`), lnum, recDepth);
 
     // check for trailing separator
 
 
     // recursively parse function arguments
     treeHead.astLeaves = argPos.map((x,i) => {
-        bF.parserPrintdbgline('F', 'Function Arguments #'+(i+1), lnum, recDepth);
+        bF.parserPrintdbgline("F", 'Function Arguments #'+(i+1), lnum, recDepth);
 
         // check for empty tokens
         if (x.end - x.start < 0) throw new ParserError("not a function call because it's malformed");
@@ -2779,12 +2784,10 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     );
     treeHead.astType = "function";
     treeHead.astSeps = argSeps.map(i => tokens[i]);
-    bF.parserPrintdbgline('F', "astSeps = "+treeHead.astSeps, lnum, recDepth);
+    bF.parserPrintdbgline("F", "astSeps = "+treeHead.astSeps, lnum, recDepth);
 
     return treeHead;
 }
-
-
 bF._parseIdent = function(lnum, tokens, states, recDepth) {
     bF.parserPrintdbg2('i', lnum, tokens, states, recDepth);
 
@@ -2816,7 +2819,6 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 
     return treeHead;
 }
-// ## USAGE OF lambdaBoundVars IN PARSEMODE STARTS HERE ##
 /**
  * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
  */
@@ -2853,10 +2855,10 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             vars.push(it.astValue);
         });
         
-        lambdaBoundVars.unshift(vars); // this is PARSEMODE so only put variable name here
+        lambdaBoundVars.unshift(vars);
         
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] added new bound variables: "+theLambdaBoundVars());
+            serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
         }
     }
     
@@ -2876,7 +2878,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         // test print new tree
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] closure bound variables: "+theLambdaBoundVars());
+            serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
         }
         
         // rename the parameters
@@ -3162,21 +3164,48 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                     }
                     
                     // insert bound variables to its places
-                    bF._recurseApplyAST(expression, it => {
-                        if (it.astType == "defun_args") {
-                            let recIndex = it.astValue[0];
-                            let varIndex = it.astValue[1];
-                            let theVariable = lambdaBoundVars[recIndex][varIndex];
+                    let bindVar = function(tree, recDepth) {
+                        bF._recurseApplyAST(tree, it => {
                             
-                            if (theVariable === undefined) {
-                                throw new InternalError(`Undefined bound variable d(${recIndex},${varIndex})`);
+                            if (_debugExec) {
+                                serial.println(recWedge+`usrdefun${recDepth} trying to bind some variables to:`);
+                                serial.println(astToString(it));
                             }
                             
-                            it.astValue = theVariable[1];
-                            it.astType = theVariable[0];
-                        }
-                    });
+                            if (it.astType == "defun_args") {
+                                let recIndex = it.astValue[0] - recDepth;
+                                let varIndex = it.astValue[1];
+                                
+                                if (_debugExec) {
+                                    serial.println(recWedge+`usrdefun${recDepth} bindvar d(${recIndex},${varIndex})`);
+                                }
+                                
+                                let theVariable = undefined;
+                                try {
+                                    theVariable = lambdaBoundVars[recIndex][varIndex];
+                                }
+                                catch (e0) {}
+                                
+                                // this will make partial applying work, but completely remove the ability of catching errors...
+                                if (theVariable !== undefined) {
+                                    it.astValue = theVariable[1];
+                                    it.astType = theVariable[0];
+                                }
+                                
+                                if (_debugExec) {
+                                    serial.println(recWedge+`usrdefun${recDepth} the bindvar: ${theVariable}`);
+                                    serial.println(recWedge+`usrdefun${recDepth} modified tree:`);
+                                    serial.println(astToString(it));
+                                }
+                            }
+                            // function in a function
+                            else if (it.astType == "usrdefun") {
+                                bindVar(it.astValue, recDepth + 1);
+                            }
+                        });
+                    };bindVar(expression, 0);
                     
+
                     if (_debugExec) {
                         serial.println(recWedge+"usrdefun dereference final tree:");
                         serial.println(astToString(expression));
