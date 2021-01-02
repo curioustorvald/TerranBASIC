@@ -256,9 +256,6 @@ let astToString = function(ast, depth, isFinalLeaf) {
                  ("array" == ast.astType) ? "[" :
                  ("defun_args" === ast.astType) ? "d" : "f";
     sb += l__.repeat(recDepth)+`${marker} ${ast.astLnum}: "${ast.astValue}" (astType:${ast.astType}); leaves: ${ast.astLeaves.length}\n`;    
-    //sb += l__.repeat(recDepth) + marker+" Line "+ast.astLnum+" ("+ast.astType+")\n";
-    //sb += l__.repeat(recDepth+1) + "leaves: "+(ast.astLeaves.length)+"\n";
-    //sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (typeof "+typeof ast.astValue+")\n";
     for (var k = 0; k < ast.astLeaves.length; k++) {
         sb += astToString(ast.astLeaves[k], recDepth + 1, k == ast.astLeaves.length - 1);
         if (ast.astSeps[k] !== undefined)
@@ -1483,10 +1480,13 @@ bF._isUnary = function(code) {
     return bF._uos[String.fromCharCode(code)]
 }
 bF._isParenOpen = function(code) {
-    return (code == 0x28 || code == 0x5B);
+    return (code == 0x28 || code == 0x5B) || (code == '(' || code == '[');
 };
 bF._isParenClose = function(code) {
-    return (code == 0x29 || code == 0x5D);
+    return (code == 0x29 || code == 0x5D) || (code == ')' || code == ']');
+};
+bF._isMatchingParen = function(open, close) {
+    return (open == '(' && close == ')' || open == '[' && close == ']');
 };
 bF._isParen = function(code) {
     return bF._isParenOpen(code) || bF._isParenClose(code);

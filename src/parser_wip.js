@@ -8,6 +8,15 @@ var DEFUNS_BUILD_DEFUNS = false;
 var DBGON = true;
 let lambdaBoundVars = []; // format: [[a,b],[c]] for "[c]~>[a,b]~>expr"
 let bF = {};
+bF._isParenOpen = function(code) {
+    return (code == 0x28 || code == 0x5B) || (code == '(' || code == '[');
+};
+bF._isParenClose = function(code) {
+    return (code == 0x29 || code == 0x5D) || (code == ')' || code == ']');
+};
+bF._isMatchingParen = function(open, close) {
+    return (open == '(' && close == ')' || open == '[' && close == ']');
+}
 bF.parserPrintdbg = any => serial.println(any);
 bF.parserPrintdbg2 = function(icon, lnum, tokens, states, recDepth) {
     let treeHead = "|  ".repeat(recDepth);
@@ -36,6 +45,8 @@ lang.aG = " arguments were given";
  * @return ARRAY of BasicAST
  */
 bF._parseTokens = function(lnum, tokens, states) {
+    if (tokens.length !== states.length) throw Error("unmatched tokens and states length");
+    
     bF.parserPrintdbg2('Line ', lnum, tokens, states, 0);
 
     if (tokens.length !== states.length) throw lang.syntaxfehler(lnum);
@@ -670,24 +681,31 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     let parenEnd = -1;
     let _argsepsOnLevelZero = []; // argseps collected when parenDepth == 0
     let _argsepsOnLevelOne = []; // argseps collected when parenDepth == 1
-
+    let currentParenMode = []; // a stack; must be able to distinguish different kinds of parens as closures use [ this paren ]
+    let depthsOfRoundParen = [];
+    
     // Scan for unmatched parens and mark off the right operator we must deal with
     // every function_call need to re-scan because it is recursively called
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "(" && states[k] != "qot") {
-            parenDepth += 1;
+        if (bF._isParenOpen(tokens[k]) && states[k] == "paren") {
+            parenDepth += 1; currentParenMode.unshift(tokens[k]);
+            if (currentParenMode[0] == '(') depthsOfRoundParen.push(parenDepth);
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
         // decrease paren depth
-        else if (tokens[k] == ")" && states[k] != "qot") {
+        else if (bF._isParenClose(tokens[k]) && states[k] == "paren") {
+            if (!bF._isMatchingParen(currentParenMode[0], tokens[k]))
+                throw lang.syntaxfehler(lnum, `Opening paren: ${currentParenMode[0]}, closing paren: ${tokens[k]}`); 
+            
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
-            parenDepth -= 1;
+            if (currentParenMode[0] == '(') depthsOfRoundParen.pop();
+            parenDepth -= 1; currentParenMode.shift();
         }
 
-        if (parenDepth == 0 && states[k] == "sep")
+        if (parenDepth == 0 && states[k] == "sep" && currentParenMode[0] === undefined)
             _argsepsOnLevelZero.push(k);
-        if (parenDepth == 1 && states[k] == "sep")
+        if (parenDepth == depthsOfRoundParen[0] && states[k] == "sep" && currentParenMode[0] == "(")
             _argsepsOnLevelOne.push(k);
     }
 
@@ -698,6 +716,8 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
     // if starting paren is found, just use it
     // this prevents "RND(~~)*K" to be parsed as [RND, (~~)*K]
 
+    bF.parserPrintdbgline("F", `parenStart: ${parenStart}, parenEnd: ${parenEnd}`, lnum, recDepth);
+    
     /*************************************************************************/
 
     // ## case for:
@@ -883,25 +903,25 @@ bF.isSemanticLiteral = function(token, state) {
 
 
 /////// TEST/////////
-let astToString = function(ast, depth) {
-    let l__ = "|  ";
+let astToString = function(ast, depth, isFinalLeaf) {
+    let l__ = "| ";
+    
     let recDepth = depth || 0;
     if (ast === undefined || ast.astType === undefined) return "";
-    var sb = "";
-    var marker = ("lit" == ast.astType) ? "i" :
+    let sb = "";
+    let marker = ("lit" == ast.astType) ? "i" :
                  ("op" == ast.astType) ? "+" :
                  ("string" == ast.astType) ? "@" :
                  ("num" == ast.astType) ? "$" :
                  ("array" == ast.astType) ? "[" :
                  ("defun_args" === ast.astType) ? "d" : "f";
-    sb += l__.repeat(recDepth) + marker+" Line "+ast.astLnum+" ("+ast.astType+")\n";
-    sb += l__.repeat(recDepth+1) + "leaves: "+(ast.astLeaves.length)+"\n";
-    sb += l__.repeat(recDepth+1) + "value: "+ast.astValue+" (typeof "+typeof ast.astValue+")\n";
+    sb += l__.repeat(recDepth)+`${marker} ${ast.astLnum}: "${ast.astValue}" (astType:${ast.astType}); leaves: ${ast.astLeaves.length}\n`;    
     for (var k = 0; k < ast.astLeaves.length; k++) {
-        sb += astToString(ast.astLeaves[k], recDepth + 1);
-        sb += l__.repeat(recDepth+1) + " " + ast.astSeps[k] + "\n";
+        sb += astToString(ast.astLeaves[k], recDepth + 1, k == ast.astLeaves.length - 1);
+        if (ast.astSeps[k] !== undefined)
+            sb += l__.repeat(recDepth)+` sep:${ast.astSeps[k]}\n`;
     }
-    sb += l__.repeat(recDepth)+"`"+"-".repeat(19)+'\n';
+    sb += l__.repeat(recDepth)+"`"+"-".repeat(22)+'\n';
     return sb;
 }
 let BasicAST = function() {
@@ -1027,10 +1047,14 @@ let states19 = ["lit","op","paren","lit","sep","lit","paren","op","paren","lit",
 let tokens20 = ["[","A",",","B","]","~>","MAP","(","[","C","]","~>","C","<","B",",","A",")"];
 let states20 = ["paren","lit","sep","lit","paren","op","lit","paren","paren","lit","paren","op","lit","op","lit","sep","lit","paren"];
 
+// [X]~>FOO([Y]~>[K,X]~>X+K*Y,ZIP(X))
+let tokens21 = ["[","X","]","~>","FOO","(","[","Y","]","~>","[","K",",","X","]","~>","X","+","K","*","Y",",","ZIP","(","X",")",")"];
+let states21 = ["paren","lit","paren","op","lit","paren","paren","lit","paren","op","paren","lit","sep","lit","paren","op","lit","op","lit","op","lit","sep","lit","paren","lit","paren","paren"];
+
 try  {
     let rawTrees = bF._parseTokens(lnum,
-        tokens19,
-        states19
+        tokens21,
+        states21
     );
     let trees = rawTrees.map(it => bF._pruneTree(lnum, it, 0));
     trees.forEach((t,i) => {
