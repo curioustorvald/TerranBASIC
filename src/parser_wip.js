@@ -816,7 +816,6 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (tree.astType == "op" && tree.astValue == "~>" || tree.astType == "function" && tree.astValue == "DEFUN") {
         
         let nameTree = tree.astLeaves[0];
-        let vars = [];
         if (tree.astValue == "DEFUN") {
             defunName = nameTree.astValue;
             
@@ -824,10 +823,10 @@ bF._pruneTree = function(lnum, tree, recDepth) {
                 serial.println("[Parser.PRUNE.~>] met DEFUN, function name: "+defunName);
             }
         }
-        nameTree.astLeaves.forEach((it, i) => {
+        let vars = nameTree.astLeaves.map((it, i) => {
             if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToString(nameTree));
-            vars.push(it.astValue);
-        });
+            return it.astValue;
+        }).reverse();
         
         lambdaBoundVars.unshift(vars);
         

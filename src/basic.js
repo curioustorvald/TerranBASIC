@@ -319,6 +319,8 @@ let resolve = function(variable) {
         throw Error("BasicIntpError: unknown variable/object with type "+variable.troType+", with value "+variable.troValue);
 }
 let curryDefun = function(inputTree, inputValue) {
+    // FIXME not compatible with new de bruijn indexing
+    
     let exprTree = cloneObject(inputTree);
     let value = cloneObject(inputValue);
     bF._recurseApplyAST(exprTree, it => {
@@ -581,11 +583,11 @@ bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
         
         if (!norename) {
-            let argsMap = [];
-            args.map(it => {
+            let argsMap = args.map(it => {
                 argCheckErr(lnum, it);
-                return resolve(it);
-            }).forEach(arg => argsMap.push([JStoBASICtype(arg), arg])); // substitute for [astType, astValue]
+                let rit = resolve(it);
+                return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
+            }).reverse();
             
             // bind arguments
             lambdaBoundVars.unshift(argsMap);
@@ -2862,7 +2864,6 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (tree.astType == "op" && tree.astValue == "~>" || tree.astType == "function" && tree.astValue == "DEFUN") {
         
         let nameTree = tree.astLeaves[0];
-        let vars = [];
         if (tree.astValue == "DEFUN") {
             defunName = nameTree.astValue;
             
@@ -2870,10 +2871,10 @@ bF._pruneTree = function(lnum, tree, recDepth) {
                 serial.println("[Parser.PRUNE.~>] met DEFUN, function name: "+defunName);
             }
         }
-        nameTree.astLeaves.forEach((it, i) => {
+        let vars = nameTree.astLeaves.map((it, i) => {
             if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToString(nameTree));
-            vars.push(it.astValue);
-        });
+            return it.astValue;
+        }).reverse();
         
         lambdaBoundVars.unshift(vars);
         
@@ -3037,7 +3038,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
         let thisLevelBoundVars = syntaxTree.astLeaves.map(it => {
             let tro = bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1)
             return [tro.troType, tro.troValue]; // TODO bitch pls
-        });
+        }).reverse();
         lambdaBoundVars.unshift(thisLevelBoundVars);
         
         let expression = syntaxTree.astValue;
@@ -3200,7 +3201,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                     // dereference usrdefun
                     let expression = cloneObject(someVar.bvLiteral);
                     // register variables
-                    let defunArgs = args.map(it => resolve(it)).map(it => [JStoBASICtype(it), it]);
+                    let defunArgs = args.map(it => {
+                        let rit = resolve(it)
+                        return [JStoBASICtype(rit), rit];
+                    }).reverse();
                     lambdaBoundVars.unshift(defunArgs); lambdaBoundVarsAppended = true;
                     
                     if (_debugExec) {
