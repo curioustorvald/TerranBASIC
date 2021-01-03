@@ -2864,6 +2864,8 @@ bF._findDeBruijnIndex = function(varname) {
  * @return: BasicAST
  */
 bF._pruneTree = function(lnum, tree, recDepth) {    
+    if (tree === undefined) return;
+    
     if (DBGON) {
         serial.println("[Parser.PRUNE] pruning following subtree:");
         serial.println(astToString(tree));
@@ -3090,10 +3092,11 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
         serial.println(astToString(syntaxTree));
     }
 
-    let callingUsrdefun = (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined);
-    
     if (syntaxTree == undefined) return bF._troNOP(lnum, stmtnum);
-    else if (syntaxTree.astValue == undefined) { // empty meaningless parens
+
+    let callingUsrdefun = (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined); // usually (~<) will make this 'true'
+    
+    if (syntaxTree.astValue == undefined) { // empty meaningless parens
         if (syntaxTree.astLeaves.length > 1) throw Error("WTF");
         return bF._executeSyntaxTree(lnum, stmtnum, syntaxTree.astLeaves[0], recDepth);
     }

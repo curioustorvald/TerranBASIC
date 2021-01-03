@@ -800,7 +800,9 @@ bF._findDeBruijnIndex = function(varname) {
 /**
  * @return: BasicAST
  */
-bF._pruneTree = function(lnum, tree, recDepth) {    
+bF._pruneTree = function(lnum, tree, recDepth) {
+    if (tree === undefined) return;
+
     if (DBGON) {
         serial.println("[Parser.PRUNE] pruning following subtree:");
         serial.println(astToString(tree));
