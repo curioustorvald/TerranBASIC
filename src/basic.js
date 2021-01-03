@@ -1512,6 +1512,7 @@ bF._isSep = function(code) {
     return code == 0x2C || code == 0x3B;
 };
 // define operator precedence here...
+// NOTE: do NOT put falsy value here!!
 bF._opPrc = {
     // function call in itself has highest precedence
     "^":1,
@@ -1661,7 +1662,7 @@ bF._tokenise = function(lnum, cmd) {
             }
         }
         else if ("op" == mode) {
-            if (bF._is2o(charCode)) {
+            if (bF._is2o(charCode) && bF._opPrc[sb + char]) {
                 sb += char;
                 mode = "o2";
             }
@@ -1697,7 +1698,7 @@ bF._tokenise = function(lnum, cmd) {
             }
         }
         else if ("o2" == mode) {
-            if (bF._is3o(charCode)) {
+            if (bF._is3o(charCode) && bF._opPrc[sb + char]) {
                 sb += char;
                 mode = "o3";
             }
@@ -3002,6 +3003,71 @@ let JumpObj = function(targetLnum, targetStmtNum, fromLnum, rawValue) {
     this.jmpFrom = fromLnum;
     this.jmpReturningValue = rawValue;
 }
+bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args, recDepth, _debugExec, recWedge) {
+    // register variables
+    let defunArgs = args.map(it => {
+        let rit = resolve(it)
+        return [JStoBASICtype(rit), rit];
+    }).reverse();
+    lambdaBoundVars.unshift(defunArgs);
+    
+    if (_debugExec) {
+        serial.println(recWedge+"usrdefun dereference");
+        serial.println(recWedge+"usrdefun dereference function: ");
+        serial.println(astToString(expression));
+        serial.println(recWedge+"usrdefun dereference bound vars: "+theLambdaBoundVars());
+    }
+    
+    // insert bound variables to its places
+    let bindVar = function(tree, recDepth) {
+        bF._recurseApplyAST(tree, it => {
+            
+            if (_debugExec) {
+                serial.println(recWedge+`usrdefun${recDepth} trying to bind some variables to:`);
+                serial.println(astToString(it));
+            }
+            
+            if (it.astType == "defun_args") {
+                let recIndex = it.astValue[0] - recDepth;
+                let varIndex = it.astValue[1];
+                
+                if (_debugExec) {
+                    serial.println(recWedge+`usrdefun${recDepth} bindvar d(${recIndex},${varIndex})`);
+                }
+                
+                let theVariable = undefined;
+                try {
+                    theVariable = lambdaBoundVars[recIndex][varIndex];
+                }
+                catch (e0) {}
+                
+                // this will make partial applying work, but completely remove the ability of catching errors...
+                if (theVariable !== undefined) {
+                    it.astValue = theVariable[1];
+                    it.astType = theVariable[0];
+                }
+                
+                if (_debugExec) {
+                    serial.println(recWedge+`usrdefun${recDepth} the bindvar: ${theVariable}`);
+                    serial.println(recWedge+`usrdefun${recDepth} modified tree:`);
+                    serial.println(astToString(it));
+                }
+            }
+            // function in a function
+            else if (it.astType == "usrdefun") {
+                bindVar(it.astValue, recDepth + 1);
+            }
+        });
+    };bindVar(expression, 0);
+    
+
+    if (_debugExec) {
+        serial.println(recWedge+"usrdefun dereference final tree:");
+        serial.println(astToString(expression));
+    }
+    
+    return bStatus.getDefunThunk(lnum, stmtnum, expression, true);
+}
 /**
  * @param lnum line number of BASIC
  * @param syntaxTree BasicAST
@@ -3024,7 +3090,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
         serial.println(astToString(syntaxTree));
     }
 
-    // TODO executeTree merely runs the tree and should not modify it; parser is responsible to produce 'compete tree'
+    let callingUsrdefun = (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined);
     
     if (syntaxTree == undefined) return bF._troNOP(lnum, stmtnum);
     else if (syntaxTree.astValue == undefined) { // empty meaningless parens
@@ -3043,34 +3109,6 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 [lnum, stmtnum + 1]
         );
     }
-    // userdefun with args
-    // apply given arguments (syntaxTree.astLeaves) to the expression tree and evaluate it
-    // if tree has leaves:
-    // NOTE: unless you can properly parse something like: '([X]~>X+3)(20)', this line seems never get reached
-    else if (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined) {
-        // register bound variables
-        let thisLevelBoundVars = syntaxTree.astLeaves.map(it => {
-            let tro = bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1)
-            return [tro.troType, tro.troValue]; // TODO bitch pls
-        }).reverse();
-        lambdaBoundVars.unshift(thisLevelBoundVars);
-        
-        let expression = syntaxTree.astValue;
-        
-        if (_debugExec) {
-            serial.println(recWedge+"usrdefun call");
-            serial.println(recWedge+"function: ");
-            serial.println(astToString(expression));
-            serial.println(recWedge+"bound vars: "+theLambdaBoundVars());
-        }
-        
-        let ret = bF._executeSyntaxTree(lnum, stmtnum, expression, recDepth + 1);
-        
-        // unregister used bound variables
-        lambdaBoundVars.shift();
-        
-        return ret;
-    }
     // closure
     // type: closure_args ~> (expr)
     else if (syntaxTree.astType == "op" && syntaxTree.astValue == "~>") {
@@ -3079,11 +3117,21 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     else if (syntaxTree.astType == "function" && syntaxTree.astValue == "DEFUN") {
         throw new InternalError("Untended DEFUN"); // DEFUN must be 'pruned' by the parser
     }
-    else if (syntaxTree.astType == "function" || syntaxTree.astType == "op") {
+    else if (syntaxTree.astType == "function" || syntaxTree.astType == "op" || callingUsrdefun) {
         if (_debugExec) serial.println(recWedge+"function|operator");
         if (_debugExec) serial.println(recWedge+astToString(syntaxTree));
-        var funcName = syntaxTree.astValue.toUpperCase();
-        var func = (bStatus.builtin[funcName] === undefined) ? undefined : bStatus.builtin[funcName].f;
+        let funcName = (typeof syntaxTree.astValue.toUpperCase == "function") ? syntaxTree.astValue.toUpperCase() : "(usrdefun)";
+        let lambdaBoundVarsAppended = (callingUsrdefun);
+        let func = (callingUsrdefun)
+                ? bF._makeRunnableFunctionFromExprTree(
+                    lnum, stmtnum,
+                    cloneObject(syntaxTree.astValue),
+                    syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1)), // the args
+                    recDepth, _debugExec, recWedge
+                )
+            : (bStatus.builtin[funcName] === undefined)
+                ? undefined
+            : bStatus.builtin[funcName].f;
 
 
         if ("IF" == funcName) {
@@ -3114,57 +3162,6 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 throw lang.errorinline(lnum, "TEST", e);
             }
         }
-        else if ("DEFUN" == funcName) {
-            throw new InternalError("Undefined control sequence");
-            
-            if (syntaxTree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum, "DEFUN 1");
-            let nameTree = syntaxTree.astLeaves[0];
-            let exprTree = syntaxTree.astLeaves[1];
-
-            // create parameters map
-            // NOTE: firstmost param ('x' as in foo(x,y,z)) gets index 0
-            let defunName = nameTree.astValue.toUpperCase();
-            let defunRenamingMap = {};
-            nameTree.astLeaves.forEach((it, i) => {
-                if (it.astType !== "lit") throw lang.syntaxfehler(lnum, "4");
-                return defunRenamingMap[it.astValue] = i;
-            });
-
-            // rename the parameters
-            bF._recurseApplyAST(exprTree, (it) => {
-                if (it.astType == "lit" || it.astType == "function") {
-                    // check if parameter name is valid
-                    // if the name is invalid, regard it as a global variable (i.e. do nothing)
-                    if (defunRenamingMap[it.astValue] !== undefined) {
-                        it.astType = "defun_args";
-                        it.astValue = defunRenamingMap[it.astValue];
-                    }
-                }
-            });
-
-            // test print new tree
-            if (DBGON) {
-                serial.println("[BASIC.DEFUN] defun debug info for function "+defunName);
-                serial.println("[BASIC.DEFUN] defun name tree: ");
-                serial.println(astToString(nameTree));
-                serial.println("[BASIC.DEFUN] defun renaming map: "+Object.entries(defunRenamingMap));
-                serial.println("[BASIC.DEFUN] defun expression tree:");
-                serial.println(astToString(exprTree));
-            }
-            // check if the variable name already exists
-            // search from constants
-            if (_basicConsts[defunName]) throw lang.asgnOnConst(lnum, defunName);
-            // search from builtin functions
-            if (bStatus.builtin[defunName] !== undefined || bF[defunName.toLowerCase()] !== undefined)
-                throw lang.dupDef(lnum, stmtnum, defunName);
-
-            // finally assign the function to the variable table
-            bStatus.vars[defunName] = new BasicVar(exprTree, "usrdefun");
-
-            let r = new SyntaxTreeReturnObj("internal_lambda", exprTree, [lnum, stmtnum + 1]);
-            if (_debugExec) serial.println(tearLine);
-            return r;
-        }
         else if ("ON" == funcName) {
             if (syntaxTree.astLeaves.length < 3) throw lang.badFunctionCallFormat();
 
@@ -3192,9 +3189,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 serial.println(recWedge+"fn call name: "+funcName);
                 serial.println(recWedge+"fn call args: "+(args.map(it => it.troType+" "+it.troValue)).join(", "));
             }
-            
-            let lambdaBoundVarsAppended = false;
-            
+                        
             // func not in builtins (e.g. array access, user-defined function defuns)
             if (func === undefined) {
                 var someVar = bStatus.vars[funcName];
@@ -3214,70 +3209,8 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 else if ("usrdefun" == someVar.bvType) {
                     // dereference usrdefun
                     let expression = cloneObject(someVar.bvLiteral);
-                    // register variables
-                    let defunArgs = args.map(it => {
-                        let rit = resolve(it)
-                        return [JStoBASICtype(rit), rit];
-                    }).reverse();
-                    lambdaBoundVars.unshift(defunArgs); lambdaBoundVarsAppended = true;
-                    
-                    if (_debugExec) {
-                        serial.println(recWedge+"usrdefun dereference");
-                        serial.println(recWedge+"usrdefun dereference function: ");
-                        serial.println(astToString(expression));
-                        serial.println(recWedge+"usrdefun dereference bound vars: "+theLambdaBoundVars());
-                    }
-                    
-                    // insert bound variables to its places
-                    let bindVar = function(tree, recDepth) {
-                        bF._recurseApplyAST(tree, it => {
-                            
-                            if (_debugExec) {
-                                serial.println(recWedge+`usrdefun${recDepth} trying to bind some variables to:`);
-                                serial.println(astToString(it));
-                            }
-                            
-                            if (it.astType == "defun_args") {
-                                let recIndex = it.astValue[0] - recDepth;
-                                let varIndex = it.astValue[1];
-                                
-                                if (_debugExec) {
-                                    serial.println(recWedge+`usrdefun${recDepth} bindvar d(${recIndex},${varIndex})`);
-                                }
-                                
-                                let theVariable = undefined;
-                                try {
-                                    theVariable = lambdaBoundVars[recIndex][varIndex];
-                                }
-                                catch (e0) {}
-                                
-                                // this will make partial applying work, but completely remove the ability of catching errors...
-                                if (theVariable !== undefined) {
-                                    it.astValue = theVariable[1];
-                                    it.astType = theVariable[0];
-                                }
-                                
-                                if (_debugExec) {
-                                    serial.println(recWedge+`usrdefun${recDepth} the bindvar: ${theVariable}`);
-                                    serial.println(recWedge+`usrdefun${recDepth} modified tree:`);
-                                    serial.println(astToString(it));
-                                }
-                            }
-                            // function in a function
-                            else if (it.astType == "usrdefun") {
-                                bindVar(it.astValue, recDepth + 1);
-                            }
-                        });
-                    };bindVar(expression, 0);
-                    
-
-                    if (_debugExec) {
-                        serial.println(recWedge+"usrdefun dereference final tree:");
-                        serial.println(astToString(expression));
-                    }
-                    
-                    func = bStatus.getDefunThunk(lnum, stmtnum, expression, true);
-                    
+                    lambdaBoundVarsAppended = true;
+                    func = bF._makeRunnableFunctionFromExprTree(lnum, stmtnum, expression, args, recDepth, _debugExec, recWedge);
                 }
                 else {
                     throw lang.syntaxfehler(lnum, funcName + " is not a function or an array");
