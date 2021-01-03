@@ -3373,7 +3373,7 @@ bF._interpretLine = function(lnum, cmd) {
     // PARSING (SYNTAX ANALYSIS)
     let syntaxTrees = bF._parseTokens(lnum, tokens, states).map(it => {
         if (lambdaBoundVars.length != 0)
-            throw new ParserError();
+            throw new InternalError("lambdaBoundVars not empty");
         return bF._pruneTree(lnum, it, 0)
     });
 
@@ -3461,6 +3461,7 @@ bF.new = function(args) { // NEW function
     if (args) cmdbuf = [];
     bStatus.vars = initBvars();
     gotoLabels = {};
+    lambdaBoundVars = [];
     DATA_CONSTS = [];
     DATA_CURSOR = 0;
     INDEX_BASE = 0;
