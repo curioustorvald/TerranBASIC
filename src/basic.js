@@ -374,26 +374,6 @@ let curryDefun = function(inputTree, inputValue) {
 
     return exprTree;
 }
-let isGenerator = (o) => o.start !== undefined && o.end !== undefined && o.step !== undefined && o.stepsgn !== undefined
-let genToArray = (gen) => {
-    let a = [];
-    let cur = gen.start;
-    while (cur*gen.stepsgn + gen.step*gen.stepsgn <= (gen.end + gen.step)*gen.stepsgn) {
-        a.push(cur);
-        cur += gen.step;
-    }
-    return a;
-}
-let genHasHext = (o) => o.current*o.stepsgn + o.step*o.stepsgn <= (o.end + o.step)*o.stepsgn;
-let genGetNext = (gen, mutated) => {
-    //if (mutated === undefined) throw "InternalError: parameter is missing";
-    if (mutated !== undefined) gen.current = (mutated|0);
-    gen.current += gen.step;
-    //serial.println(`[BASIC.FORGEN] ${(mutated|0)} -> ${gen.current}`);
-    return genHasHext(gen) ? gen.current : undefined;
-}
-let genToString = (gen) => `Generator: ${gen.start} to ${gen.end}`+((gen.step !== 1) ? ` step ${gen.step}` : '');
-let genReset = (gen) => { gen.current = gen.start }
 let countArgs = function(defunTree) {
     let cnt = -1;
     bF._recurseApplyAST(defunTree, it => {
@@ -496,46 +476,27 @@ let ForGen = function(s,e,t) {
 
     this.current = this.start;
     this.stepsgn = (this.step > 0) ? 1 : -1;
-
-    /*this.hasNext = function() {
-        return this.current*this.stepsgn + this.step*this.stepsgn <= (this.end + this.step)*this.stepsgn;
-        // 1 to 10 step 1
-        // 1 + 1 <= 11 -> true
-        // 10 + 1 <= 11 -> true
-        // 11 + 1 <= 11 -> false
-
-        // 10 to 1 step -1
-        // -10 + 1 <= 0 -> true
-        // -1 + 1 <= 0 -> true
-        // 0 + 1 <= 0 -> false
-    }*/
-
-    // mutableVar: the actual number stored into the FOR-Variable, because BASIC's FOR-Var is mutable af
-    // returns undefined if there is no next()
-    /*this.getNext = function(mutated) {
-        //if (mutated === undefined) throw "InternalError: parameter is missing";
-        if (mutated !== undefined) this.current = (mutated|0);
-        this.current += this.step;
-        //serial.println(`[BASIC.FORGEN] ${(mutated|0)} -> ${this.current}`);
-        return this.hasNext() ? this.current : undefined;
-    }*/
-
-    /*this.toArray = function() {
-        let a = [];
-        let cur = this.start;
-        while (cur*this.stepsgn + this.step*this.stepsgn <= (this.end + this.step)*this.stepsgn) {
-            a.push(cur);
-            cur += this.step;
-        }
-        return a;
-    }*/
-    /*this.reset = function() {
-        this.current = this.start;
-    }*/
-    /*this.toString = function() {
-        return `Generator: ${this.start} to ${this.end}`+((this.step !== 1) ? ` step ${this.step}` : '');
-    }*/
 }
+let isGenerator = (o) => o.start !== undefined && o.end !== undefined && o.step !== undefined && o.stepsgn !== undefined
+let genToArray = (gen) => {
+    let a = [];
+    let cur = gen.start;
+    while (cur*gen.stepsgn + gen.step*gen.stepsgn <= (gen.end + gen.step)*gen.stepsgn) {
+        a.push(cur);
+        cur += gen.step;
+    }
+    return a;
+}
+let genHasHext = (o) => o.current*o.stepsgn + o.step*o.stepsgn <= (o.end + o.step)*o.stepsgn;
+let genGetNext = (gen, mutated) => {
+    //if (mutated === undefined) throw "InternalError: parameter is missing";
+    if (mutated !== undefined) gen.current = (mutated|0);
+    gen.current += gen.step;
+    //serial.println(`[BASIC.FORGEN] ${(mutated|0)} -> ${gen.current}`);
+    return genHasHext(gen) ? gen.current : undefined;
+}
+let genToString = (gen) => `Generator: ${gen.start} to ${gen.end}`+((gen.step !== 1) ? ` step ${gen.step}` : '');
+let genReset = (gen) => { gen.current = gen.start }
 let bStatus = {};
 bStatus.gosubStack = [];
 bStatus.forLnums = {}; // key: forVar, value: [lnum, stmtnum]
@@ -2899,6 +2860,21 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
         }
     }
+    // simplify UNARYMINUS(num) to -num
+    else if (tree.astValue == "UNARYMINUS" && tree.astType == "op" &&
+        tree.astLeaves[1] === undefined && tree.astLeaves[0] !== undefined && tree.astLeaves[0].astType == "num"
+    ) {
+        tree.astValue = -(tree.astLeaves[0].astValue);
+        tree.astType = "num";
+        tree.astLeaves = [];
+    }
+    else if (tree.astValue == "UNARYPLUS" && tree.astType == "op" &&
+        tree.astLeaves[1] === undefined && tree.astLeaves[0] !== undefined && tree.astLeaves[0].astType == "num"
+    ) {
+        tree.astValue = +(tree.astLeaves[0].astValue);
+        tree.astType = "num";
+        tree.astLeaves = [];
+    }
     
     
     // depth-first run
@@ -3311,30 +3287,6 @@ bF._interpretLine = function(lnum, cmd) {
         if (lambdaBoundVars.length != 0)
             throw new InternalError("lambdaBoundVars not empty");
         return bF._pruneTree(lnum, it, 0)
-    });
-
-    // syntax tree pruning
-
-    // turn UNARYMINUS(num) to -num
-    syntaxTrees.forEach(syntaxTree => {
-        if (syntaxTree !== undefined) {
-            bF._recurseApplyAST(syntaxTree, tree => {
-                if (tree.astValue == "UNARYMINUS" && tree.astType == "op" &&
-                    tree.astLeaves[1] === undefined && tree.astLeaves[0] !== undefined && tree.astLeaves[0].astType == "num"
-                ) {
-                    tree.astValue = -(tree.astLeaves[0].astValue);
-                    tree.astType = JStoBASICtype(tree.astValue);
-                    tree.astLeaves = [];
-                }
-                else if (tree.astValue == "UNARYPLUS" && tree.astType == "op" &&
-                    tree.astLeaves[1] === undefined && tree.astLeaves[0] !== undefined && tree.astLeaves[0].astType == "num"
-                ) {
-                    tree.astValue = +(tree.astLeaves[0].astValue);
-                    tree.astType = JStoBASICtype(tree.astValue);
-                    tree.astLeaves = [];
-                }
-            });
-        }
     });
 
     if (_debugprintHighestLevel) {

@@ -836,6 +836,21 @@ bF._pruneTree = function(lnum, tree, recDepth) {
             serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
         }
     }
+    // simplify UNARYMINUS(num) to -num
+    else if (tree.astValue == "UNARYMINUS" && tree.astType == "op" &&
+        tree.astLeaves[1] === undefined && tree.astLeaves[0] !== undefined && tree.astLeaves[0].astType == "num"
+    ) {
+        tree.astValue = -(tree.astLeaves[0].astValue);
+        tree.astType = "num";
+        tree.astLeaves = [];
+    }
+    else if (tree.astValue == "UNARYPLUS" && tree.astType == "op" &&
+        tree.astLeaves[1] === undefined && tree.astLeaves[0] !== undefined && tree.astLeaves[0].astType == "num"
+    ) {
+        tree.astValue = +(tree.astLeaves[0].astValue);
+        tree.astType = "num";
+        tree.astLeaves = [];
+    }
     
     
     // depth-first run
