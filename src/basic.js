@@ -318,38 +318,52 @@ let resolve = function(variable) {
     else
         throw Error("BasicIntpError: unknown variable/object with type "+variable.troType+", with value "+variable.troValue);
 }
-let curryDefun = function(inputTree, inputValue) {
-    // FIXME not compatible with new de bruijn indexing
-    
+let curryDefun = function(inputTree, inputValue) {    
     let exprTree = cloneObject(inputTree);
     let value = cloneObject(inputValue);
+    let highestIndex = [-1,-1];
+    // look for the highest index of [a,b]
     bF._recurseApplyAST(exprTree, it => {
         if (it.astType == "defun_args") {
+            let recIndex = it.astValue[0];
+            let ordIndex = it.astValue[1];
+            
+            if (recIndex > highestIndex[0]) {
+                highestIndex = [recIndex, 0];
+            }
+            
+            if (recIndex == highestIndex[0] && ordIndex > highestIndex[1]) {
+                highestIndex[1] = ordIndex;
+            }
+        }
+    });
+    
+    if (DBGON) {
+        serial.println("[curryDefun] highest index to curry: "+highestIndex);
+    }
+    
+    // substitute the highest index with given value
+    bF._recurseApplyAST(exprTree, it => {
+        if (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === highestIndex[1]) {
             /*if (DBGON) {
                 serial.println("[curryDefun] found defun_args #"+it.astValue);
                 serial.println(astToString(it));
             }*/
+            
             // apply arg0 into the tree
-            if (it.astValue == 0) {
-                let valueType = JStoBASICtype(value);
-                if (valueType === "usrdefun") {
-                    it.astLnum = value.astLnum;
-                    it.astLeaves = value.astLeaves;
-                    it.astSeps = value.astSeps;
-                    it.astValue = value.astValue
-                    it.astType = value.astType;
-                }
-                else {
-                    it.astType = valueType
-                    it.astValue = value;
-                }
-                //if (DBGON) serial.println("[curryDefun] applying value "+value);
+            let valueType = JStoBASICtype(value);
+            /*if (valueType === "usrdefun") {
+                it.astLnum = value.astLnum;
+                it.astLeaves = value.astLeaves;
+                it.astSeps = value.astSeps;
+                it.astValue = value.astValue
+                it.astType = value.astType;
             }
-            // shift down arg index
-            else {
-                it.astValue -= 1;
-                //if (DBGON) serial.println("[curryDefun] decrementing arg index");
-            }
+            else {*/
+                it.astType = valueType
+                it.astValue = value;
+            //}
+            //if (DBGON) serial.println("[curryDefun] applying value "+value);
 
             /*if (DBGON) {
                 serial.println("[curryDefun] after the task:");
@@ -2833,7 +2847,7 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
     return treeHead;
 }
 /**
- * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
+ * @return: Array of [recurseIndex, orderlyIndex], both corresponds to the de-bruijn indexing
  */
 bF._findDeBruijnIndex = function(varname) {
     let recurseIndex = -1;

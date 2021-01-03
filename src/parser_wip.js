@@ -785,7 +785,7 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
     return treeHead;
 }
 /**
- * @return: Array of [recurseIndex, orderlyIndex] where recurseIndex corresponds with the de-bruijn indexing
+ * @return: Array of [recurseIndex, orderlyIndex], both corresponds to the de-bruijn indexing
  */
 bF._findDeBruijnIndex = function(varname) {
     let recurseIndex = -1;
