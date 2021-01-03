@@ -810,11 +810,20 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         }
     }
     
+    let defunName = undefined;
     
     // catch all the bound variables for function definition
-    if (tree.astType == "op" && tree.astValue == "~>") {
+    if (tree.astType == "op" && tree.astValue == "~>" || tree.astType == "function" && tree.astValue == "DEFUN") {
+        
         let nameTree = tree.astLeaves[0];
         let vars = [];
+        if (tree.astValue == "DEFUN") {
+            defunName = nameTree.astValue;
+            
+            if (DBGON) {
+                serial.println("[Parser.PRUNE.~>] met DEFUN, function name: "+defunName);
+            }
+        }
         nameTree.astLeaves.forEach((it, i) => {
             if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToString(nameTree));
             vars.push(it.astValue);
@@ -834,7 +843,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     }
     
     
-    if (tree.astType == "op" && tree.astValue == "~>") {
+    if (tree.astType == "op" && tree.astValue == "~>" || tree.astType == "function" && tree.astValue == "DEFUN") {
         
         if (tree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum, tree.astLeaves.length+lang.aG);
         
@@ -864,6 +873,29 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         tree.astLeaves = [];
         
         lambdaBoundVars.shift();
+    }
+    
+    // for DEFUNs, build assign tree such that:
+    //    DEFUN F lambda
+    // turns into:
+    //    F=(lambda)
+    if (defunName) {
+        let nameTree = new BasicAST();
+        nameTree.astLnum = tree.astLnum;
+        nameTree.astType = "lit";
+        nameTree.astValue = defunName;
+        
+        let newTree = new BasicAST();
+        newTree.astLnum = tree.astLnum;
+        newTree.astType = "op";
+        newTree.astValue = "=";
+        newTree.astLeaves = [nameTree, tree];
+        
+        tree = newTree;
+        
+        if (DBGON) {
+            serial.println(`[Parser.PRUNE] has DEFUN, function name: ${defunName}`);
+        }
     }
     
     if (DBGON) {
@@ -1039,8 +1071,8 @@ let states21 = ["paren","lit","paren","op","lit","paren","paren","lit","paren","
 
 try  {
     let rawTrees = bF._parseTokens(lnum,
-        tokens21,
-        states21
+        tokens2,
+        states2
     );
     let trees = rawTrees.map(it => bF._pruneTree(lnum, it, 0));
     trees.forEach((t,i) => {

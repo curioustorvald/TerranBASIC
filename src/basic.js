@@ -37,7 +37,7 @@ let TRACEON = (!PROD) && true;
 let DBGON = (!PROD) && true;
 let DATA_CURSOR = 0;
 let DATA_CONSTS = [];
-const DEFUNS_BUILD_DEFUNS = true;
+const DEFUNS_BUILD_DEFUNS = false;
 const BASIC_HOME_PATH = "/home/basic/"
 
 if (system.maxmem() < 8192) {
@@ -1975,27 +1975,30 @@ stmt =
     | "(" , stmt , ")"
     | expr ; (* if the statement is 'lit' and contains only one word, treat it as function_call
                 e.g. NEXT for FOR loop *)
-
+    
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
       lit
     | "(" , expr , ")"
+    | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     | kywd , expr - "(" (* also deals with FOR statement *)
     (* at this point, if OP is found in paren-level 0, skip function_call *)
     | function_call
     | expr , op , expr
     | op_uni , expr ;
-
+    
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
-
+        
+ident_tuple = "[" , ident , ["," , ident] , "]" ;
+    
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
     | ident , expr , {argsep , expr} , [argsep] ;
 kywd = ? words that exists on the list of predefined function that are not operators ? ;
-
-(* don't bother looking at these, because you already know the stuff *)
-
+    
+(* don't bother looking at these, because you already know the stuff *)    
+    
 argsep = "," | ";" ;
 ident = alph , [digits] ; (* variable and function names *)
 lit = alph , [digits] | num | string ; (* ident + numbers and string literals *)
@@ -2009,7 +2012,7 @@ digits = digit | digit , digits ;
 hexdigits = hexdigit | hexdigit , hexdigits ;
 bindigits = bindigit | bindigit , bindigits ;
 num = digits | digits , "." , [digits] | "." , digits
-    | ("0x"|"0X") , hexdigits
+    | ("0x"|"0X") , hexdigits 
     | ("0b"|"0B") , bindigits ; (* sorry, no e-notation! *)
 visible = ? ASCII 0x20 to 0x7E ? ;
 string = '"' , (visible | visible , stringlit) , '"' ;
@@ -2035,8 +2038,8 @@ FOR (type: function, value: FOR)
 1. expr (normally (=) but not necessarily)
 
 DEFUN (type: function, value: DEFUN)
-1. funcname
-    1. arg0
+1. funcname (type: lit)
+    1. arg0 (type: lit)
     [2. arg1]
     [3. argN...]
 2. stmt
@@ -2052,6 +2055,13 @@ FUNCTION_CALL (type: function, value: PRINT or something)
 1. arg0
 2. arg1
 [3. argN...]
+
+LAMBDA (type: op, value: "~>")
+1. undefined (type: closure_args, value: undefined)
+    1. arg0 (type: lit)
+    [2. arg1]
+    [3. argN...]
+2. stmt
  */
 // @returns BasicAST
 bF._EquationIllegalTokens = ["IF","THEN","ELSE","DEFUN","ON"];
@@ -2846,11 +2856,20 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         }
     }
     
+    let defunName = undefined;
     
     // catch all the bound variables for function definition
-    if (tree.astType == "op" && tree.astValue == "~>") {
+    if (tree.astType == "op" && tree.astValue == "~>" || tree.astType == "function" && tree.astValue == "DEFUN") {
+        
         let nameTree = tree.astLeaves[0];
         let vars = [];
+        if (tree.astValue == "DEFUN") {
+            defunName = nameTree.astValue;
+            
+            if (DBGON) {
+                serial.println("[Parser.PRUNE.~>] met DEFUN, function name: "+defunName);
+            }
+        }
         nameTree.astLeaves.forEach((it, i) => {
             if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToString(nameTree));
             vars.push(it.astValue);
@@ -2870,7 +2889,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     }
     
     
-    if (tree.astType == "op" && tree.astValue == "~>") {
+    if (tree.astType == "op" && tree.astValue == "~>" || tree.astType == "function" && tree.astValue == "DEFUN") {
         
         if (tree.astLeaves.length !== 2) throw lang.syntaxfehler(lnum, tree.astLeaves.length+lang.aG);
         
@@ -2900,6 +2919,29 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         tree.astLeaves = [];
         
         lambdaBoundVars.shift();
+    }
+    
+    // for DEFUNs, build assign tree such that:
+    //    DEFUN F lambda
+    // turns into:
+    //    F=(lambda)
+    if (defunName) {
+        let nameTree = new BasicAST();
+        nameTree.astLnum = tree.astLnum;
+        nameTree.astType = "lit";
+        nameTree.astValue = defunName;
+        
+        let newTree = new BasicAST();
+        newTree.astLnum = tree.astLnum;
+        newTree.astType = "op";
+        newTree.astValue = "=";
+        newTree.astLeaves = [nameTree, tree];
+        
+        tree = newTree;
+        
+        if (DBGON) {
+            serial.println(`[Parser.PRUNE] has DEFUN, function name: ${defunName}`);
+        }
     }
     
     if (DBGON) {
@@ -2989,6 +3031,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     // userdefun with args
     // apply given arguments (syntaxTree.astLeaves) to the expression tree and evaluate it
     // if tree has leaves:
+    // NOTE: unless you can properly parse something like: '([X]~>X+3)(20)', this line seems never get reached
     else if (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined) {
         // register bound variables
         let thisLevelBoundVars = syntaxTree.astLeaves.map(it => {
@@ -3016,7 +3059,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     // closure
     // type: closure_args ~> (expr)
     else if (syntaxTree.astType == "op" && syntaxTree.astValue == "~>") {
-        throw new InternalError("Untended closure");
+        throw new InternalError("Untended closure"); // closure definition must be 'pruned' by the parser
+    }
+    else if (syntaxTree.astType == "function" && syntaxTree.astValue == "DEFUN") {
+        throw new InternalError("Untended DEFUN"); // DEFUN must be 'pruned' by the parser
     }
     else if (syntaxTree.astType == "function" || syntaxTree.astType == "op") {
         if (_debugExec) serial.println(recWedge+"function|operator");

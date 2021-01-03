@@ -5,4 +5,5 @@
 
 cp parser_wip.js ../release/assets/disk0/tbas/basic.js
 cd ../release
+clear
 java8 -jar TSVM-Executable.jar > testlog.log
