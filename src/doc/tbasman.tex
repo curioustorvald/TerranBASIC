@@ -33,6 +33,9 @@
 \usepackage{amsmath,amssymb}
 \usepackage{calc}
 \usepackage{ifthen}
+\usepackage[pdf]{graphviz}
+\usepackage{caption}
+\usepackage{subcaption}
 
 \usepackage{lineno} % debug
 
@@ -157,13 +160,13 @@
 % The title
 \newcommand{\tbas}{Terran BASIC}
 \newcommand{\thismachine}{TSVM}
-\newcommand{\tbasver}{1.0}
-\newcommand{\theedition}{First Edition}
+\newcommand{\tbasver}{1.1}
+\newcommand{\theedition}{Second Edition}
 \newcommand{\oreallypress}{\large\textbf{O'REALLY\raisebox{1ex}{\scriptsize ?}} \normalsize Press}
 
 \title{\HUGE\textbf{\MakeUppercase{\tbas} \\ REFERENCE MANUAL} \\ \Large \vspace{1em} For Language Version \tbasver\hspace{0.75em}|\hspace{0.75em}\theedition}
 \date{}
-\author{Minjae Song (CuriousTorvald) \\ 2020-12-28}
+\author{Minjae Song (CuriousTorvald) \\ 2021-01-04}
 \hypersetup{
 	pdfauthor={CuriousTorvald},
 	pdftitle={\tbas\ Reference Manual For Language Version \tbasver, \theedition},
@@ -212,11 +215,11 @@
 
 \part{Implementation}
 
-\chapter{Technical Reference}
+\chapter{Interpreter}
 \input{technical}
 
-\chapter{Implementation Details}
-\input{Implementation}
+\chapter{Virtual Machine}
+\input{implementation}
 
 \part{More Goodies}
 

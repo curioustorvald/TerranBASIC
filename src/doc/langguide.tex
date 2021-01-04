@@ -163,6 +163,36 @@ Or, think about the old \code{FAC} program before: it merely printed out the val
 
 Here, \code{K} holds the values of $1!$, $2!$ \ldots\ $10!$. Right now we're just printing out the array, but being an array, you can make actual use of it.
 
+\section[Closure]{The Function with No Name}
+
+But \code{DEFUN F(X)} is only there for partial compatibility with traditional BASICs, of which their syntax is \code{DEF FNX(X)}. \code{DEFUN} cannot define nested functions, it's not a lambda-calculus system, yaddi yadda.
+
+No, we want to be up-to-date; we don't always want every function to be global; we want to utter \emph{give me a closure, bar-tender}.
+
+\tbas\ presents you: a closure. What does it do?
+
+\begin{lstlisting}
+10 FAC=[N]~>IF N==0 THEN 1 ELSE N*FAC(N-1)
+20 K=MAP(FAC, 1 TO 10)
+30 PRINT K
+\end{lstlisting}
+
+Here, \code{[N]$\sim\!>$\,\ldots} defines a \emph{closure} (anonymous function) that has single parameter \code{N}, then assigns it to global variable \code{FAC}.
+
+But \emph{stop right there, criminal scum}: in what way is that an \emph{anonymous function}?
+
+Ah-ha, take a look at this:
+
+\begin{lstlisting}
+10 F=[X]~>MAP([X]~>[X]<=5,X)
+20 PRINT F(1 TO 10)
+\end{lstlisting}
+
+Here, the global function \code{F} has an internal function for a first parameter of \code{MAP}, which is: \code{[X]$\sim\!>$[X]<=5}
+
+Even if the \code{F} and the anonymous function for \code{MAP} uses same parameter name of \code{X}, they're unrelated because two functions are different.
+
+
 \section[Currying]{Haskell Curry Wants to Know Your Location}
 \label{currying101}
 
@@ -181,6 +211,21 @@ Here, \code{K} holds the values of $1!$, $2!$ \ldots\ $10!$. Right now we're jus
 % NOTE: you can't use \basiccurry within \code{}
 Here, \code{CF} is a curried function of \code{F}; built-in operator \code{$\sim\!<$} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
 
+But, what if the function was served with pre-cooked curry? The \code{$\sim\!<$} operator is there to curry an un-curried functions; we don't need that if the function was curried in the first place.
+
+Here, \emph{closure} do wonders as well; for a fun of it, let's re-write the \code{F(K,T)} to be pre-curried:
+
+\begin{lstlisting}
+10 F=[K]~>[T]~>ABS(T)==K
+20 CF=F(32)
+30 PRINT CF(24) : REM will print 'false'
+40 PRINT CF(-32) : REM will print 'true'
+\end{lstlisting}
+
+The function \code{F}, when called, returns its inner function \code{[T]$\sim\!>$ABS(T)==K} with \code{K} being substituted with the argument that were applied to \code{F}, so the function \code{CF} here can be expressed as: \code{[T]$\sim\!>$ABS(T)==32}
+
+The subsequent calls for \code{CF} returns appropriate values, in the same manner as the descriptions above.
+
 \section[Wrapping-Up]{The Grand Unification}
 
 Using all the knowledge we have learned, it should be trivial\footnote{/s} to write a Quicksort function in \tbas, like this:
@@ -198,11 +243,10 @@ Using all the knowledge we have learned, it should be trivial\footnote{/s} to wr
 
 Line 12 implements quicksort algorithm, using \code{LESS} and \code{GTEQ} as helper functions. \code{LESS} is a user-function version of less-than operator, and \code{GTEQ} is similar. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}\footnote{stands for \emph{X's}} with \code{HEAD(XS)}, then utilises curried version of \code{LESS} and \code{GTEQ} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL(XS)} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Currying is exploited to give comparison functions a pivot-value to compare against, and also because \code{FILTER} wants a \emph{function} and not an \emph{expression}. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
 
-%Uncomment this if you finally decided to support a closure%
-%% Using \emph{closure}, the definition of \code{QSORT} can truly be a one-liner and be \emph{even more cryptic}:
-%% 
-%% \begin{lstlisting}
-%% 10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE 
-%%     QSORT(FILTER([K]~>K<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
-%%     QSORT(FILTER([K]~>K>=HEAD XS,TAIL XS))
-%% \end{lstlisting}
+Using the closure, the definition of \code{QSORT} no longer need helper functions, can truly be a one-liner and be \emph{even more cryptic}:
+
+\begin{lstlisting}
+10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE 
+    QSORT(FILTER([X]~>X<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
+    QSORT(FILTER([X]~>X>=HEAD XS,TAIL XS))
+\end{lstlisting}

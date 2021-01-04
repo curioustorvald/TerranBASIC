@@ -1,0 +1,26 @@
+digraph lambdaindexing {
+"[X,Y]" [shape=box]
+"[C]" [shape=box]
+"[M]" [shape=box]
+"C1" [label=C,style=filled]
+"C2" [label=C,style=filled]
+"X" [label=X,style=filled]
+"Y" [label=Y,style=filled]
+"Outer ZIP" [label=ZIP]
+"Inner ZIP" [label=ZIP]
+Invisobitch [label="lol",style=invis]
+
+"[X,Y]"->"[C]"->"Outer ZIP"
+
+"Outer ZIP"->"C1"
+"Outer ZIP"->"FILTER"
+"C1"->Invisobitch [style=invis]
+
+"FILTER"->"[M]"
+"[M]"->"C2"
+"[M]"->Invisobitch [style=invis]
+
+"FILTER"->"Inner ZIP"
+"Inner ZIP"->X
+"Inner ZIP"->Y
+}

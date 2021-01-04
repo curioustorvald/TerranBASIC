@@ -1,6 +1,6 @@
-\section{Resolving Variables}
+This chapter documents the reference implementation of \tbas.
 
-This section describes all use cases of \code{BasicVar}.
+\section{Resolving Variables}
 
 When a variable is \code{resolve}d, an object with instance of \code{BasicVar} is returned. A \code{bvType} of Javascript value is determined using \code{JStoBASICtype}.
 
@@ -55,3 +55,57 @@ Assignment & {\ttfamily internal\_assignment\_object} \\
 \item As all variables will have \code{troType} of \code{lit} when they are not resolved, the property must not be used to determine the type of the variable; you must \code{resolve} it first.
 \item The type string \code{function} should not appear outside of TRO and \code{astType}; if you do see them in the wild, please check your JS code because you probably meant \code{usrdefun}.
 \end{itemlist}
+
+\section{Lambda Variables}
+
+Lambda expressions have bound variables: $\lambda x . E$ has bound variable of $x$ and this expression can be written in \tbas\ as \code{[X]$\sim\!>$E}.
+
+However, in the creation and execution of a syntax tree, the bound variables must be able to be properly substituted, but at the same time Closure on \tbas\ can have multiple parameters. How do we solve the substitution and name collision problem?
+
+In 1972, dutch mathematician Nicolaas de Bruijn invented \emph{de Bruijn Indexing}, a system we use to solve the forementioned problems.
+
+Since closures in \tbas\ can have multiple bound variables instead of just one as in lambda-expression, we deploy a modified version of the indexing:
+
+\begin{align}
+recIndex &:= \text{index of recursion depth}\\
+ordIndex &:= \text{order of the bound variable of the same level}\\
+index &:= \text{array of}\ [recIndex, ordIndex]
+\end{align}
+
+(inner elements---or tighter ones---gets lower number of index)
+
+And consider following example code:
+
+\begin{lstlisting}
+[X,Y]~>[C]~>ZIP(C,FILTER([M]~>C,ZIP(X,Y)))
+\end{lstlisting}
+
+In this code, variables will have following indices:
+
+\begin{tabulary}{\textwidth}{cC|cC|cC}
+Variable & Index & Variable & Index & Variable & Index \\
+\hline
+C {\condensedfont (in filter of M)} & [1,0] & X & [1,1] & M & [0,0] \\
+C {\condensedfont (in outer ZIP)} & [0,0] & Y & [1,0] & \ & \ \\
+\end{tabulary}
+
+and the program tree would look like this:
+
+{\centering
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{lambdaindexing}
+  \captionof{figure}{Variable Names Tree}
+  \label{fig:lambdaraw}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=1.108\linewidth]{lambdaindexing2}
+  \captionof{figure}{Variable Indices Tree}
+  \label{fig:lambdaindexed}
+\end{minipage}
+}
+
+As you can clearly observe, there are two \code{C}s, both must refer to the same bound variable but are in different depth. In order to satisfy the constraint, two \code{C}s have different indices. If you were to change \code{[M]} into \code{[C]}, however, the inner \code{C} will get index of [0,0], which points to the immediate \code{C} and it's different \code{C} than one referred in the outer \code{ZIP}, even if the ZIP's \code{C} has identical index of [0,0].
+
+In \code{basic.js}, a variable \code{lambdaBoundVars} will contain such variables, and gets reused in different contexts.
