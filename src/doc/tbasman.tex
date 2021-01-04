@@ -162,11 +162,12 @@
 \newcommand{\thismachine}{TSVM}
 \newcommand{\tbasver}{1.1}
 \newcommand{\theedition}{Second Edition}
+\newcommand{\thepublishingdate}{2021-01-04}
 \newcommand{\oreallypress}{\large\textbf{O'REALLY\raisebox{1ex}{\scriptsize ?}} \normalsize Press}
 
 \title{\HUGE\textbf{\MakeUppercase{\tbas} \\ REFERENCE MANUAL} \\ \Large \vspace{1em} For Language Version \tbasver\hspace{0.75em}|\hspace{0.75em}\theedition}
 \date{}
-\author{Minjae Song (CuriousTorvald) \\ 2021-01-04}
+\author{}
 \hypersetup{
 	pdfauthor={CuriousTorvald},
 	pdftitle={\tbas\ Reference Manual For Language Version \tbasver, \theedition},
@@ -176,11 +177,18 @@
 }
 
 \begin{document}
-\begin{titlingpage}
+
 \maketitle{}
+\thispagestyle{empty}
 \vfill
 \oreallypress
-\end{titlingpage}
+
+\newpage
+
+\input{meta}
+\thispagestyle{empty}
+
+\newpage
 
 \setcounter{page}{3}
 \tableofcontents*
