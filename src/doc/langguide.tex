@@ -165,7 +165,7 @@ Here, \code{K} holds the values of $1!$, $2!$ \ldots\ $10!$. Right now we're jus
 
 \section[Closure]{The Function with No Name}
 
-But \code{DEFUN F(X)} is only there for partial compatibility with traditional BASICs, of which their syntax is \code{DEF FNX(X)}. \code{DEFUN} cannot define nested functions, it's not a lambda-calculus system, yaddi yadda.
+But \code{DEFUN F(X)} is only there for partial compatibility with traditional BASICs, of which their syntax is \code{DEF FNF(X)}. \code{DEFUN} cannot define nested functions, it's not a lambda-calculus system, yaddi yadda.
 
 No, we want to be up-to-date; we don't always want every function to be global; we want to utter \emph{give me a closure, bar-tender}.
 
@@ -211,7 +211,7 @@ Even if the \code{F} and the anonymous function for \code{MAP} uses same paramet
 % NOTE: you can't use \basiccurry within \code{}
 Here, \code{CF} is a curried function of \code{F}; built-in operator \code{$\sim\!<$} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
 
-But, what if the function was served with pre-cooked curry? The \code{$\sim\!<$} operator is there to curry an un-curried functions; we don't need that if the function was curried in the first place.
+But, what if we pre-cook the curry before serve? The \code{$\sim\!<$} operator is there to curry an un-curried function; we rarely need that if the function was curried in the begin with.
 
 Here, \emph{closure} do wonders as well; for a fun of it, let's re-write the \code{F(K,T)} to be pre-curried:
 
@@ -250,3 +250,5 @@ Using the closure, the definition of \code{QSORT} no longer need helper function
     QSORT(FILTER([X]~>X<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
     QSORT(FILTER([X]~>X>=HEAD XS,TAIL XS))
 \end{lstlisting}
+
+Compare with the lengthy version and this one, and try to tell how it works; this is the today's excercise.
