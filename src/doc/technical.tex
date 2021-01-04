@@ -62,17 +62,15 @@ Lambda expressions have bound variables: $\lambda x . E$ has bound variable of $
 
 However, in the creation and execution of a syntax tree, the bound variables must be able to be properly substituted, but at the same time Closure on \tbas\ can have multiple parameters. How do we solve the substitution and name collision problem?
 
-In 1972, dutch mathematician Nicolaas de Bruijn invented \emph{de Bruijn Indexing}, a system we use to solve the forementioned problems.
+In 1972, dutch mathematician Nicolaas de Bruijn invented \emph{de Bruijn Indexing}, a system we use to solve the forementioned problems. In de Bruijn Indexing, the innermost bound variable has index of zero\footnote{Smallest number in the set of natural numbers, which can be zero or one depending on your definition of natural numbers; we've obviously chose zero.} and outer variables have greater indices. For example, $\lambda x . \lambda y . \lambda z . x\ z (y\ z)$ is represented as $\lambda\ \lambda\ \lambda\ 2\ 0\ (1\ 0)$
 
-Since closures in \tbas\ can have multiple bound variables instead of just one as in lambda-expression, we deploy a modified version of the indexing:
+Since closures in \tbas\ can have multiple bound variables instead of just one as in lambda calculus, we deploy a modified version of the indexing:
 
 \begin{align}
 recIndex &:= \text{index of recursion depth}\\
-ordIndex &:= \text{order of the bound variable of the same level}\\
+ordIndex &:= \text{reverse order of a bound variable within a level}\\
 index &:= \text{array of}\ [recIndex, ordIndex]
 \end{align}
-
-(inner elements---or tighter ones---gets lower number of index)
 
 And consider following example code:
 
@@ -106,6 +104,6 @@ and the program tree would look like this:
 \end{minipage}
 }
 
-As you can clearly observe, there are two \code{C}s, both must refer to the same bound variable but are in different depth. In order to satisfy the constraint, two \code{C}s have different indices. If you were to change \code{[M]} into \code{[C]}, however, the inner \code{C} will get index of [0,0], which points to the immediate \code{C} and it's different \code{C} than one referred in the outer \code{ZIP}, even if the ZIP's \code{C} has identical index of [0,0].
+As you can clearly observe, there are two \code{C}s, both must refer to the same bound variable but are in different depth. In order to satisfy the constraint, two \code{C}s get different indices. If you were to change \code{[M]} into \code{[C]}, however, the inner \code{C} will get index of [0,0], which points to its immediate \code{C} and it's different \code{C} than one referred in the outer \code{ZIP}, even if the ZIP's \code{C} has identical index of [0,0].
 
 In \code{basic.js}, a variable \code{lambdaBoundVars} will contain such variables, and gets reused in different contexts.
