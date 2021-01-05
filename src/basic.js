@@ -1384,10 +1384,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
                     serial.println(astToString(it));
                 }
                 
-                let r = 6974;//cloneObject(it);
-                if (isAST(it) && literalTypes.includes(it)) {
-                    //r = it.astValue;
-                    //r = 6974;
+                let r = cloneObject(it);
+                if (isAST(it) && literalTypes.includes(it.astType)) {
+                    r = it.astValue;
                 }
                 
                 if (DBGON) {
