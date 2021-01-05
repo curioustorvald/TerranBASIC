@@ -83,8 +83,8 @@ In this code, variables will have following indices:
 \begin{tabulary}{\textwidth}{cC|cC|cC}
 Variable & Index & Variable & Index & Variable & Index \\
 \hline
-C {\condensedfont (in filter of M)} & [1,0] & X & [1,1] & M & [0,0] \\
-C {\condensedfont (in outer ZIP)} & [0,0] & Y & [1,0] & \ & \ \\
+C {\condensedfont (in filter of M)} & $[1,0]$ & X & $[1,1]$ & M & $[0,0]$ \\
+C {\condensedfont (in outer ZIP)} & $[0,0]$ & Y & $[1,0]$ & \ & \ \\
 \end{tabulary}
 
 and the program tree would look like this:
@@ -104,6 +104,6 @@ and the program tree would look like this:
 \end{minipage}
 }
 
-As you can clearly observe, there are two \code{C}s, both must refer to the same bound variable but are in different depth. In order to satisfy the constraint, two \code{C}s get different indices. If you were to change \code{[M]} into \code{[C]}, however, the inner \code{C} will get index of [0,0], which points to its immediate \code{C} and it's different \code{C} than one referred in the outer \code{ZIP}, even if the ZIP's \code{C} has identical index of [0,0].
+As you can clearly observe, there are two \code{C}s, both must refer to the same bound variable but are in different depth. In order to satisfy the constraint, two \code{C}s get different indices. If you were to change \code{[M]} into \code{[C]}, however, the inner \code{C} will get index of $[0,0]$, which points to its immediate \code{C} and it's different \code{C} than one referred in the outer \code{ZIP}, even if the ZIP's \code{C} has identical index of $[0,0]$.
 
 In \code{basic.js}, a variable \code{lambdaBoundVars} will contain such variables, and gets reused in different contexts.

@@ -33,7 +33,7 @@ But with Terran BASIC you can do, I don't know, recursion:
 30 PRINT K
 ```
 
-...or how about the `APPLY`ing:
+...or how about writing your own `APPLY`ing:
 
 ```
 10 DEFUN APPLY(F,X)=F(X)
@@ -42,14 +42,21 @@ But with Terran BASIC you can do, I don't know, recursion:
 40 PRINT K
 ```
 
-...or writing a Quicksort algorithm with currying!
+...or a closure with currying:
 
 ```
-10 DEFUN LESS(P,X)=X<P
-11 DEFUN GTEQ(P,X)=X>=P
-12 DEFUN QSORT(XS)=IF LEN(XS)<1 THEN NIL ELSE 
-    QSORT(FILTER(LESS~<HEAD(XS),TAIL(XS))) # HEAD(XS)!NIL # 
-    QSORT(FILTER(GTEQ~<HEAD(XS),TAIL(XS)))
+10 F=[K]~>[T]~>ABS(T)==K
+20 CF=F(32)
+30 PRINT CF(24) : REM will print 'false'
+40 PRINT CF(-32) : REM will print 'true'
+```
+
+...or writing a Quicksort in one-liner!
+
+```
+10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE
+    QSORT(FILTER([X]~>X<HEAD XS,TAIL XS)) # HEAD(XS)!NIL #
+    QSORT(FILTER([X]~>X>=HEAD XS,TAIL XS))
 100 L=7!9!4!5!2!3!1!8!6!NIL
 110 PRINT L
 120 PRINT QSORT(L)
