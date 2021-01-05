@@ -247,7 +247,7 @@ let astToString = function(ast, depth, isFinalLeaf) {
     let l__ = "| ";
     
     let recDepth = depth || 0;
-    if (ast === undefined || ast.astType === undefined) return "";
+    if (!isAST(ast)) return "";
     let sb = "";
     let marker = ("lit" == ast.astType) ? "i" :
                  ("op" == ast.astType) ? "+" :
@@ -1187,7 +1187,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "MAP" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (fn, functor) => {
         // TODO test only works with DEFUN'd functions
-        if (fn.astLeaves === undefined) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
         if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, "not a mappable type: "+functor+((typeof functor == "object") ? Object.entries(functor) : ""));
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
@@ -1201,7 +1201,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "FOLD" : {f:function(lnum, stmtnum, args) {
     return threeArg(lnum, stmtnum, args, (fn, init, functor) => {
         // TODO test only works with DEFUN'd functions
-        if (fn.astLeaves === undefined) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
         if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, `not a mappable type '${Object.entries(args[2])}': `+functor+((typeof functor == "object") ? Object.entries(functor) : ""));
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
@@ -1219,7 +1219,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "FILTER" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (fn, functor) => {
         // TODO test only works with DEFUN'd functions
-        if (fn.astLeaves === undefined) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
         if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, `not a mappable type '${Object.entries(args[1])}': `+functor+((typeof functor == "object") ? Object.entries(functor) : (typeof functor)));
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
@@ -1273,7 +1273,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "~<" : {f:function(lnum, stmtnum, args) { // CURRY operator
     return twoArg(lnum, stmtnum, args, (fn, value) => {
         // TODO test only works with DEFUN'd functions
-        if (fn.astLeaves === undefined) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
 
         if (DBGON) {
             serial.println("[BASIC.BUILTIN.CURRY] currying this function tree...");
@@ -1294,7 +1294,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "TYPEOF" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, bv => {
-        if (bv.Type === undefined || !(bv instanceof BasicVar))
+        if (bv.bvType === undefined || !(bv instanceof BasicVar))
             return JStoBASICtype(bv);
         return bv.bvType;
     });
@@ -1337,7 +1337,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     let value = resolve(args[1]); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
     
     // TODO test only works with DEFUN'd functions
-    if (fn.astLeaves === undefined) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+    if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
 
     if (DBGON) {
         serial.println("[BASIC.BUILTIN.APPLY] applying this function tree...");
@@ -1365,6 +1365,46 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 
     return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
 }},
+"REDUCE" : {f:function(lnum, stmtnum, args) {
+    
+    // TODO find a way to modify the source tree
+    
+    return oneArg(lnum, stmtnum, args, bv => {
+        if (isAST(bv)) {
+            let tree = cloneObject(bv);
+            
+            if (DBGON) {
+                serial.println("[BASIC.BUILTIN.REDUCE] reducing:");
+                serial.println(astToString(tree));
+            }
+            
+            tree = bF._recurseApplyAST(tree, it => {
+                if (DBGON) {
+                    serial.println("[BASIC.BUILTIN.REDUCE] it: "+it);
+                    serial.println(astToString(it));
+                }
+                
+                let r = 6974;//cloneObject(it);
+                if (isAST(it) && literalTypes.includes(it)) {
+                    //r = it.astValue;
+                    //r = 6974;
+                }
+                
+                if (DBGON) {
+                    serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+r);
+                    serial.println(astToString(r));
+                }
+                
+                return r;
+            });
+            
+            return tree;
+        }
+        else {
+            return bv;
+        }
+    });
+}},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
         if (lh != 0 && lh != 1) throw lang.syntaxfehler(line);
@@ -1380,11 +1420,11 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "RESOLVE" : {f:function(lnum, stmtnum, args) {
     if (DBGON) {
         return oneArg(lnum, stmtnum, args, (it) => {
-            if (it.astValue !== undefined) {
+            if (isAST(it)) {
                 println(lnum+" RESOLVE PRINTTREE")
                 println(astToString(it));
                 if (typeof it.astValue == "object") {
-                    if (it.astValue.astValue !== undefined) {
+                    if (isAST(it.astValue)) {
                         println(lnum+" RESOLVE PRINTTREE ASTVALUE PRINTTREE");
                         println(astToString(it.astValue));
                     }
@@ -1929,11 +1969,19 @@ bF._parserElaboration = function(lnum, tokens, states) {
     }
 };
 bF._recurseApplyAST = function(tree, action) {
-    if (tree.astLeaves === undefined || tree.astLeaves[0] === undefined)
+    if (tree.astLeaves[0] === undefined)
         return action(tree);
     else {
-        action(tree);
         tree.astLeaves.forEach(it => bF._recurseApplyAST(it, action))
+        return action(tree);
+    }
+}
+bF._recurseModifyAST = function(tree, action) {
+    if (tree.astLeaves[0] === undefined)
+        return action(tree);
+    else {
+        tree.astLeaves.forEach(it => bF._recurseApplyAST(it, action))
+        return action(tree);
     }
 }
 /** EBNF notation:
@@ -2831,7 +2879,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (DBGON) {
         serial.println("[Parser.PRUNE] pruning following subtree:");
         serial.println(astToString(tree));
-        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+        if (isAST(tree) && isAST(tree.astValue)) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
             serial.println(astToString(tree.astValue));
         }
@@ -2942,7 +2990,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (DBGON) {
         serial.println("[Parser.PRUNE] pruned subtree:");
         serial.println(astToString(tree));
-        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+        if (isAST(tree) && isAST(tree.astValue)) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
             serial.println(astToString(tree.astValue));
         }
@@ -2955,6 +3003,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
 
 // ## USAGE OF lambdaBoundVars IN PARSEMODE ENDS HERE ##
 
+let isAST = (object) => (object === undefined) ? false : object.astLeaves !== undefined
 // @return is defined in BasicAST
 let JStoBASICtype = function(object) {
     if (typeof object === "boolean") return "bool";
@@ -2962,7 +3011,7 @@ let JStoBASICtype = function(object) {
     else if (object.arrName !== undefined) return "internal_arrindexing_lazy";
     else if (object.asgnVarName !== undefined) return "internal_assignment_object";
     else if (object instanceof ForGen || isGenerator(object)) return "generator";
-    else if (object instanceof BasicAST || object.astLeaves !== undefined) return "usrdefun";
+    else if (object instanceof BasicAST || isAST(object)) return "usrdefun";
     else if (Array.isArray(object)) return "array";
     else if (isNumable(object)) return "num";
     else if (typeof object === "string" || object instanceof String) return "string";
@@ -3245,7 +3294,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     else if (syntaxTree.astType == "lit" || literalTypes.includes(syntaxTree.astType)) {
         if (_debugExec) {
             serial.println(recWedge+"literal with astType: "+syntaxTree.astType+", astValue: "+syntaxTree.astValue);
-            if (syntaxTree.astValue.astValue !== undefined) {
+            if (isAST(syntaxTree.astValue)) {
                 serial.println(recWedge+"astValue is a tree, unpacking: \n"+astToString(syntaxTree.astValue));
             }
         }
