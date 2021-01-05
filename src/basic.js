@@ -345,30 +345,9 @@ let curryDefun = function(inputTree, inputValue) {
     // substitute the highest index with given value
     bF._recurseApplyAST(exprTree, it => {
         if (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === highestIndex[1]) {
-            /*if (DBGON) {
-                serial.println("[curryDefun] found defun_args #"+it.astValue);
-                serial.println(astToString(it));
-            }*/
-            
-            // apply arg0 into the tree
             let valueType = JStoBASICtype(value);
-            /*if (valueType === "usrdefun") {
-                it.astLnum = value.astLnum;
-                it.astLeaves = value.astLeaves;
-                it.astSeps = value.astSeps;
-                it.astValue = value.astValue
-                it.astType = value.astType;
-            }
-            else {*/
-                it.astType = valueType
-                it.astValue = value;
-            //}
-            //if (DBGON) serial.println("[curryDefun] applying value "+value);
-
-            /*if (DBGON) {
-                serial.println("[curryDefun] after the task:");
-                serial.println(astToString(it));
-            }*/
+            it.astType = valueType
+            it.astValue = value;
         }
     });
 
@@ -1353,16 +1332,38 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "CLS" : {f:function(lnum, stmtnum, args) {
     con.clear();
 }},
-// synopsis: ([a] ~> b) $ a, returns b
 "$" : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (fn, arg) => {
-        if (JStoBASICtype(fn) != "usrdefun") throw lang.illegalType(lnum, "LH:"+fn);
-        // check arg count for fn
-        let fnArgCount = countArgs(fn);
-        if (fnArgCount != 1) throw lang.badFunctionCallFormat("The function must accept only one parameter but this function wants "+fnArgCount);
-        let thenewfunction = bStatus.getDefunThunk(lnum, stmtnum, fn);
-        return thenewfunction(lnum, stmtnum, [arg]);
-    });
+    let fn = resolve(args[0]);
+    let value = resolve(args[1]); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
+    
+    // TODO test only works with DEFUN'd functions
+    if (fn.astLeaves === undefined) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+
+    if (DBGON) {
+        serial.println("[BASIC.BUILTIN.APPLY] applying this function tree...");
+        serial.println(astToString(fn));
+        serial.println("[BASIC.BUILTIN.APPLY] with this value: "+value);
+        if (value !== undefined)
+            serial.println(Object.entries(value));
+    }
+
+    let valueTree = new BasicAST();
+    valueTree.astLnum = lnum;
+    valueTree.astType = JStoBASICtype(value);
+    valueTree.astValue = value;
+    
+    let newTree = new BasicAST();
+    newTree.astLnum = lnum;
+    newTree.astValue = fn;
+    newTree.astType = "usrdefun";
+    newTree.astLeaves = [valueTree];
+
+    if (DBGON) {
+        serial.println("[BASIC.BUILTIN.APPLY] Here's your applied tree:");
+        serial.println(astToString(newTree));
+    }
+
+    return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
@@ -1494,9 +1495,9 @@ bF._opPrc = {
     "STEP":41,
     "!":50,"~":51, // array CONS and PUSH
     "#":52, // array concat
-    "~<": 100, // curry operator
-    "~>": 101, // closure operator
-    "$": 200, // apply operator
+    "$": 60, // apply operator
+    "~<": 61, // curry operator
+    "~>": 100, // closure operator
     "=":999,
     "IN":1000
 };

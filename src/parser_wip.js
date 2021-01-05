@@ -984,9 +984,10 @@ bF._opPrc = {
     "TO":40,
     "STEP":41,
     "!":50,"~":51, // array CONS and PUSH
-    "#": 52, // array concat
-    "<~": 100, // curry operator
-    "~>": 101, // closure operator
+    "#":52, // array concat
+    "$": 60, // apply operator
+    "~<": 61, // curry operator
+    "~>": 100, // closure operator
     "=":999,
     "IN":1000
 };
@@ -1085,10 +1086,14 @@ let states20 = ["paren","lit","sep","lit","paren","op","lit","paren","paren","li
 let tokens21 = ["[","X","]","~>","FOO","(","[","Y","]","~>","[","K",",","X","]","~>","X","+","K","*","Y",",","ZIP","(","X",")",")"];
 let states21 = ["paren","lit","paren","op","lit","paren","paren","lit","paren","op","paren","lit","sep","lit","paren","op","lit","op","lit","op","lit","sep","lit","paren","lit","paren","paren"];
 
+// S=[X]~>[Y]~>[Z]~>X(Z) $ Y(Z)
+let tokens22 = ["S","=","[","X","]","~>","[","Y","]","~>","[","Z","]","~>","X","(","Z",")","$","Y","(","Z",")"]
+let states22 = ["lit","op","paren","lit","paren","op","paren","lit","paren","op","paren","lit","paren","op","lit","paren","lit","paren","op","lit","paren","lit","paren"]
+
 try  {
     let rawTrees = bF._parseTokens(lnum,
-        tokens2,
-        states2
+        tokens22,
+        states22
     );
     let trees = rawTrees.map(it => bF._pruneTree(lnum, it, 0));
     trees.forEach((t,i) => {
