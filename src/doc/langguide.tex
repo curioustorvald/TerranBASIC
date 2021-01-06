@@ -188,9 +188,9 @@ Ah-ha, take a look at this:
 20 PRINT F(1 TO 10)
 \end{lstlisting}
 
-Here, the global function \code{F} has an internal function for a first parameter of \code{MAP}, which is: \code{[X]$\sim\!>$[X]<=5}
+Here, \code{MAP} inside of the global function \code{F} has an internal function: \code{[X]$\sim\!>$[X]<=5}
 
-Even if the \code{F} and the anonymous function for \code{MAP} uses same parameter name of \code{X}, they're unrelated because two functions are different.
+This function is anonymous: only the \code{MAP} can use it and is not accessible from the other scopes. Even if the \code{F} and the anonymous function use same parameter name of \code{X}, they don't matter because two functions are different.
 
 
 \section[Currying]{Haskell Curry Wants to Know Your Location}
