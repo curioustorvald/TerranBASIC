@@ -11,17 +11,17 @@ BASIC is a \emph{Dynamically Typed Language}, which means variables do not know 
 
 There are six basic types: \emph{number}, \emph{boolean}, \emph{string},  \emph{array}, \emph{generator} and \emph{function}.
 
-\emph{Number} represents real (double-precision floating-point or actually, \emph{rational}) numbers. Operations on numbers follow the same rules of the underlying virtual machine\footnote{if you are not a computer person, disregard}, and such machines must follow the IEEE 754 standard\footnote{ditto.}. 
+\emph{Number}\index{number (type)} represents real (double-precision floating-point or actually, \emph{rational}) numbers. Operations on numbers follow the same rules of the underlying virtual machine\footnote{if you are not a computer person, disregard}, and such machines must follow the IEEE 754 standard\footnote{ditto.}. 
 
-\emph{Boolean} is type of the value that is either \codebf{TRUE} or \codebf{FALSE}. Number \codebf{0} and \codebf{FALSE} make the condition \emph{false}. When used in numeric context, \codebf{FALSE} will be interpreted as 0 and \codebf{TRUE} as 1.
+\emph{Boolean}\index{boolean (type)} is type of the value that is either \codebf{TRUE} or \codebf{FALSE}. Number \codebf{0} and \codebf{FALSE} make the condition \emph{false}. When used in numeric context, \codebf{FALSE} will be interpreted as 0 and \codebf{TRUE} as 1.
 
-\emph{String} represents immutable\footnote{Cannot be altered directly} sequences of bytes.
+\emph{String}\index{string (type)} represents immutable\footnote{Cannot be altered directly} sequences of bytes.
 
-\emph{Array} represents a collection of numbers in one or more dimensions.
+\emph{Array}\index{array (type)} represents a collection of numbers in one or more dimensions.
 
-\emph{Generator} represents a value that automatically counts up/down whenever they have been called in FOR--NEXT loop.
+\emph{Generator}\index{generator (type)} represents a value that automatically counts up/down whenever they have been called in FOR--NEXT loop.
 
-\emph{Functions} are, well\ldots\ functions, especially user-defined ones. Functions are \emph{type} because some built-in functions will actually take \emph{functions} as arguments.
+\emph{Functions}\index{function (type)} are, well\ldots\ functions, especially user-defined ones. Functions are \emph{type} because some built-in functions will actually take \emph{functions} as arguments.
 
 \section{Control Flow}
 

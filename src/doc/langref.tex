@@ -17,15 +17,15 @@ In the descriptions of BASIC syntax, these conventions apply.
 
 \section{Definitions}
 
-A \emph{Program Line} consists of a line number followed by a \emph{Statements}. Program Lines are terminated by a line break or by the end-of-the-file.
+A \emph{Program Line}\index{program line} consists of a line number followed by a \emph{Statements}. Program Lines are terminated by a line break or by the end-of-the-file.
 
-A \emph{Line Number} is an integer within the range of \intrange.
+A \emph{Line Number}\index{line number} is an integer within the range of \intrange.
 
-A \emph{Statement} is special form of code which has special meaning. A program line can be composed of 1 or more statements, separated by colons. For the details of statements available in \tbas , see \ref{statements}.
+A \emph{Statement}\index{statement} is special form of code which has special meaning. A program line can be composed of 1 or more statements, separated by colons. For the details of statements available in \tbas , see \ref{statements}.
 
 \codeline{STATEMENT [: STATEMENT]\ldots}
 
-An \emph{Expression} is rather normal program lines, e.g. mathematical equations and function calles. The expression takes one of the following forms. For the details of functions available in \tbas , see \ref{functions}.
+An \emph{Expression}\index{expression} is rather normal program lines, e.g. mathematical equations and function calles. The expression takes one of the following forms. For the details of functions available in \tbas , see \ref{functions}.
 
 \codeline{VARIABLE\_OR\_FUNCTION}\\
 \codeline{( EXPRESSION )}\\
@@ -35,14 +35,14 @@ An \emph{Expression} is rather normal program lines, e.g. mathematical equations
 \codeline{EXPRESSION BINARY\_OPERATOR EXPRESSION}\\
 \codeline{UNARY\_OPERATOR EXPRESSION}
 
-An \emph{Array} takes following form:
+An \emph{Array}\index{array (syntax)} takes following form:
 
 \codeline{ARRAY\_NAME \textbf{(} EXPRESSION [\textbf{,} EXPRESSION]\ldots\ \textbf{)}}
 
 \section{Literals}
 \subsection{String Literals}
 
-String literals take the following form:
+String literals\index{string literal} take the following form:
 
 \codeline{\textbf{"} [CHARACTERS] \textbf{"}}
 
@@ -52,7 +52,7 @@ To print out graphical letters outside of ASCII-printable, use string concatenat
 
 \subsection{Numeric Literals} 
 
-Numeric literals take one of the following forms:
+Numeric literals\index{numeric literal} take one of the following forms:
 
 \codeline{[\textbf{+}|\textbf{-}][\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots\ [\textbf{.}][\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots}\\
 \codeline{\textbf{0}\{\textbf{x}|\textbf{X}\}[\textbf{0}|\textbf{1}|\textbf{2}|\textbf{3}|\textbf{4}|\textbf{5}|\textbf{6}|\textbf{7}|\textbf{8}|\textbf{9}]\ldots}\\
@@ -62,7 +62,7 @@ Hexadecimal and binary literals are always interpreted as \emph{unsigned} intege
 
 \subsection{Variables} 
 
-Variable names must start with a letter and all characters of the name must be letters \code{A-Z}, figures \code{0-9}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
+Variable\index{variable name} names must start with a letter and all characters of the name must be letters \code{A-Z}, figures \code{0-9}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
 
 Unlike conventional BASIC dialects (especially GW-BASIC), name pool of variables are shared between all the types. For example, if you have a numeric variable \code{A}, and define an array named \code{A} later in the program, the new array will overwrite your numeric \code{A}.
 
@@ -70,7 +70,7 @@ Furthermore, \emph{sigils} are not used in the \tbas\ and attempting to use one 
 
 \subsection{Types}
 
-Types of data recognised by \tbas\ are distinguished by some arcane magic of Javascript auto-casing mumbo-jumbo
+Types\index{types} of data recognised by \tbas\ are distinguished by some arcane magic of Javascript auto-casing mumbo-jumbo
 
 \begin{tabulary}{\textwidth}{rCL}
 Type & Range & Precision \\
@@ -83,7 +83,7 @@ Float & $ \pm 4.9406564584124654 \times 10^{-324} $ -- $ \pm 1.7976931348623157 
 \section{Operators}
 \subsection{Order of Precedence}
 
-The order of precedence of the operators is as shown below, lower numbers means they have higher precedence (more tightly bound)
+The order of precedence\index{operator}\index{order of precedence} of the operators is as shown below, lower numbers means they have higher precedence (more tightly bound)
 
 \begin{longtable}{*{2}{m{\textwidth}}}\hline
 \endfirsthead
@@ -135,7 +135,7 @@ Order & Op & Associativity \\
 
 \subsection{Mathematical Operators}
 
-Mathematical operators operate on expressions that returns numeric value only, except for the \code{+} operator which will take the action of string concatenation if either of the operand is non-numeric.
+Mathematical operators\index{mathematical oprator} operate on expressions that returns numeric value only, except for the \code{+} operator which will take the action of string concatenation if either of the operand is non-numeric.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -169,7 +169,7 @@ $-$ \emph{x} & Unary Minus & Negative value of \emph{x} \\
 
 \subsection{Comparison Operators}
 
-Comparison operator can operate on numeric and string operands. String operands will be automatically converted to numeric value if they can be; if one operand is numeric and other is non-numeric string, the former will be converted to string value.
+Comparison operator\index{comparison operator} can operate on numeric and string operands. String operands will be automatically converted to numeric value if they can be; if one operand is numeric and other is non-numeric string, the former will be converted to string value.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -192,7 +192,7 @@ When comparing strings, the ordering is as follows:
 
 \subsection{Bitwise Operators}
 
-Bitwise operators operate on unsigned integers only. Floating points are truncated\footnote{truncated towards zero} to integers.
+Bitwise operators\index{bitwise operator} operate on unsigned integers only. Floating points are truncated\footnote{truncated towards zero} to integers.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -207,7 +207,7 @@ Code & Operation & Result \\
 
 \subsection{Boolean Operators}
 
-Boolean operators operate on boolean values. If one of the operand is not boolean, it will be cast to appropriate boolean value. See \ref{valuesandtypes} for casting rules.
+Boolean operators\index{boolean operator} operate on boolean values. If one of the operand is not boolean, it will be cast to appropriate boolean value. See \ref{valuesandtypes} for casting rules.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -219,7 +219,7 @@ Code & Operation & Result \\
 
 \subsection{Generator Operators}
 
-Generator operators operate on numeric values and generators to create and modify a generator.
+Generator operators\index{generator} operate on numeric values and generators to create and modify a generator.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Result \\
@@ -230,7 +230,7 @@ Code & Result \\
 
 \subsection{Array Operators}
 
-Array operators operate on arrays and numeric values.
+Array operators\index{array operator} operate on arrays and numeric values.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -240,11 +240,11 @@ Code & Operation & Result \\
 \emph{x} $\#$ \emph{y} & Concat & Concatenates two arrays \\
 \end{tabulary}
 
-Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
+\index{cons (operator)}\index{$!$}\index{push (operator)}\index{$\sim$}\index{concat (operator)}\index{$\#$}Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
 
 \subsection{Function Operators}
 
-Function operators operate on functions and some values.
+Function operators\index{function operators} operate on functions and some values.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -255,19 +255,19 @@ Code & Operation & Result \\
 {[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
 \end{tabulary}
 
-\emph{Currying} %
+\emph{Currying}\index{curry (operator)}\index{\basiccurry} %
 %\footnote{\emph{Partial Application} ought to be more appropriate for this operator, but \emph{Partial Application} and \emph{Application} sound very much alike}
 is an operation which returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
 
-\emph{Applying} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
+\emph{Applying}\index{apply (operator)}\index{\$} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
 
-Function \emph{Compo}sition is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
+Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
-\emph{Closure} defines anonymous function with given parameters and the expression, and returns the function.
+\emph{Closure}\index{closure} defines anonymous function with given parameters and the expression, and returns the function.
 
 \section{Constants}
 
-Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.
+Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{NIL}\index{PI}\index{TAU}\index{EULER}
 
 \begin{tabulary}{\textwidth}{rllL}
 Name & Type & Value & Description \\

@@ -38,6 +38,8 @@ src/doc/*.log
 src/doc/*.out
 src/doc/*.pdf
 src/doc/*.toc
+src/doc/*.idx
+src/doc/*.bib
 
 # Release work directory
 release/*
