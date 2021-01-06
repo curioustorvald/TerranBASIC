@@ -107,22 +107,23 @@ Order & Op & Associativity \\
 9 & \condensedfont{MIN}\quad\condensedfont{MAX} & Left \\
 10 & \condensedfont{BAND} & Left \\
 11 & \condensedfont{BXOR} & Left \\
-%\ & \ & \ \\
+12 & \condensedfont{BOR} & Left \\
 \end{tabulary}
 \begin{tabulary}{\textwidth}{cCc}
 Order & Op & Associativity \\
 \hline
-12 & \condensedfont{BOR} & Left \\
 13 & \condensedfont{AND} & Left \\
 14 & \condensedfont{OR} & Left \\
 15 & \condensedfont{TO}\quad\condensedfont{STEP} & Left \\
 16 & ! & Right \\
 17 & \sim & Left\\
 18 & \# & Left \\
-19 & \basiccurry & Left \\
-20 & \$ & Right \\
-21 & \basicclosure & Right \\
-22 & = & Right \\
+19 & \basiccompo & Right \\
+20 & \basiccurry & Left \\
+21 & \$ & Right \\
+22 & \basicclosure & Right \\
+23 & $=$ & Right \\
+\ & \ & \ \\
 \end{tabulary}
 \end{longtable}
 
@@ -250,12 +251,17 @@ Code & Operation & Result \\
 \hline
 \emph{f} \basiccurry\ \emph{x} & Curry & Partially apply \emph{x} into the first parameter of the function \emph{f} and returns the resulting function \\
 \emph{f} \$ \emph{x} & Apply & Evaluates single-parameter function $ f(x) $ and returns the value \\
+\emph{f} \basiccompo\ \emph{g} & Compo & Creates a new function $ f \circ g $  where function \emph{g} is pipelined onto the function \emph{f} \\
 {[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
 \end{tabulary}
 
-\emph{Currying}\footnote{\emph{Partial Application} ought to be more appropriate for this operator, but \emph{Partial Application} and \emph{Application} sound very much alike} is an operation which returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
+\emph{Currying} %
+%\footnote{\emph{Partial Application} ought to be more appropriate for this operator, but \emph{Partial Application} and \emph{Application} sound very much alike}
+is an operation which returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
 
 \emph{Applying} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
+
+Function \emph{Compo}sition is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
 \emph{Closure} defines anonymous function with given parameters and the expression, and returns the function.
 

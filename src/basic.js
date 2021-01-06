@@ -83,8 +83,8 @@ let lang = {};
 lang.badNumberFormat = Error("Illegal number format");
 lang.badOperatorFormat = Error("Illegal operator format");
 lang.divByZero = Error("Division by zero");
-lang.badFunctionCallFormat = function(reason) {
-    return Error("Illegal function call" + ((reason) ? ": "+reason : ""));
+lang.badFunctionCallFormat = function(line, reason) {
+    return Error("Illegal function call" + ((line) ? " in "+line : "") + ((reason) ? ": "+reason : ""));
 };
 lang.unmatchedBrackets = Error("Unmatched brackets");
 lang.missingOperand = Error("Missing operand");
@@ -792,7 +792,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "^" : {f:function(lnum, stmtnum, args) {
     return twoArgNum(lnum, stmtnum, args, (lh,rh) => {
         let r = Math.pow(lh, rh);
-        if (isNaN(r)) throw lang.badFunctionCallFormat();
+        if (isNaN(r)) throw lang.badFunctionCallFormat(lnum);
         if (!isFinite(r)) throw lang.divByZero;
         return r;
     });
@@ -1193,7 +1193,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "MAP" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (fn, functor) => {
         // TODO test only works with DEFUN'd functions
-        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
         if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, "not a mappable type: "+functor+((typeof functor == "object") ? Object.entries(functor) : ""));
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
@@ -1207,7 +1207,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "FOLD" : {f:function(lnum, stmtnum, args) {
     return threeArg(lnum, stmtnum, args, (fn, init, functor) => {
         // TODO test only works with DEFUN'd functions
-        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
         if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, `not a mappable type '${Object.entries(args[2])}': `+functor+((typeof functor == "object") ? Object.entries(functor) : ""));
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
@@ -1225,7 +1225,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "FILTER" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (fn, functor) => {
         // TODO test only works with DEFUN'd functions
-        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
         if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, `not a mappable type '${Object.entries(args[1])}': `+functor+((typeof functor == "object") ? Object.entries(functor) : (typeof functor)));
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
@@ -1255,7 +1255,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     let jmpTarget = args[testvalue];
 
     if (jmpFun !== "GOTO" && jmpFun !== "GOSUB")
-        throw lang.badFunctionCallFormat(`Not a jump statement: ${jmpFun}`)
+        throw lang.badFunctionCallFormat(lnum, `Not a jump statement: ${jmpFun}`)
 
     if (jmpTarget === undefined)
         return undefined;
@@ -1279,7 +1279,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "~<" : {f:function(lnum, stmtnum, args) { // CURRY operator
     return twoArg(lnum, stmtnum, args, (fn, value) => {
         // TODO test only works with DEFUN'd functions
-        if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
 
         if (DBGON) {
             serial.println("[BASIC.BUILTIN.CURRY] currying this function tree...");
@@ -1343,7 +1343,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     let value = resolve(args[1]); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
     
     // TODO test only works with DEFUN'd functions
-    if (!isAST(fn)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+    if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
 
     if (DBGON) {
         serial.println("[BASIC.BUILTIN.APPLY] applying this function tree...");
@@ -1372,95 +1372,53 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
 }},
 "REDUCE" : {f:function(lnum, stmtnum, args) {
-    return oneArg(lnum, stmtnum, args, bv => {
-        if (isAST(bv)) {
-            let tree = cloneObject(bv);
-            
-            if (DBGON) {
-                serial.println("[BASIC.BUILTIN.REDUCE] reducing:");
-                serial.println(astToString(tree));
-                /*if (tree.astType == "usrdefun") {
-                    serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
-                    serial.println(astToString(tree.astValue));
-                }*/
-            }
-            
-            let recurse = function(tree) {
-                bF._recurseApplyAST(tree, it => {
-                    if (DBGON) {
-                        serial.println("[BASIC.BUILTIN.REDUCE] it: "+it);
-                        serial.println(astToString(it));
-                        /*if (it.astType == "usrdefun") {
-                            serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
-                            serial.println(astToString(it.astValue));
-                        }*/
-                    }
-                    
-                    let r = cloneObject(it);
-                    if (isAST(it.astValue)) {
-                        r.astValue = recurse(it.astValue);
-                    }
-                    else if (isAST(it) && literalTypes.includes(it.astType)) {
-                        r = it.astValue;
-                    }
-                    
-                    if (DBGON) {
-                        serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+r);
-                        serial.println(astToString(r));
-                    }
-                    
-                    return r;
+    if (DBGON) { // NOT ready for production
+        return oneArg(lnum, stmtnum, args, bv => {
+            if (isAST(bv)) {            
+                if (DBGON) {
+                    serial.println("[BASIC.BUILTIN.REDUCE] reducing:");
+                    serial.println(astToString(bv));
+                    /*if (tree.astType == "usrdefun") {
+                        serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
+                        serial.println(astToString(tree.astValue));
+                    }*/
+                }
+                
+                return bF._uncapAST(bv, it => {
+                    return (isAST(it) && literalTypes.includes(it.astType)) ? it.astValue : it;
                 });
             }
-            
-            recurse(tree);
-            
-            return tree;
-        }
-        else {
-            return bv;
-        }
-    });
-}},
-"." : {f:function(lnum, stmtnum, args) {
-    let t = cloneObject(resolve(args[0]));
-    let s = cloneObject(resolve(args[1])); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
-    
-    // t and s now have uncapsulated function trees
-    /*
-[funcomp] t:
-+ 10: "*" (astType:op); leaves: 2
-| d 10: "0,0" (astType:defun_args); leaves: 0
-| `----------------------
-| d 10: "0,0" (astType:defun_args); leaves: 0
-| `----------------------
-`----------------------
-
-[funcomp] s:
-+ 20: "*" (astType:op); leaves: 2
-| d 20: "0,0" (astType:defun_args); leaves: 0
-| `----------------------
-| $ 20: "2" (astType:num); leaves: 0
-| `----------------------
-`----------------------
-     */
-    // t . undefined must return just t
-    if (s==undefined) return t;
-    if (!isAST(s)) throw lang.badFunctionCallFormat("Right-hand side is not a function");
-    // TODO test only works with DEFUN'd functions
-    if (!isAST(t)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
-    
-    return;/////////////////////////////////////
-    
-    let recurse = function(tree) {
-        return bF._recurseApplyAST(tree, it => {
-            let r = cloneObject(it);
-            
-            //if (
-            
-            return r;
+            else {
+                return bv;
+            }
         });
     }
+    else {
+        throw lang.syntaxfehler(lnum);
+    }
+}},
+"." : {f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (fn, value) => {
+        // TODO test only works with DEFUN'd functions
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
+        if (!isAST(value)) throw lang.badFunctionCallFormat(lnum, "Right-hand parameter is not a DEFUN'd function");
+                  
+        if (DBGON) {
+            serial.println("[BASIC.BUILTIN.COMPO] pipelining this function tree...");
+            serial.println(astToString(fn));
+            serial.println("[BASIC.BUILTIN.COMPO] with this function: "+value);
+            serial.println(Object.entries(value));
+        }
+
+        let curriedTree = curryDefun(fn, value);
+
+        if (DBGON) {
+            serial.println("[BASIC.BUILTIN.COMPO] Here's your composit function:");
+            serial.println(astToString(curriedTree));
+        }
+
+        return curriedTree;
+    });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
@@ -1530,7 +1488,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 };
 Object.freeze(bStatus.builtin);
 let bF = {};
-bF._1os = {"!":1,"~":1,"#":1,"<":1,"=":1,">":1,"*":1,"+":1,"-":1,"/":1,"^":1,":":1,"$":1};
+bF._1os = {"!":1,"~":1,"#":1,"<":1,"=":1,">":1,"*":1,"+":1,"-":1,"/":1,"^":1,":":1,"$":1,".":1};
 bF._2os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1};
 bF._3os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1}
 bF._uos = {"+":1,"-":1,"NOT":1,"BNOT":1};
@@ -1592,7 +1550,8 @@ bF._opPrc = {
     "STEP":41,
     "!":50,"~":51, // array CONS and PUSH
     "#":52, // array concat
-    "~<": 60, // curry operator
+    ".": 60, // compo operator
+    "~<": 61, // curry operator
     "$": 70, // apply operator
     "~>": 100, // closure operator
     "=":999,
@@ -2031,20 +1990,20 @@ bF._parserElaboration = function(lnum, tokens, states) {
  * To NOT modify the tree, make sure you're not modifying any properties of the object */
 bF._recurseApplyAST = function(tree, action) {
     if (tree.astLeaves !== undefined && tree.astLeaves[0] === undefined) {
-        if (DBGON) {
+        /*if (DBGON) {
             serial.println(`RECURSE astleaf`);
             serial.println(astToString(tree));
-        }
+        }*/
         
         return action(tree) || tree;
     }
     else {
         let newLeaves = tree.astLeaves.map(it => bF._recurseApplyAST(it, action))
         
-        if (DBGON) {
+        /*if (DBGON) {
             serial.println(`RECURSE ast`);
             serial.println(astToString(tree));
-        }
+        }*/
         
         let newTree = action(tree);
         
@@ -2059,6 +2018,26 @@ bF._recurseApplyAST = function(tree, action) {
             }
         }
     }
+}
+/**
+ * Returns a copy of BasicAST where its 'capsulated' trees are fully uncapsulated.
+ */
+bF._uncapAST = function(tree, action) {
+    let expr = cloneObject(tree);
+    bF._recurseApplyAST(expr, it => {
+        if (isAST(it.astValue)) {
+            let capTree = bF._uncapAST(it.astValue, action);
+            it.astLnum = capTree.astLnum;
+            it.astValue = capTree.astValue;
+            it.astSeps = capTree.astSeps;
+            it.astType = capTree.astType;
+            it.astLeaves = capTree.astLeaves;
+        }
+        
+        return action(it);
+    });
+    action(expr);
+    return expr;
 }
 /** EBNF notation:
 (* quick reference to EBNF *)
@@ -3273,7 +3252,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             }
         }
         else if ("ON" == funcName) {
-            if (syntaxTree.astLeaves.length < 3) throw lang.badFunctionCallFormat();
+            if (syntaxTree.astLeaves.length < 3) throw lang.badFunctionCallFormat(lnum);
 
             let testValue = bF._executeSyntaxTree(lnum, stmtnum, syntaxTree.astLeaves[0], recDepth + 1);
             let functionName = syntaxTree.astLeaves[1].astValue;

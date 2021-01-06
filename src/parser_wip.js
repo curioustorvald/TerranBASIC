@@ -33,20 +33,20 @@ bF.parserPrintdbgline = function(icon, msg, lnum, recDepth) {
  * To NOT modify the tree, make sure you're not modifying any properties of the object */
 bF._recurseApplyAST = function(tree, action) {
     if (tree.astLeaves !== undefined && tree.astLeaves[0] === undefined) {
-        if (DBGON) {
+        /*if (DBGON) {
             serial.println(`RECURSE astleaf`);
             serial.println(astToString(tree));
-        }
+        }*/
         
         return action(tree) || tree;
     }
     else {
         let newLeaves = tree.astLeaves.map(it => bF._recurseApplyAST(it, action))
         
-        if (DBGON) {
+        /*if (DBGON) {
             serial.println(`RECURSE ast`);
             serial.println(astToString(tree));
-        }
+        }*/
         
         let newTree = action(tree);
         
@@ -1017,13 +1017,14 @@ bF._opPrc = {
     "STEP":41,
     "!":50,"~":51, // array CONS and PUSH
     "#":52, // array concat
-    "$": 60, // apply operator
+    ".": 60, // compo operator
     "~<": 61, // curry operator
+    "$": 70, // apply operator
     "~>": 100, // closure operator
     "=":999,
     "IN":1000
 };
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"<~":1,"~>":1};
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1}; // ~< and ~> cannot have same associativity
 let bStatus = {};
 bStatus.builtin = {};
 ["PRINT","NEXT","SPC","CHR","ROUND","SQR","RND","GOTO","GOSUB","DEFUN","FOR","MAP"].forEach(w=>{ bStatus.builtin[w] = 1 });
