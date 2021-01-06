@@ -240,7 +240,7 @@ Code & Operation & Result \\
 \emph{x} \basicconcat\ \emph{y} & Concat & Concatenates two arrays \\
 \end{tabulary}
 
-\index{cons (operator)}\index{\basiccons}\index{push (operator)}\index{\basicpush}\index{concat (operator)}\index{\basicconcat}Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
+\index{cons (operator)}\index{\basiccons\,}\index{push (operator)}\index{\basicpush}\index{concat (operator)}\index{\basicconcat}Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
 
 \subsection{Function Operators}
 
@@ -251,7 +251,7 @@ Code & Operation & Result \\
 \hline
 \emph{f} \basiccurry\ \emph{x} & Curry & Partially apply \emph{x} into the first parameter of the function \emph{f} and returns the resulting function \\
 \emph{f} \basicapply\ \emph{x} & Apply & Evaluates single-parameter function $ f(x) $ and returns the value \\
-\emph{f} \basiccompo\ \emph{g} & Compo & Creates a new function $ f \circ g $  where function \emph{g} is pipelined onto the function \emph{f} \\
+\emph{f} \basiccompo\ \emph{g} & Compo & Creates a new function $ f \circ g $  where function \emph{g} is pipelined into the function \emph{f} \\
 {[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
 \end{tabulary}
 
@@ -261,7 +261,7 @@ is an operation which returns new function that has given value applied to the o
 
 \emph{Applying}\index{apply (operator)}\index{\basicapply} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
 
-Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
+Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo\,} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
 \emph{Closure}\index{closure}\index{\basicclosure} defines anonymous function with given parameters and the expression, and returns the function.
 
