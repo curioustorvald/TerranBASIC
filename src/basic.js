@@ -1342,21 +1342,19 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     let fn = resolve(args[0]);
     let value = resolve(args[1]); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
     
-    // TODO test only works with DEFUN'd functions
-    if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
-
     if (DBGON) {
-        serial.println("[BASIC.BUILTIN.APPLY] applying this function tree...");
+        serial.println("[BASIC.BUILTIN.APPLY] applying this function tree... "+fn);
         serial.println(astToString(fn));
         serial.println("[BASIC.BUILTIN.APPLY] with this value: "+value);
         if (value !== undefined)
             serial.println(Object.entries(value));
     }
-
+    
     let valueTree = new BasicAST();
     valueTree.astLnum = lnum;
     valueTree.astType = JStoBASICtype(value);
     valueTree.astValue = value;
+    
     
     let newTree = new BasicAST();
     newTree.astLnum = lnum;
@@ -1368,7 +1366,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         serial.println("[BASIC.BUILTIN.APPLY] Here's your applied tree:");
         serial.println(astToString(newTree));
     }
-
+    
     return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
 }},
 "REDUCE" : {f:function(lnum, stmtnum, args) {
@@ -1384,9 +1382,23 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
                     }*/
                 }
                 
-                return bF._uncapAST(bv, it => {
-                    return (isAST(it) && literalTypes.includes(it.astType)) ? it.astValue : it;
+                let reduced = bF._uncapAST(bv, it => {
+                    // TODO beta-eta reduction
+                    return it;
                 });
+                
+                if (DBGON) {
+                    serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+reduced);
+                    serial.println(astToString(reduced));
+                }
+                
+                // re-wrap because tree-executor wants encapsulated function
+                let newTree = new BasicAST();
+                newTree.astLnum = lnum;
+                newTree.astType = JStoBASICtype(reduced);
+                newTree.astValue = reduced;
+                
+                return newTree;
             }
             else {
                 return bv;
