@@ -35,6 +35,7 @@
 \usepackage[pdf]{graphviz}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{makeidx}
 
 \usepackage{lineno} % debug
 
@@ -64,9 +65,13 @@
 
 %% BASIC operators %%
 \newcommand\basicexp{\raisebox{0.25ex}{\scriptsize\wedge}}
+\newcommand\basiccons{$!$}
+\newcommand\basicpush{$\sim$}
+\newcommand\basicconcat{$\#$}
 \newcommand\basiccurry{$\sim\!<$}
 \newcommand\basicclosure{$\sim\!>$}
 \newcommand\basiccompo{{\LARGE\raisebox{0.03ex}{.}}}
+\newcommand\basicapply{\$}
 
 % Title styling
 \pretitle{\begin{flushright}}
@@ -259,9 +264,6 @@
 Level of humour used on this document is \emph{super-corny}. Do not use this atrocious humour for a purpose of real-world entertainment; we take no responsibility of the consequences---losing your friends, get shunned by people, etc.
 }
 
-\chapter{Index}
-\printindex
-
 \chapter{Copyright}
 
 The source code for \tbas\ and this documentation are distributed under the following terms:
@@ -285,6 +287,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+\printindex
 
 \afterpage{\pagestyle{empty}\null\newpage}
 

@@ -39,6 +39,8 @@ src/doc/*.out
 src/doc/*.pdf
 src/doc/*.toc
 src/doc/*.idx
+src/doc/*.ind
+src/doc/*.ilg
 src/doc/*.bib
 
 # Release work directory

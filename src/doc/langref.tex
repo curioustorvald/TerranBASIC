@@ -115,12 +115,12 @@ Order & Op & Associativity \\
 13 & \condensedfont{AND} & Left \\
 14 & \condensedfont{OR} & Left \\
 15 & \condensedfont{TO}\quad\condensedfont{STEP} & Left \\
-16 & ! & Right \\
-17 & \sim & Left\\
-18 & \# & Left \\
+16 & \basiccons & Right \\
+17 & \basicpush & Left\\
+18 & \basicconcat & Left \\
 19 & \basiccompo & Right \\
 20 & \basiccurry & Left \\
-21 & \$ & Right \\
+21 & \basicapply & Right \\
 22 & \basicclosure & Right \\
 23 & $=$ & Right \\
 \ & \ & \ \\
@@ -235,12 +235,12 @@ Array operators\index{array operator} operate on arrays and numeric values.
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
 \hline
-\emph{x} $!$ \emph{y} & Cons & Prepends a value of \emph{x} into an array of \emph{y} \\
-\emph{x} $\sim$ \emph{y} & Push & Appends a value of \emph{y} into an array of \emph{x} \\
-\emph{x} $\#$ \emph{y} & Concat & Concatenates two arrays \\
+\emph{x} \basiccons\ \emph{y} & Cons & Prepends a value of \emph{x} into an array of \emph{y} \\
+\emph{x} \basicpush\ \emph{y} & Push & Appends a value of \emph{y} into an array of \emph{x} \\
+\emph{x} \basicconcat\ \emph{y} & Concat & Concatenates two arrays \\
 \end{tabulary}
 
-\index{cons (operator)}\index{$!$}\index{push (operator)}\index{$\sim$}\index{concat (operator)}\index{$\#$}Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
+\index{cons (operator)}\index{\basiccons}\index{push (operator)}\index{\basicpush}\index{concat (operator)}\index{\basicconcat}Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
 
 \subsection{Function Operators}
 
@@ -250,7 +250,7 @@ Function operators\index{function operators} operate on functions and some value
 Code & Operation & Result \\
 \hline
 \emph{f} \basiccurry\ \emph{x} & Curry & Partially apply \emph{x} into the first parameter of the function \emph{f} and returns the resulting function \\
-\emph{f} \$ \emph{x} & Apply & Evaluates single-parameter function $ f(x) $ and returns the value \\
+\emph{f} \basicapply\ \emph{x} & Apply & Evaluates single-parameter function $ f(x) $ and returns the value \\
 \emph{f} \basiccompo\ \emph{g} & Compo & Creates a new function $ f \circ g $  where function \emph{g} is pipelined onto the function \emph{f} \\
 {[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
 \end{tabulary}
@@ -259,11 +259,11 @@ Code & Operation & Result \\
 %\footnote{\emph{Partial Application} ought to be more appropriate for this operator, but \emph{Partial Application} and \emph{Application} sound very much alike}
 is an operation which returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
 
-\emph{Applying}\index{apply (operator)}\index{\$} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
+\emph{Applying}\index{apply (operator)}\index{\basicapply} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
 
 Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
-\emph{Closure}\index{closure} defines anonymous function with given parameters and the expression, and returns the function.
+\emph{Closure}\index{closure}\index{\basicclosure} defines anonymous function with given parameters and the expression, and returns the function.
 
 \section{Constants}
 
