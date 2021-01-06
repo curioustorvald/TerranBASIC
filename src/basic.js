@@ -342,13 +342,19 @@ let curryDefun = function(inputTree, inputValue) {
         serial.println("[curryDefun] highest index to curry: "+highestIndex);
     }
     
+    let substitution = new BasicAST();
+    if (isAST(value)) {
+        substitution = value;
+    }
+    else {
+        substitution.astLnum = "??";
+        substitution.astType = JStoBASICtype(value);
+        substitution.astValue = value;
+    }
+    
     // substitute the highest index with given value
     bF._recurseApplyAST(exprTree, it => {
-        if (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === highestIndex[1]) {
-            let valueType = JStoBASICtype(value);
-            it.astType = valueType
-            it.astValue = value;
-        }
+        return (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === highestIndex[1]) ? substitution : it
     });
 
     return exprTree;
@@ -1366,9 +1372,6 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
 }},
 "REDUCE" : {f:function(lnum, stmtnum, args) {
-    
-    // TODO find a way to modify the source tree
-    
     return oneArg(lnum, stmtnum, args, bv => {
         if (isAST(bv)) {
             let tree = cloneObject(bv);
@@ -1376,26 +1379,41 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             if (DBGON) {
                 serial.println("[BASIC.BUILTIN.REDUCE] reducing:");
                 serial.println(astToString(tree));
+                /*if (tree.astType == "usrdefun") {
+                    serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
+                    serial.println(astToString(tree.astValue));
+                }*/
             }
             
-            tree = bF._recurseApplyAST(tree, it => {
-                if (DBGON) {
-                    serial.println("[BASIC.BUILTIN.REDUCE] it: "+it);
-                    serial.println(astToString(it));
-                }
-                
-                let r = cloneObject(it);
-                if (isAST(it) && literalTypes.includes(it.astType)) {
-                    r = it.astValue;
-                }
-                
-                if (DBGON) {
-                    serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+r);
-                    serial.println(astToString(r));
-                }
-                
-                return r;
-            });
+            let recurse = function(tree) {
+                bF._recurseApplyAST(tree, it => {
+                    if (DBGON) {
+                        serial.println("[BASIC.BUILTIN.REDUCE] it: "+it);
+                        serial.println(astToString(it));
+                        /*if (it.astType == "usrdefun") {
+                            serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
+                            serial.println(astToString(it.astValue));
+                        }*/
+                    }
+                    
+                    let r = cloneObject(it);
+                    if (isAST(it.astValue)) {
+                        r.astValue = recurse(it.astValue);
+                    }
+                    else if (isAST(it) && literalTypes.includes(it.astType)) {
+                        r = it.astValue;
+                    }
+                    
+                    if (DBGON) {
+                        serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+r);
+                        serial.println(astToString(r));
+                    }
+                    
+                    return r;
+                });
+            }
+            
+            recurse(tree);
             
             return tree;
         }
@@ -1403,6 +1421,46 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             return bv;
         }
     });
+}},
+"." : {f:function(lnum, stmtnum, args) {
+    let t = cloneObject(resolve(args[0]));
+    let s = cloneObject(resolve(args[1])); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
+    
+    // t and s now have uncapsulated function trees
+    /*
+[funcomp] t:
++ 10: "*" (astType:op); leaves: 2
+| d 10: "0,0" (astType:defun_args); leaves: 0
+| `----------------------
+| d 10: "0,0" (astType:defun_args); leaves: 0
+| `----------------------
+`----------------------
+
+[funcomp] s:
++ 20: "*" (astType:op); leaves: 2
+| d 20: "0,0" (astType:defun_args); leaves: 0
+| `----------------------
+| $ 20: "2" (astType:num); leaves: 0
+| `----------------------
+`----------------------
+     */
+    // t . undefined must return just t
+    if (s==undefined) return t;
+    if (!isAST(s)) throw lang.badFunctionCallFormat("Right-hand side is not a function");
+    // TODO test only works with DEFUN'd functions
+    if (!isAST(t)) throw lang.badFunctionCallFormat("Only works with DEFUN'd functions yet");
+    
+    return;/////////////////////////////////////
+    
+    let recurse = function(tree) {
+        return bF._recurseApplyAST(tree, it => {
+            let r = cloneObject(it);
+            
+            //if (
+            
+            return r;
+        });
+    }
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
@@ -1534,13 +1592,13 @@ bF._opPrc = {
     "STEP":41,
     "!":50,"~":51, // array CONS and PUSH
     "#":52, // array concat
-    "$": 60, // apply operator
-    "~<": 61, // curry operator
+    "~<": 60, // curry operator
+    "$": 70, // apply operator
     "~>": 100, // closure operator
     "=":999,
     "IN":1000
 };
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1}; // ~< and ~> cannot have same associativity
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {
     var _debugprintStateTransition = false;
@@ -1967,20 +2025,39 @@ bF._parserElaboration = function(lnum, tokens, states) {
         k += 1;
     }
 };
+/**
+ * Destructively transforms an AST (won't unpack capsulated trees by default)
+ * 
+ * To NOT modify the tree, make sure you're not modifying any properties of the object */
 bF._recurseApplyAST = function(tree, action) {
-    if (tree.astLeaves[0] === undefined)
-        return action(tree);
-    else {
-        tree.astLeaves.forEach(it => bF._recurseApplyAST(it, action))
-        return action(tree);
+    if (tree.astLeaves !== undefined && tree.astLeaves[0] === undefined) {
+        if (DBGON) {
+            serial.println(`RECURSE astleaf`);
+            serial.println(astToString(tree));
+        }
+        
+        return action(tree) || tree;
     }
-}
-bF._recurseModifyAST = function(tree, action) {
-    if (tree.astLeaves[0] === undefined)
-        return action(tree);
     else {
-        tree.astLeaves.forEach(it => bF._recurseApplyAST(it, action))
-        return action(tree);
+        let newLeaves = tree.astLeaves.map(it => bF._recurseApplyAST(it, action))
+        
+        if (DBGON) {
+            serial.println(`RECURSE ast`);
+            serial.println(astToString(tree));
+        }
+        
+        let newTree = action(tree);
+        
+        if (newTree !== undefined) {
+            tree.astLnum = newTree.astLnum;
+            tree.astValue = newTree.astValue;
+            tree.astSeps = newTree.astSeps;
+            tree.astType = newTree.astType;
+            // weave astLeaves
+            for (let k = 0; k < tree.astLeaves.length; k++) {
+                if (newLeaves[k] !== undefined) tree.astLeaves[k] = newLeaves[k];
+            }
+        }
     }
 }
 /** EBNF notation:
@@ -2876,7 +2953,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (tree === undefined) return;
     
     if (DBGON) {
-        serial.println("[Parser.PRUNE] pruning following subtree:");
+        serial.println("[Parser.PRUNE] pruning following subtree, lambdaBoundVars = "+theLambdaBoundVars());
         serial.println(astToString(tree));
         if (isAST(tree) && isAST(tree.astValue)) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
@@ -2905,7 +2982,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         lambdaBoundVars.unshift(vars);
         
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
+            serial.println("[Parser.PRUNE.~>] added new bound variables: "+theLambdaBoundVars());
         }
     }
     // simplify UNARYMINUS(num) to -num
@@ -2940,15 +3017,20 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         // test print new tree
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
+            serial.println("[Parser.PRUNE.~>] closure bound variables: "+theLambdaBoundVars());
         }
         
         // rename the parameters
         bF._recurseApplyAST(exprTree, (it) => {
-            if (it.astType == "lit" || it.astType == "function") {
+            if (it.astType == "lit" || it.astType == "function") {                
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
                 try {
+                    if (DBGON) {
+                        serial.println(`index for ${it.astValue}: ${bF._findDeBruijnIndex(it.astValue)}`)
+                    }
+                    
+                    
                     it.astValue = bF._findDeBruijnIndex(it.astValue);
                     it.astType = "defun_args";
                 }

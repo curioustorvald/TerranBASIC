@@ -27,12 +27,39 @@ bF.parserPrintdbgline = function(icon, msg, lnum, recDepth) {
     let treeHead = "|  ".repeat(recDepth);
     bF.parserPrintdbg(`${icon}${lnum} ${treeHead}${msg}`);
 }
+/**
+ * Destructively transforms an AST (won't unpack capsulated trees by default)
+ * 
+ * To NOT modify the tree, make sure you're not modifying any properties of the object */
 bF._recurseApplyAST = function(tree, action) {
-    if (tree.astLeaves === undefined || tree.astLeaves[0] === undefined)
-        return action(tree);
+    if (tree.astLeaves !== undefined && tree.astLeaves[0] === undefined) {
+        if (DBGON) {
+            serial.println(`RECURSE astleaf`);
+            serial.println(astToString(tree));
+        }
+        
+        return action(tree) || tree;
+    }
     else {
-        action(tree);
-        tree.astLeaves.forEach(it => bF._recurseApplyAST(it, action))
+        let newLeaves = tree.astLeaves.map(it => bF._recurseApplyAST(it, action))
+        
+        if (DBGON) {
+            serial.println(`RECURSE ast`);
+            serial.println(astToString(tree));
+        }
+        
+        let newTree = action(tree);
+        
+        if (newTree !== undefined) {
+            tree.astLnum = newTree.astLnum;
+            tree.astValue = newTree.astValue;
+            tree.astSeps = newTree.astSeps;
+            tree.astType = newTree.astType;
+            // weave astLeaves
+            for (let k = 0; k < tree.astLeaves.length; k++) {
+                if (newLeaves[k] !== undefined) tree.astLeaves[k] = newLeaves[k];
+            }
+        }
     }
 }
 let lang = {};
@@ -800,13 +827,13 @@ bF._findDeBruijnIndex = function(varname) {
 /**
  * @return: BasicAST
  */
-bF._pruneTree = function(lnum, tree, recDepth) {
+bF._pruneTree = function(lnum, tree, recDepth) {    
     if (tree === undefined) return;
-
+    
     if (DBGON) {
-        serial.println("[Parser.PRUNE] pruning following subtree:");
+        serial.println("[Parser.PRUNE] pruning following subtree, lambdaBoundVars = "+theLambdaBoundVars());
         serial.println(astToString(tree));
-        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+        if (isAST(tree) && isAST(tree.astValue)) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
             serial.println(astToString(tree.astValue));
         }
@@ -833,7 +860,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         lambdaBoundVars.unshift(vars);
         
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
+            serial.println("[Parser.PRUNE.~>] added new bound variables: "+theLambdaBoundVars());
         }
     }
     // simplify UNARYMINUS(num) to -num
@@ -868,15 +895,20 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         // test print new tree
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
+            serial.println("[Parser.PRUNE.~>] closure bound variables: "+theLambdaBoundVars());
         }
         
         // rename the parameters
         bF._recurseApplyAST(exprTree, (it) => {
-            if (it.astType == "lit" || it.astType == "function") {
+            if (it.astType == "lit" || it.astType == "function") {                
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
                 try {
+                    if (DBGON) {
+                        serial.println(`index for ${it.astValue}: ${bF._findDeBruijnIndex(it.astValue)}`)
+                    }
+                    
+                    
                     it.astValue = bF._findDeBruijnIndex(it.astValue);
                     it.astType = "defun_args";
                 }
@@ -917,7 +949,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (DBGON) {
         serial.println("[Parser.PRUNE] pruned subtree:");
         serial.println(astToString(tree));
-        if (tree.astValue !== undefined && tree.astValue.astValue !== undefined) {
+        if (isAST(tree) && isAST(tree.astValue)) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
             serial.println(astToString(tree.astValue));
         }
