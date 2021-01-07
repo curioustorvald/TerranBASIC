@@ -1410,26 +1410,32 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     }
 }},
 "." : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (fn, value) => {
+    return twoArg(lnum, stmtnum, args, (f, g) => {
         // TODO test only works with DEFUN'd functions
-        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
-        if (!isAST(value)) throw lang.badFunctionCallFormat(lnum, "Right-hand parameter is not a DEFUN'd function");
+        if (!isAST(f)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
+        if (!isAST(g)) throw lang.badFunctionCallFormat(lnum, "Right-hand parameter is not a DEFUN'd function");
                   
         if (DBGON) {
-            serial.println("[BASIC.BUILTIN.COMPO] pipelining this function tree...");
-            serial.println(astToString(fn));
-            serial.println("[BASIC.BUILTIN.COMPO] with this function: "+value);
-            serial.println(Object.entries(value));
+            serial.println("[BASIC.BUILTIN.COMPO] pipelining this function...");
+            serial.println(astToString(f));
+            serial.println("[BASIC.BUILTIN.COMPO] after this function...");
+            serial.println(astToString(g));
         }
-
-        let curriedTree = curryDefun(fn, value);
-
-        if (DBGON) {
-            serial.println("[BASIC.BUILTIN.COMPO] Here's your composit function:");
-            serial.println(astToString(curriedTree));
-        }
-
-        return curriedTree;
+        
+        // FIXME
+        
+        let tree2 = new BasicAST();
+        tree2.astLnum = lnum;
+        tree2.astType = "usrdefun";
+        tree2.astValue = g;
+        
+        let tree = new BasicAST();
+        tree.astLnum = lnum;
+        tree.astType = "usrdefun";
+        tree.astValue = f;
+        tree.astLeaves = [tree2];
+        
+        return tree;
     });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
@@ -3123,12 +3129,13 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
         bF._recurseApplyAST(tree, it => {
             
             if (_debugExec) {
+                serial.println(recWedge+`usrdefun${recDepth} dereference bound vars: `+theLambdaBoundVars());
                 serial.println(recWedge+`usrdefun${recDepth} trying to bind some variables to:`);
                 serial.println(astToString(it));
             }
             
             if (it.astType == "defun_args") {
-                let recIndex = it.astValue[0] - recDepth;
+                let recIndex = it.astValue[0];// - recDepth; // FIXME wtf is going on? I think we must get all the de bruijn indexing absolutely correct in the first place and definitely not rely on the recDepth...
                 let varIndex = it.astValue[1];
                 
                 if (_debugExec) {
