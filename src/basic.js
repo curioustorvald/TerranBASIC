@@ -3332,9 +3332,6 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             }
 
             let funcCallResult = func(lnum, stmtnum, args, syntaxTree.astSeps);
-
-            if (funcCallResult instanceof SyntaxTreeReturnObj) return funcCallResult;
-
             let retVal = (funcCallResult instanceof JumpObj) ? funcCallResult.jmpReturningValue : funcCallResult;
 
             let theRealRet = new SyntaxTreeReturnObj(
