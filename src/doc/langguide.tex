@@ -14,6 +14,7 @@ Oh \emph{boy} we just did a computation! It printed out \code{4} which is a corr
 
 \section[GOTO]{GOTO here and there}
 
+\index{GOTO (tutorial)}
 \code{GOTO} is used a lot in BASIC, and so does in \tbas. \code{GOTO} is a simplest method of diverging a program flow: execute only the part of the program conditionally and perform a loop.
 
 Following program attempts to calculate a square root of the input value,  showing how \code{GOTO} can be used in such manner.
@@ -31,6 +32,7 @@ Here, \code{GOTO} in line 50 is used to perform a loop, which keeps looping unti
 
 \section[Subroutine with GOSUB]{What If We Wanted to Go Back?}
 
+\index{GOSUB (tutorial)}
 But \code{GOTO} only jumps, you can't jump \emph{back}. Well, not with that attitute; you \emph{can} go back with \code{GOSUB} and \code{RETURN} statement.
 
 This program will draw a triangle, where the actual drawing part is on line 100--160, and only get jumped into it when needed.
@@ -52,6 +54,7 @@ This program will draw a triangle, where the actual drawing part is on line 100-
 
 \section[FOR--NEXT Loop]{FOR ever loop NEXT}
 
+\index{FOR--NEXT (tutorial)}
 As we've just seen, you can make loops using \code{GOTO}s here and there, but they \emph{totally suck}, too much spaghetti crashes your cerebral cortex faster than \emph{Crash Bandicoot 2}. Fortunately, there's a better way to go about that: the FOR--NEXT loop!
 
 \begin{lstlisting}
@@ -83,6 +86,7 @@ This short program will ask your name, and then it will greet you by the name yo
 
 \section[Function]{Function}
 
+\index{function (tutorial)}
 Consider the following code:
 
 \begin{lstlisting}
@@ -105,6 +109,7 @@ This sample program also shows \code{FOREACH} statement, which is same as \code{
 
 \section[Recursion]{BRB: Bad Recursion BRB: Bad Recursion BRB: Bad Recursion BRB: Bad RecursionBRB: Bad Recursion BRBRangeError: Maximum call stack size exceeded}
 
+\index{recursion (tutorial)}
 But don't get over-excited, as it's super-trivial to create unintentional infinite loop:
 
 \begin{lstlisting}
@@ -138,6 +143,7 @@ Since \code{IF-THEN-ELSE} can be chained to make third or more conditions --- \c
 
 \section[Higher-order Function]{The Functions of the High Order}
 
+\index{higher-order function (tutorial)}
 Higher-order functions are functions that either takes another function as an argument, or returns a function. This sample program shows how higher-order functions can be constructed.
 
 \begin{lstlisting}
@@ -151,6 +157,7 @@ Here, \code{APPLY} takes a function \code{F} and value \code{X}, \emph{applies} 
 
 \section[MAPping]{Map}
 
+\index{MAP (tutorial)}
 \code{MAP} is a higher-order function that takes a function (called \emph{transformation}) and an array to construct a new array that contains old array transformed with given \emph{transformation}.
 
 Or, think about the old \code{FAC} program before: it merely printed out the value of $1!$, $2!$ \ldots\ $10!$. What if we wanted to build an array that contains such values?
@@ -165,6 +172,7 @@ Here, \code{K} holds the values of $1!$, $2!$ \ldots\ $10!$. Right now we're jus
 
 \section[Closure]{The Function with No Name}
 
+\index{closure (tutorial)}
 But \code{DEFUN F(X)} is only there for partial compatibility with traditional BASICs, of which their syntax is \code{DEF FNF(X)}. \code{DEFUN} cannot define nested functions, it's not a lambda-calculus system, yaddi yadda.
 
 No, we want to be up-to-date; we don't always want every function to be global; we want to utter \emph{give me a closure, bar-tender}.
@@ -199,6 +207,7 @@ This function is anonymous: only the \code{MAP} can use it and is not accessible
 \newcounter{curryingselfref}
 \setcounter{curryingselfref}{\value{page} - \value{curryingappearance}}
 
+\index{curry (tutorial)}
 \cnttoenglish{\value{curryingselfref}}{page} ago there was a mentioning about something called \emph{functional currying}. So what the fsck is currying? Consider the following code:
 
 \begin{lstlisting}

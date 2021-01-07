@@ -9,6 +9,12 @@ for f in *.dot; do
   dot -Tpdf -o ${f%.*}.pdf $f;
 done
 
+rm $TEXJOBNAME.idx
+rm $TEXJOBNAME.ind
+rm $TEXJOBNAME.toc
+rm $TEXJOBNAME.ilg
+rm $TEXJOBNAME.aux
+
 lualatex $TEXJOBNAME.tex
 makeindex $TEXJOBNAME
 lualatex $TEXJOBNAME.tex

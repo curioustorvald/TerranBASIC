@@ -62,7 +62,7 @@ Hexadecimal and binary literals are always interpreted as \emph{unsigned} intege
 
 \subsection{Variables} 
 
-Variable\index{variable name} names must start with a letter and all characters of the name must be letters \code{A-Z}, figures \code{0-9}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
+Variable\index{variable naming} names must start with a letter and all characters of the name must be letters \code{A-Z}, figures \code{0-9}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
 
 Unlike conventional BASIC dialects (especially GW-BASIC), name pool of variables are shared between all the types. For example, if you have a numeric variable \code{A}, and define an array named \code{A} later in the program, the new array will overwrite your numeric \code{A}.
 
@@ -97,24 +97,24 @@ The order of precedence\index{operator}\index{order of precedence} of the operat
 Order & Op & Associativity \\
 \hline
 1 & \basicexp & Right \\
-2 & \ast\quad$/$\quad$\backslash$ & Left \\
-3 & \condensedfont{MOD} & Left \\
-4 & $+$\quad$-$ & Left \\
-5 & \condensedfont{NOT}\quad\condensedfont{BNOT} & Left \\
-6 & <\!<\quad>\!> & Left \\
-7 & <\enskip>\enskip=\!<\enskip<\!=\enskip=\!>\enskip>\!= & Left \\
-8 & ==\quad<\!>\quad>\!< & Left \\
-9 & \condensedfont{MIN}\quad\condensedfont{MAX} & Left \\
-10 & \condensedfont{BAND} & Left \\
-11 & \condensedfont{BXOR} & Left \\
-12 & \condensedfont{BOR} & Left \\
+2 & \basicmul\quad\basicdiv\quad\basicdivint & Left \\
+3 & \basicmod & Left \\
+4 & \basicplus\quad\basicminus & Left \\
+5 & \basicnot\quad\basicbnot & Left \\
+6 & \basicshl\quad\basicshr & Left \\
+7 & \basicls\enskip\basicgt\enskip\basiclseqB\enskip\basiclseqA\enskip\basicgteqB\enskip\basicgteqA & Left \\
+8 & \basiceq\quad\basicneqA\quad\basicneqB & Left \\
+9 & \basicmin\quad\basicmax & Left \\
+10 & \basicband & Left \\
+11 & \basicbxor & Left \\
+12 & \basicbor & Left \\
 \end{tabulary}
 \begin{tabulary}{\textwidth}{cCc}
 Order & Op & Associativity \\
 \hline
-13 & \condensedfont{AND} & Left \\
-14 & \condensedfont{OR} & Left \\
-15 & \condensedfont{TO}\quad\condensedfont{STEP} & Left \\
+13 & \basicand & Left \\
+14 & \basicor & Left \\
+15 & \basicto\quad\basicstep & Left \\
 16 & \basiccons & Right \\
 17 & \basicpush & Left\\
 18 & \basicconcat & Left \\
@@ -122,7 +122,7 @@ Order & Op & Associativity \\
 20 & \basiccurry & Left \\
 21 & \basicapply & Right \\
 22 & \basicclosure & Right \\
-23 & $=$ & Right \\
+23 & \basicasgn & Right \\
 \ & \ & \ \\
 \end{tabulary}
 \end{longtable}
@@ -135,23 +135,24 @@ Order & Op & Associativity \\
 
 \subsection{Mathematical Operators}
 
-Mathematical operators\index{mathematical oprator} operate on expressions that returns numeric value only, except for the \code{+} operator which will take the action of string concatenation if either of the operand is non-numeric.
+Mathematical operators\index{mathematical oprator} operate on expressions that returns numeric value only, except for the \code{\basicplus} operator which will take the action of string concatenation if either of the operand is non-numeric.
 
 \begin{tabulary}{\textwidth}{clL}
+\index{\basicasgn}\index{\basicexp}\index{\basicmul}\index{\basicdiv}\index{\basicdivint}\index{MOD@\basicmod}\index{\basicplus}\index{\basicminus}\index{MIN@\basicmin}\index{MAX@\basicmax}
 Code & Operation & Result \\
 \hline
-\emph{x} $=$ \emph{y} & Assignment & Assigns \emph{y} into \emph{x} \\
-\emph{x} $\basicexp$ \emph{y} & Exponentiation & \emph{x} raised to the \emph{y}th power \\
-\emph{x} $\ast$ \emph{y} & Multiplication & Product of \emph{x} and \emph{y} \\
-\emph{x} $/$ \emph{y} & Division & Quotient of \emph{x} and \emph{y} \\
-\emph{x} $\backslash$ \emph{y} & Truncated Division & Integer quotient of \emph{x} and \emph{y} \\
-\emph{x} \condensedfont{MOD} \emph{y} & Modulo & Integer remainder of \emph{x} and \emph{y} with sign of \emph{x} \\
-\emph{x} $+$ \emph{y} & Addition & Sum of \emph{x} and \emph{y} \\
-\emph{x} $-$ \emph{y} & Subtraction & Difference of \emph{x} and \emph{y} \\
-$+$ \emph{x} & Unary Plus & Value of \emph{x} \\
-$-$ \emph{x} & Unary Minus & Negative value of \emph{x} \\
-\emph{x} \condensedfont{MIN} \emph{y} & Minimum & Lesser value of two \\
-\emph{x} \condensedfont{MAX} \emph{y} & Maximum & Greater value of two \\
+\emph{x} \basicasgn\ \emph{y} & Assignment & Assigns \emph{y} into \emph{x} \\
+\emph{x} \basicexp\ \emph{y} & Exponentiation & \emph{x} raised to the \emph{y}th power \\
+\emph{x} \basicmul\ \emph{y} & Multiplication & Product of \emph{x} and \emph{y} \\
+\emph{x} \basicdiv\ \emph{y} & Division & Quotient of \emph{x} and \emph{y} \\
+\emph{x} \basicdivint\ \emph{y} & Truncated Division & Integer quotient of \emph{x} and \emph{y} \\
+\emph{x} \basicmod\ \emph{y} & Modulo & Integer remainder of \emph{x} and \emph{y} with sign of \emph{x} \\
+\emph{x} \basicplus\ \emph{y} & Addition & Sum of \emph{x} and \emph{y} \\
+\emph{x} \basicminus\ \emph{y} & Subtraction & Difference of \emph{x} and \emph{y} \\
+\basicplus\ \emph{x} & Unary Plus & Value of \emph{x} \\
+\basicminus\ \emph{x} & Unary Minus & Negative value of \emph{x} \\
+\emph{x} \basicmin\ \emph{y} & Minimum & Lesser value of two \\
+\emph{x} \basicmax\ \emph{y} & Maximum & Greater value of two \\
 
 \end{tabulary}
 
@@ -172,14 +173,15 @@ $-$ \emph{x} & Unary Minus & Negative value of \emph{x} \\
 Comparison operator\index{comparison operator} can operate on numeric and string operands. String operands will be automatically converted to numeric value if they can be; if one operand is numeric and other is non-numeric string, the former will be converted to string value.
 
 \begin{tabulary}{\textwidth}{clL}
+\index{\basiceq}\index{\basicneqA}\index{\basicneqB}\index{\basicls}\index{\basicgt}\index{\basiclseqA}\index{\basiclseqB}\index{\basicgteqA}\index{\basicgteqB}
 Code & Operation & Result \\
 \hline
-\emph{x} == \emph{y} & Equal & True if \emph{x} equals \emph{y} \\
-\emph{x} <\!> \emph{y} \quad \emph{x} >\!< \emph{y} & Not equal & False if \emph{x} equals \emph{y} \\
-\emph{x} < \emph{y} & Less than & True if \emph{x} is less than \emph{y} \\
-\emph{x} > \emph{y} & Greater than & True if \emph{x} is greater than \emph{y} \\
-\emph{x} <\!= \emph{y} \quad \emph{x} =\!< \emph{y} & Less than or equal & False if \emph{x} is greater than \emph{y} \\
-\emph{x} >\!= \emph{y} \quad \emph{x} =\!> \emph{y} & Greater than or equal & False if \emph{x} is less than \emph{y} \\
+\emph{x} \basiceq\ \emph{y} & Equal & True if \emph{x} equals \emph{y} \\
+\emph{x} \basicneqA\ \emph{y} \quad \emph{x} \basicneqB\ \emph{y} & Not equal & False if \emph{x} equals \emph{y} \\
+\emph{x} \basicls\ \emph{y} & Less than & True if \emph{x} is less than \emph{y} \\
+\emph{x} \basicgt\ \emph{y} & Greater than & True if \emph{x} is greater than \emph{y} \\
+\emph{x} \basiclseqA\ \emph{y} \quad \emph{x} \basiclseqB\ \emph{y} & Less than or equal & False if \emph{x} is greater than \emph{y} \\
+\emph{x} \basicgteqA\ \emph{y} \quad \emph{x} \basicgteqB\ \emph{y} & Greater than or equal & False if \emph{x} is less than \emph{y} \\
 \end{tabulary}
 
 When comparing strings, the ordering is as follows:
@@ -195,14 +197,15 @@ When comparing strings, the ordering is as follows:
 Bitwise operators\index{bitwise operator} operate on unsigned integers only. Floating points are truncated\footnote{truncated towards zero} to integers.
 
 \begin{tabulary}{\textwidth}{clL}
+\index{\basicshl}\index{\basicshr}\index{BAND@\basicband}\index{BOR@\basicbor}\index{BXOR@\basicbxor}
 Code & Operation & Result \\
 \hline
-\emph{x}  <\!< \emph{y} & Bitwise Shift Left & Shifts entire bits of \emph{x} by \emph{y} \\
-\emph{x}  >\!> \emph{y} & Bitwise Shift Right & Shift entire bits \emph{x} by \emph{y}, including sign bit \\
-\condensedfont{BNOT} \emph{x} & Ones' complement & $-\emph{x}-1$ \\
-\emph{x}  \condensedfont{BAND} \emph{y} & Bitwise conjunction & Bitwise AND of \emph{x} and \emph{y} \\
-\emph{x}  \condensedfont{BOR} \emph{y} & Bitwise disjunction & Bitwise OR of \emph{x} and \emph{y} \\
-\emph{x}  \condensedfont{BXOR} \emph{y} & Bitwise add-with-no-carry & Bitwise XOR of \emph{x} and \emph{y} \\
+\emph{x}  \basicshl\ \emph{y} & Bitwise Shift Left & Shifts entire bits of \emph{x} by \emph{y} \\
+\emph{x}  \basicshr\ \emph{y} & Bitwise Shift Right & Shift entire bits \emph{x} by \emph{y}, including sign bit \\
+\basicbnot\ \emph{x} & Ones' complement & $-\emph{x}-1$ \\
+\emph{x}  \basicband\ \emph{y} & Bitwise conjunction & Bitwise AND of \emph{x} and \emph{y} \\
+\emph{x}  \basicbor\ \emph{y} & Bitwise disjunction & Bitwise OR of \emph{x} and \emph{y} \\
+\emph{x}  \basicbxor\ \emph{y} & Bitwise add-with-no-carry & Bitwise XOR of \emph{x} and \emph{y} \\
 \end{tabulary}
 
 \subsection{Boolean Operators}
@@ -210,22 +213,23 @@ Code & Operation & Result \\
 Boolean operators\index{boolean operator} operate on boolean values. If one of the operand is not boolean, it will be cast to appropriate boolean value. See \ref{valuesandtypes} for casting rules.
 
 \begin{tabulary}{\textwidth}{clL}
+%\index{\basicnot}\index{\basicand}\index{\basicor}
 Code & Operation & Result \\
 \hline
-\condensedfont{NOT} \emph{x} & Logical negation & True if \emph{x} is false and vice versa \\
-\emph{x} \condensedfont{AND} \emph{y} & Bitwise conjunction & True if \emph{x} and \emph{y} are both true \\
-\emph{x} \condensedfont{OR} \emph{y} & Bitwise disjunction & True if \emph{x} or \emph{y} is true, or  both are true \\
+\basicnot\ \emph{x} & Logical negation & True if \emph{x} is false and vice versa \\
+\emph{x} \basicand\ \emph{y} & Bitwise conjunction & True if \emph{x} and \emph{y} are both true \\
+\emph{x} \basicor\ \emph{y} & Bitwise disjunction & True if \emph{x} or \emph{y} is true, or  both are true \\
 \end{tabulary}
-
 \subsection{Generator Operators}
 
 Generator operators\index{generator} operate on numeric values and generators to create and modify a generator.
 
 \begin{tabulary}{\textwidth}{clL}
+\index{TO@\basicto}\index{STEP@\basicstep}
 Code & Result \\
 \hline
-\emph{x} \condensedfont{TO} \emph{y} & Creates an generator that counts from \emph{x} to \emph{y} \\
-\emph{x} \condensedfont{STEP} \emph{y} & Modifies a counting stride of the generator \emph{x} into \emph{y} \\
+\emph{x} \basicto\ \emph{y} & Creates an generator that counts from \emph{x} to \emph{y} \\
+\emph{x} \basicstep\ \emph{y} & Modifies a counting stride of the generator \emph{x} into \emph{y} \\
 \end{tabulary}
 
 \subsection{Array Operators}
@@ -233,6 +237,9 @@ Code & Result \\
 Array operators\index{array operator} operate on arrays and numeric values.
 
 \begin{tabulary}{\textwidth}{clL}
+\index{cons (operator)}\index{\,"!\,}%makeindex interprets ! @ | as formatting characters so they need to be escaped
+\index{push (operator)}\index{\basicpush}
+\index{concat (operator)}\index{\basicconcat}
 Code & Operation & Result \\
 \hline
 \emph{x} \basiccons\ \emph{y} & Cons & Prepends a value of \emph{x} into an array of \emph{y} \\
@@ -240,7 +247,7 @@ Code & Operation & Result \\
 \emph{x} \basicconcat\ \emph{y} & Concat & Concatenates two arrays \\
 \end{tabulary}
 
-\index{cons (operator)}\index{\basiccons\,}\index{push (operator)}\index{\basicpush}\index{concat (operator)}\index{\basicconcat}Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
+Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
 
 \subsection{Function Operators}
 
@@ -261,13 +268,13 @@ is an operation which returns new function that has given value applied to the o
 
 \emph{Applying}\index{apply (operator)}\index{\basicapply} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
 
-Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo\,} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
+Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
 \emph{Closure}\index{closure}\index{\basicclosure} defines anonymous function with given parameters and the expression, and returns the function.
 
 \section{Constants}
 
-Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{NIL}\index{PI}\index{TAU}\index{EULER}
+Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{NIL (constant)}\index{PI (constant)}\index{TAU (constant)}\index{EULER (constant)}
 
 \begin{tabulary}{\textwidth}{rllL}
 Name & Type & Value & Description \\

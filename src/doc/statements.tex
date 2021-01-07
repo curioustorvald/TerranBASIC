@@ -4,7 +4,7 @@ A Program line is composed of a line number and one or more statements. Multiple
 
 \section{IF}
 
-\codeline{\textbf{IF} TRUTH\_VALUE \textbf{THEN} TRUE\_EXPRESSION [\textbf{ELSE} FALSE\_EXPERSSION]}
+\index{IF (statement)}\codeline{\textbf{IF} TRUTH\_VALUE \textbf{THEN} TRUE\_EXPRESSION [\textbf{ELSE} FALSE\_EXPERSSION]}
 
 If \code{TRUTH\_VALUE} is truthy, executes \code{TRUE\_EXPRESSION}. If \code{TRUTH\_VALUE} is falsy and \code{FALSE\_EXPERSSION} is specified, executes that expression; otherwise next line or next statement will be executed.
 
@@ -18,7 +18,7 @@ If \code{TRUTH\_VALUE} is truthy, executes \code{TRUE\_EXPRESSION}. If \code{TRU
 
 \section{ON}
 
-\codeline{\textbf{ON} INDEX\_EXPRESSION \{\textbf{GOTO}|\textbf{GOSUB}\} LINE0 [\textbf{,} LINE1]\ldots}
+\index{ON (statement)}\codeline{\textbf{ON} INDEX\_EXPRESSION \{\textbf{GOTO}|\textbf{GOSUB}\} LINE0 [\textbf{,} LINE1]\ldots}
 
 Jumps to the line number returned by the \code{INDEX\_EXPRESSION}. If the result is outside of range of the arguments, no jump will be performed.
 
@@ -31,11 +31,11 @@ Jumps to the line number returned by the \code{INDEX\_EXPRESSION}. If the result
 
 \section{DEFUN}
 
-\emph{There it is, the} DEFUN. \emph{All those new-fangled parser\footnote{a computer program that translates program code entered by you into some data bits that only it can understand} and paradigms\footnote{a guidance to in which way you must think to assimilate your brain into the computer-overlord} are tied to this very statement on \tbas, and only Wally knows its secrets\ldots}
+\index{DEFUN (statement)}\emph{There it is, the} DEFUN. \emph{All those new-fangled parser\footnote{a computer program that translates program code entered by you into some data bits that only it can understand} and paradigms\footnote{a guidance to in which way you must think to assimilate your brain into the computer-overlord} are tied to this very statement on \tbas, and only Wally knows its secrets\ldots}
 
 \codeline{\textbf{DEFUN} NAME \textbf{(} [ARGS0 [\textbf{,} ARGS1]\ldots] \textbf{)} \textbf{=} EXPRESSION }
 
-With the aid of other statements\footnote{Actually, only the IF is useful, unless you want to \emph{transcend} from the \emph{dung} of mortality by using DEFUN within DEFUN (a little modification of the source code is required)} and functions, DEFUN will allow you to ascend from traditional BASIC and do godly things such as \emph{recursion}\footnote{see recursion} and \emph{functional programming}.
+With the aid of other statements\footnote{Actually, only the IF is useful. Use closure expression for more sophisticated function definition.} and functions, DEFUN will allow you to ascend from traditional BASIC and do godly things such as \emph{recursion}\footnote{see recursion} and \emph{functional programming}.
 
 Oh, and you can define your own function, in traditional \code{DEF FN} sense.
 

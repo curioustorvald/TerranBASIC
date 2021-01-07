@@ -12,7 +12,6 @@
 \newfontfamily\monofont[Ligatures={NoCommon, NoDiscretionary, NoHistoric, NoRequired, NoContextual}]{TeX Gyre Cursor}
 
 
-
 \usepackage{fapapersize}
 \usefapapersize{148mm,210mm,15mm,15mm,20mm,15mm} % A5 paper
 \usepackage{afterpage}
@@ -64,14 +63,43 @@
 \newcommand\forceindent{\hskip1.5em}
 
 %% BASIC operators %%
-\newcommand\basicexp{\raisebox{0.25ex}{\scriptsize\wedge}}
-\newcommand\basiccons{$!$}
+\newcommand\basicasgn{$=$}
+\newcommand\basicmul{$\,\ast\,$}
+\newcommand\basicdiv{$\,/\,$}
+\newcommand\basicdivint{$\,\backslash\,$}
+\newcommand\basicplus{$+$}
+\newcommand\basicminus{$-$}
+\newcommand\basicmod{{\condensedfont{MOD}}}
+\newcommand\basicmin{{\condensedfont{MIN}}}
+\newcommand\basicmax{{\condensedfont{MAX}}}
+\newcommand\basicnot{{\condensedfont{NOT}}}
+\newcommand\basicbnot{{\condensedfont{BNOT}}}
+\newcommand\basicband{{\condensedfont{BAND}}}
+\newcommand\basicbxor{{\condensedfont{BXOR}}}
+\newcommand\basicbor{{\condensedfont{BOR}}}
+\newcommand\basicand{{\condensedfont{AND}}}
+\newcommand\basicor{{\condensedfont{OR}}}
+\newcommand\basicto{{\condensedfont{TO}}}
+\newcommand\basicstep{{\condensedfont{STEP}}}
+\newcommand\basiccons{$\,!\,$}
 \newcommand\basicpush{$\sim$}
-\newcommand\basicconcat{$\#$}
+\newcommand\basicconcat{$\,\#\,$}
 \newcommand\basiccurry{$\sim\!<$}
 \newcommand\basicclosure{$\sim\!>$}
-\newcommand\basiccompo{{\LARGE\raisebox{0.03ex}{.}}}
-\newcommand\basicapply{\$}
+\newcommand\basiclseqA{<\!=}
+\newcommand\basicgteqA{>\!=}
+\newcommand\basiclseqB{=\!<}
+\newcommand\basicgteqB{=\!>}
+\newcommand\basiceq{==}
+\newcommand\basicneqA{<\!>}
+\newcommand\basicneqB{>\!<}
+\newcommand\basicls{\,<\,}
+\newcommand\basicgt{\,>\,}
+\newcommand\basicshl{<\!<}
+\newcommand\basicshr{>\!>}
+\newcommand\basiccompo{\,{\LARGE\raisebox{0.03ex}{.}}\,}
+\newcommand\basicapply{\,\$\,}
+\newcommand\basicexp{\raisebox{0.25ex}{\scriptsize\wedge}}
 
 % Title styling
 \pretitle{\begin{flushright}}
@@ -167,7 +195,7 @@
 \newcommand{\thismachine}{TSVM}
 \newcommand{\tbasver}{1.1}
 \newcommand{\theedition}{Second Edition}
-\newcommand{\thepublishingdate}{2021-01-06}
+\newcommand{\thepublishingdate}{2021-01-07}
 \newcommand{\oreallypress}{\begingroup\hspace{0.083em}\large\textbf{O'REALLY\raisebox{1ex}{\scriptsize ?}} \large Press\endgroup}
 
 \title{\HUGE\textbf{\MakeUppercase{\tbas} \\ REFERENCE MANUAL} \\ \Large \vspace{1em} For Language Version \tbasver\hspace{0.75em}|\hspace{0.75em}\theedition}
