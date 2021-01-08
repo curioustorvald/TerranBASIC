@@ -255,7 +255,7 @@ let astToString = function(ast, depth, isFinalLeaf) {
                  ("num" == ast.astType) ? "$" :
                  ("array" == ast.astType) ? "[" :
                  ("defun_args" === ast.astType) ? "d" : "f";
-    sb += l__.repeat(recDepth)+`${marker} ${ast.astLnum}: "${ast.astValue}" (astType:${ast.astType}); leaves: ${ast.astLeaves.length}\n`;    
+    sb += l__.repeat(recDepth)+`${marker} ${ast.astLnum}: "${ast.astValue}" (astType:${ast.astType}); leaves: ${ast.astLeaves.length}; hash: ${ast.astHash}\n`;    
     for (var k = 0; k < ast.astLeaves.length; k++) {
         sb += astToString(ast.astLeaves[k], recDepth + 1, k == ast.astLeaves.length - 1);
         if (ast.astSeps[k] !== undefined)
@@ -283,6 +283,7 @@ let BasicAST = function() {
     this.astSeps = [];
     this.astValue = undefined;
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
+    this.astHash = Math.floor(Math.random() * 2147483647);
 }
 let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun"];
 /*
