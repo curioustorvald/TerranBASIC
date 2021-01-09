@@ -285,7 +285,17 @@ let BasicAST = function() {
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
     this.astHash = Math.floor(Math.random() * 2147483647);
 }
-let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun"];
+
+/** a partial implementation of Monad
+ * @param m BasicAST (a monadic value)
+ */
+let BasicComputeUnit = function(m) {
+    this.monadicValue = m;
+}
+// I'm basically duck-typing here...
+let isMonad = (o) => (o === undefined) ? false : (o.monadicValue !== undefined) 
+
+let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun", "monad"];
 /*
 @param variable SyntaxTreeReturnObj, of which  the 'troType' is defined in BasicAST.
 @return a value, if the input type if string or number, its literal value will be returned. Otherwise will search the
@@ -463,6 +473,7 @@ let ForGen = function(s,e,t) {
     this.current = this.start;
     this.stepsgn = (this.step > 0) ? 1 : -1;
 }
+// I'm basically duck-typing here...
 let isGenerator = (o) => o.start !== undefined && o.end !== undefined && o.step !== undefined && o.stepsgn !== undefined
 let genToArray = (gen) => {
     let a = [];
@@ -1503,6 +1514,36 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     else {
         throw lang.syntaxfehler(lnum);
     }
+}},
+"MRETURN" : {f:function(lnum, stmtnum, args) {
+    if (DBGON) {
+        return oneArg(lnum, stmtnum, args, it => {
+            return new BasicComputeUnit(it);
+        });
+    }
+    else {
+        throw lang.syntaxfehler(lnum);
+    }
+}},
+"MBIND" : {f:function(lnum, stmtnum, args) {
+    if (DBGON) {
+        return twoArg(lnum, stmtnum, args, it => {
+            throw lang.syntaxfehler(lnum, "TODO (>>=)");
+        });
+    }
+    else {
+        throw lang.syntaxfehler(lnum);
+    }
+}},
+"MSEQ" : {f:function(lnum, stmtnum, args) {
+    if (DBGON) {
+        return twoArg(lnum, stmtnum, args, it => {
+            throw lang.syntaxfehler(lnum, "TODO (>>~)");
+        });
+    }
+    else {
+        throw lang.syntaxfehler(lnum);
+    }
 }}
 };
 Object.freeze(bStatus.builtin);
@@ -1548,7 +1589,7 @@ bF._isSep = function(code) {
     return code == 0x2C || code == 0x3B;
 };
 // define operator precedence here...
-// NOTE: do NOT put falsy value here!!
+// NOTE: do NOT put falsy value (e.g. 0) here!!
 bF._opPrc = {
     // function call in itself has highest precedence
     "^":1,
@@ -1570,13 +1611,14 @@ bF._opPrc = {
     "!":50,"~":51, // array CONS and PUSH
     "#":52, // array concat
     ".": 60, // compo operator
-    "~<": 61, // curry operator
+    "~<": 60, // curry operator
+    ">>~": 60, // monadic sequnce operator
+    ">>=": 60, // monadic bind operator
     "$": 70, // apply operator
     "~>": 100, // closure operator
-    "=":999,
-    "IN":1000
+    "=":999,"IN":999
 };
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1}; // ~< and ~> cannot have same associativity
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {
     var _debugprintStateTransition = false;
@@ -3082,15 +3124,17 @@ bF._pruneTree = function(lnum, tree, recDepth) {
 
 // ## USAGE OF lambdaBoundVars IN PARSEMODE ENDS HERE ##
 
-let isAST = (object) => (object === undefined) ? false : object.astLeaves !== undefined
+// I'm basically duck-typing here...
+let isAST = (object) => (object === undefined) ? false : object.astLeaves !== undefined && object.astHash !== undefined
 // @return is defined in BasicAST
 let JStoBASICtype = function(object) {
     if (typeof object === "boolean") return "bool";
     else if (object === undefined) return "null";
     else if (object.arrName !== undefined) return "internal_arrindexing_lazy";
     else if (object.asgnVarName !== undefined) return "internal_assignment_object";
-    else if (object instanceof ForGen || isGenerator(object)) return "generator";
-    else if (object instanceof BasicAST || isAST(object)) return "usrdefun";
+    else if (isGenerator(object)) return "generator";
+    else if (isAST(object)) return "usrdefun";
+    else if (isMonad(object)) return "monad";
     else if (Array.isArray(object)) return "array";
     else if (isNumable(object)) return "num";
     else if (typeof object === "string" || object instanceof String) return "string";
