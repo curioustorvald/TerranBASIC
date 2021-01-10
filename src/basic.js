@@ -39,6 +39,8 @@ let DATA_CURSOR = 0;
 let DATA_CONSTS = [];
 const DEFUNS_BUILD_DEFUNS = false;
 const BASIC_HOME_PATH = "/home/basic/"
+let replCmdBuf = []; // used to store "load filename" and issues it when user confirmed potential data loss
+let replUsrConfirmed = false;
 
 if (system.maxmem() < 8192) {
     println("Out of memory. BASIC requires 8K or more User RAM");
@@ -3661,28 +3663,49 @@ bF.save = function(args) { // SAVE function
 bF.load = function(args) { // LOAD function
     if (args[1] === undefined) throw lang.missingOperand;
     var fileOpened = fs.open(args[1], "R");
-    if (!fileOpened) {
-        fileOpened = fs.open(args[1]+".BAS", "R");
-    }
-    if (!fileOpened) {
-        fileOpened = fs.open(args[1]+".bas", "R");
-    }
-    if (!fileOpened) {
-        throw lang.noSuchFile;
-        return;
-    }
-    var prg = fs.readAll();
+    
+        
+    if (replUsrConfirmed || cmdbuf.length == 0) {
+        if (!fileOpened) {
+            fileOpened = fs.open(args[1]+".BAS", "R");
+        }
+        if (!fileOpened) {
+            fileOpened = fs.open(args[1]+".bas", "R");
+        }
+        if (!fileOpened) {
+            throw lang.noSuchFile;
+            return;
+        }
+        var prg = fs.readAll();
 
-    // reset the environment
-    bF.new(true);
+        // reset the environment
+        bF.new(true);
 
-    // read the source
-    prg.split('\n').forEach((line) => {
-        var i = line.indexOf(" ");
-        var lnum = line.slice(0, i);
-        if (isNaN(lnum)) throw lang.illegalType();
-        cmdbuf[lnum] = line.slice(i + 1, line.length);
-    });
+        // read the source
+        prg.split('\n').forEach((line) => {
+            var i = line.indexOf(" ");
+            var lnum = line.slice(0, i);
+            if (isNaN(lnum)) throw lang.illegalType();
+            cmdbuf[lnum] = line.slice(i + 1, line.length);
+        });
+    }
+    else {
+        replCmdBuf = ["load"].concat(args);
+        println("Unsaved program will be lost, are you sure? (type 'yes' to confirm)");
+    }
+};
+bF.yes = function() {
+    if (replCmdBuf.length > 0) {
+        replUsrConfirmed = true;
+        
+        bF[replCmdBuf[0].toLowerCase()](replCmdBuf.slice(1, replCmdBuf.length));
+        
+        replCmdBuf = [];
+        replUsrConfirmed = false;
+    }
+    else {
+        throw lang.syntaxfehler("interactive", "nothing to confirm!");
+    }
 };
 bF.catalog = function(args) { // CATALOG function
     if (args[1] === undefined) args[1] = "\\";
