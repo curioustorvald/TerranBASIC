@@ -252,7 +252,7 @@ let astToString = function(ast, depth, isFinalLeaf) {
     let recDepth = depth || 0;
     if (!isAST(ast)) return "";
     
-    let hastStr = b[(ast.astHash & 1040187392) >> 25] +
+    let hastStr = //b[(ast.astHash & 1040187392) >> 25] +
             b[(ast.astHash & 32505856) >> 20] +
             b[(ast.astHash & 1015808) >> 15] +
             b[(ast.astHash & 31744) >> 10] +
@@ -293,17 +293,18 @@ let BasicAST = function() {
     this.astSeps = [];
     this.astValue = undefined;
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
-    this.astHash = Math.floor(Math.random() * (1 << 30));
+    this.astHash = Math.floor(Math.random() * (1 << 25));
 }
 
-/** a partial implementation of Monad
+/** A 'Computation Description' aka Monad
  * @param m BasicAST (a monadic value)
  */
 let BasicComputeUnit = function(m) {
-    this.monadicValue = m;
+    this.mVal = m;
+    this.seq = undefined;
 }
 // I'm basically duck-typing here...
-let isMonad = (o) => (o === undefined) ? false : (o.monadicValue !== undefined) 
+let isMonad = (o) => (o === undefined) ? false : (o.mVal !== undefined) 
 
 let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun", "monad"];
 /*
@@ -339,25 +340,34 @@ let resolve = function(variable) {
     else
         throw Error("BasicIntpError: unknown variable/object with type "+variable.troType+", with value "+variable.troValue);
 }
+let findHighestIndex = function(exprTree) {
+    let highestIndex = [-1,-1];
+    // look for the highest index of [a,b]
+    let rec = function(exprTree) {
+        bF._recurseApplyAST(exprTree, it => {
+            if (it.astType == "defun_args") {
+                let recIndex = it.astValue[0];
+                let ordIndex = it.astValue[1];
+                
+                if (recIndex > highestIndex[0]) {
+                    highestIndex = [recIndex, 0];
+                }
+                
+                if (recIndex == highestIndex[0] && ordIndex > highestIndex[1]) {
+                    highestIndex[1] = ordIndex;
+                }
+            }
+            else if (isAST(it.astValue)) {
+                rec(it.astValue);
+            }
+        });
+    };rec(exprTree);
+    return highestIndex;
+}
 let curryDefun = function(inputTree, inputValue) {    
     let exprTree = cloneObject(inputTree);
     let value = cloneObject(inputValue);
-    let highestIndex = [-1,-1];
-    // look for the highest index of [a,b]
-    bF._recurseApplyAST(exprTree, it => {
-        if (it.astType == "defun_args") {
-            let recIndex = it.astValue[0];
-            let ordIndex = it.astValue[1];
-            
-            if (recIndex > highestIndex[0]) {
-                highestIndex = [recIndex, 0];
-            }
-            
-            if (recIndex == highestIndex[0] && ordIndex > highestIndex[1]) {
-                highestIndex[1] = ordIndex;
-            }
-        }
-    });
+    let highestIndex = findHighestIndex(exprTree);
     
     if (DBGON) {
         serial.println("[curryDefun] highest index to curry: "+highestIndex);
@@ -528,7 +538,6 @@ bStatus.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
     return function(lnum, stmtnum, args, seps) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
 
-        // NOTE: BASIC arrays are index in column-major order, which is OPPOSITE of C/JS/etc.
         return varArgNum(lnum, stmtnum, args, (dims) => {
             if (TRACEON) serial.println("ar dims: "+dims);
 
@@ -561,6 +570,7 @@ bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
     if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
 
     let tree = cloneObject(exprTree); // ALWAYS create new tree instance!
+    let highestIndex = findHighestIndex(tree);
     return function(lnum, stmtnum, args, seps) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
         
@@ -571,21 +581,16 @@ bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
                 return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
             }).reverse();
             
-            // bind arguments
-            lambdaBoundVars.unshift(argsMap);
-
             if (DBGON) {
                 serial.println("[BASIC.getDefunThunk.invoke] unthunking: ");
                 serial.println(astToString(tree));
                 serial.println("[BASIC.getDefunThunk.invoke] thunk args:");
                 serial.println(argsMap);
-                serial.println("[BASIC.getDefunThunk.invoke] lambda bound vars:");
-                serial.println(theLambdaBoundVars());
             }
 
             // perform renaming
             bF._recurseApplyAST(tree, (it) => {
-                if ("defun_args" == it.astType) {
+                if ("defun_args" == it.astType && it.astValue[0] == highestIndex[0]) {
                     if (DBGON) {
                         serial.println("[BASIC.getDefunThunk.invoke] thunk renaming arg-tree branch:");
                         serial.println(astToString(it));
@@ -594,7 +599,7 @@ bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
                     let recIndex = it.astValue[0];
                     let argIndex = it.astValue[1];
                     
-                    let theArg = lambdaBoundVars[recIndex][argIndex]; // instanceof theArg == resolved version of SyntaxTreeReturnObj
+                    let theArg = argsMap[argIndex]; // instanceof theArg == resolved version of SyntaxTreeReturnObj
 
                     if (theArg !== undefined) { // this "forgiveness" is required to implement currying
                         if (DBGON) {
@@ -630,11 +635,6 @@ bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
             serial.println("[BASIC.getDefunThunk.invoke] evaluating tree:");
         }
         let ret = resolve(bF._executeSyntaxTree(lnum, stmtnum, tree, 0));
-        
-        // unbind previously bound arguments
-        if (!norename) {
-            lambdaBoundVars.shift();
-        }
         
         return ret;
     }
@@ -1432,32 +1432,42 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     }
 }},
 "." : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (f, g) => {
-        // TODO test only works with DEFUN'd functions
-        if (!isAST(f)) throw lang.badFunctionCallFormat(lnum, "Only works with DEFUN'd functions yet");
-        if (!isAST(g)) throw lang.badFunctionCallFormat(lnum, "Right-hand parameter is not a DEFUN'd function");
+    throw lang.syntaxfehler(lnum, "TODO");
+}},
+"MRETURN" : {f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, fn => {
+        return new BasicComputeUnit(fn);
+    });
+}},
+"MBIND" : {f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (ma, fn) => {
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum);
+        ma.seq = fn;
+        
+        return ma;
+    });
+}},
+"MSEQ" : {f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (ma, fn) => {
+        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum);
+        ma.seq = fn;
+        
+        return ma;
+    });
+}},
+"MDEREF" : {f:function(lnum, stmtnum, args) {
+    return varArg(lnum, stmtnum, args, rgs => {
+        let m = rgs[0];
+        let callArgs = rgs.slice(1, rgs.length);
+        
+        if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum);
                   
-        if (DBGON) {
-            serial.println("[BASIC.BUILTIN.COMPO] pipelining this function...");
-            serial.println(astToString(f));
-            serial.println("[BASIC.BUILTIN.COMPO] after this function...");
-            serial.println(astToString(g));
-        }
+        let mval = (isAST(m.mVal)) ? bStatus.getDefunThunk(lnum, stmtnum, m.mVal)(lnum, stmtnum, callArgs) : m.mVal;
         
-        // FIXME
+        if (m.seq === undefined) return mval;
         
-        let tree2 = new BasicAST();
-        tree2.astLnum = lnum;
-        tree2.astType = "usrdefun";
-        tree2.astValue = g;
-        
-        let tree = new BasicAST();
-        tree.astLnum = lnum;
-        tree.astType = "usrdefun";
-        tree.astValue = f;
-        tree.astLeaves = [tree2];
-        
-        return tree;
+        let sval = bStatus.getDefunThunk(lnum, stmtnum, m.seq)(lnum, stmtnum, [mval]);
+        return sval;
     });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
@@ -1520,36 +1530,6 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "UNRESOLVE0" : {f:function(lnum, stmtnum, args) {
     if (DBGON) {
         println(Object.entries(args[0]));
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
-}},
-"MRETURN" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        return oneArg(lnum, stmtnum, args, it => {
-            return new BasicComputeUnit(it);
-        });
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
-}},
-"MBIND" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        return twoArg(lnum, stmtnum, args, it => {
-            throw lang.syntaxfehler(lnum, "TODO (>>=)");
-        });
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
-}},
-"MSEQ" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        return twoArg(lnum, stmtnum, args, it => {
-            throw lang.syntaxfehler(lnum, "TODO (>>~)");
-        });
     }
     else {
         throw lang.syntaxfehler(lnum);
@@ -1621,10 +1601,10 @@ bF._opPrc = {
     "!":50,"~":51, // array CONS and PUSH
     "#":52, // array concat
     ".": 60, // compo operator
-    "~<": 60, // curry operator
-    ">>~": 60, // monadic sequnce operator
-    ">>=": 60, // monadic bind operator
-    "$": 70, // apply operator
+    "$": 60, // apply operator
+    "~<": 61, // curry operator
+    ">>~": 100, // monadic sequnce operator
+    ">>=": 100, // monadic bind operator
     "~>": 100, // closure operator
     "=":999,"IN":999
 };
@@ -2986,13 +2966,13 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
 /**
  * @return: Array of [recurseIndex, orderlyIndex], both corresponds to the de-bruijn indexing
  */
-bF._findDeBruijnIndex = function(varname) {
+bF._findDeBruijnIndex = function(varname, offset) {
     let recurseIndex = -1;
     let orderlyIndex = -1;
     for (recurseIndex = 0; recurseIndex < lambdaBoundVars.length; recurseIndex++) {
         orderlyIndex = lambdaBoundVars[recurseIndex].findIndex(it => it == varname);
         if (orderlyIndex != -1)
-            return [recurseIndex, orderlyIndex];
+            return [recurseIndex + (offset || 0), orderlyIndex];
     }
     throw new ParserError("Unbound variable: "+varname);
 }
@@ -3064,10 +3044,12 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         let nameTree = tree.astLeaves[0];
         let exprTree = tree.astLeaves[1];
+        let highestIndex = findHighestIndex(exprTree);
         
         // test print new tree
         if (DBGON) {
             serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
+            serial.println(`[Parser.PRUNE.~>] existing highest index: d(${highestIndex[0]},*)`);
         }
         
         // rename the parameters
@@ -3076,12 +3058,14 @@ bF._pruneTree = function(lnum, tree, recDepth) {
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
                 try {
+                    let dbi = bF._findDeBruijnIndex(it.astValue, highestIndex[0] + 1);
+                    
                     if (DBGON) {
-                        serial.println(`index for ${it.astValue}: ${bF._findDeBruijnIndex(it.astValue)}`)
+                        serial.println(`index for ${it.astValue}: ${dbi}`)
                     }
                     
                     
-                    it.astValue = bF._findDeBruijnIndex(it.astValue);
+                    it.astValue = dbi;
                     it.astType = "defun_args";
                 }
                 catch (_) {}
@@ -3166,40 +3150,38 @@ let JumpObj = function(targetLnum, targetStmtNum, fromLnum, rawValue) {
 }
 bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args, recDepth, _debugExec, recWedge) {
     // register variables
+    let highestIndex = findHighestIndex(expression);
     let defunArgs = args.map(it => {
         let rit = resolve(it)
         return [JStoBASICtype(rit), rit];
     }).reverse();
     lambdaBoundVars.unshift(defunArgs);
+    // at this point, highest index of lambdaBoundVars corresponds to highest d-index
+    // e.g. if lambdaBoundVars = [[3], [4], [2]], highest d = [7,*], d[5,0] must refer to 3, d[6,0] must refer to 4, d[7,0] must refer to 2 respectively.
     
-    if (_debugExec) {
-        serial.println(recWedge+"usrdefun dereference");
-        serial.println(recWedge+"usrdefun dereference function: ");
-        serial.println(astToString(expression));
-        serial.println(recWedge+"usrdefun dereference bound vars: "+theLambdaBoundVars());
-    }
-    
-    // insert bound variables to its places
+    // rename d-indices with corresponding arg values
     let bindVar = function(tree, recDepth) {
         bF._recurseApplyAST(tree, it => {
             
             if (_debugExec) {
-                serial.println(recWedge+`usrdefun${recDepth} dereference bound vars: `+theLambdaBoundVars());
-                serial.println(recWedge+`usrdefun${recDepth} trying to bind some variables to:`);
+                serial.println(recWedge+`usrdefun dereference bound vars: `+theLambdaBoundVars());
+                serial.println(recWedge+`usrdefun original tree:`);
                 serial.println(astToString(it));
             }
             
             if (it.astType == "defun_args") {
-                let recIndex = it.astValue[0];// - recDepth; // FIXME wtf is going on? I think we must get all the de bruijn indexing absolutely correct in the first place and definitely not rely on the recDepth...
+                let recIndex = it.astValue[0];
                 let varIndex = it.astValue[1];
                 
                 if (_debugExec) {
-                    serial.println(recWedge+`usrdefun${recDepth} bindvar d(${recIndex},${varIndex})`);
+                    serial.println(recWedge+`usrdefun bindvar d(${recIndex},${varIndex})`);
+                    serial.println(recWedge+`usrdefun highest d(${highestIndex[0]},*)`);
                 }
                 
                 let theVariable = undefined;
                 try {
-                    theVariable = lambdaBoundVars[recIndex][varIndex];
+                    let recIndexOffset = highestIndex[0] + 1 - defunArgs.length;
+                    theVariable = lambdaBoundVars[recIndex - recIndexOffset][varIndex];
                 }
                 catch (e0) {}
                 
@@ -3210,25 +3192,21 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
                 }
                 
                 if (_debugExec) {
-                    serial.println(recWedge+`usrdefun${recDepth} the bindvar: ${theVariable}`);
-                    serial.println(recWedge+`usrdefun${recDepth} modified tree:`);
+                    serial.println(recWedge+`usrdefun the bindvar: ${theVariable}`);
+                    serial.println(recWedge+`usrdefun modified tree:`);
                     serial.println(astToString(it));
                 }
             }
             // function in a function
-            else if (it.astType == "usrdefun") {
+            else if (isAST(it.astValue)) {
                 bindVar(it.astValue, recDepth + 1);
             }
         });
     };bindVar(expression, 0);
     
-
-    if (_debugExec) {
-        serial.println(recWedge+"usrdefun dereference final tree:");
-        serial.println(astToString(expression));
-    }
+    lambdaBoundVars.shift();
     
-    return bStatus.getDefunThunk(lnum, stmtnum, expression, true);
+    return bStatus.getDefunThunk(lnum, stmtnum, expression);
 }
 /**
  * @param lnum line number of BASIC
