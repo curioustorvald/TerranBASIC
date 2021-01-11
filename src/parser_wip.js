@@ -831,7 +831,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
     if (tree === undefined) return;
     
     if (DBGON) {
-        serial.println("[Parser.PRUNE] pruning following subtree, lambdaBoundVars = "+theLambdaBoundVars());
+        serial.println("[Parser.PRUNE] pruning following subtree, lambdaBoundVars = "+Object.entries(lambdaBoundVars)); // theLambdaBoundVars() were not formatted for this use case!
         serial.println(astToString(tree));
         if (isAST(tree) && isAST(tree.astValue)) {
             serial.println("[Parser.PRUNE] unpacking astValue:");
@@ -860,7 +860,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         lambdaBoundVars.unshift(vars);
         
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] added new bound variables: "+theLambdaBoundVars());
+            serial.println("[Parser.PRUNE.~>] added new bound variables: "+Object.entries(lambdaBoundVars));
         }
     }
     // simplify UNARYMINUS(num) to -num
@@ -895,7 +895,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         // test print new tree
         if (DBGON) {
-            serial.println("[Parser.PRUNE.~>] closure bound variables: "+theLambdaBoundVars());
+            serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
         }
         
         // rename the parameters
@@ -970,10 +970,18 @@ bF.isSemanticLiteral = function(token, state) {
 
 /////// TEST/////////
 let astToString = function(ast, depth, isFinalLeaf) {
+    let b = "YBNDRFG8EJKMCPQXOTLVWIS2A345H769";
     let l__ = "| ";
     
     let recDepth = depth || 0;
-    if (ast === undefined || ast.astType === undefined) return "";
+    if (!isAST(ast)) return "";
+    
+    let hastStr = b[(ast.astHash & 1040187392) >> 25] +
+            b[(ast.astHash & 32505856) >> 20] +
+            b[(ast.astHash & 1015808) >> 15] +
+            b[(ast.astHash & 31744) >> 10] +
+            b[(ast.astHash & 992) >> 5] +
+            b[ast.astHash & 31];
     let sb = "";
     let marker = ("lit" == ast.astType) ? "i" :
                  ("op" == ast.astType) ? "+" :
@@ -981,7 +989,7 @@ let astToString = function(ast, depth, isFinalLeaf) {
                  ("num" == ast.astType) ? "$" :
                  ("array" == ast.astType) ? "[" :
                  ("defun_args" === ast.astType) ? "d" : "f";
-    sb += l__.repeat(recDepth)+`${marker} ${ast.astLnum}: "${ast.astValue}" (astType:${ast.astType}); leaves: ${ast.astLeaves.length}\n`;    
+    sb += l__.repeat(recDepth)+`${marker} ${ast.astLnum}: "${ast.astValue}" (astType:${ast.astType}); leaves: ${ast.astLeaves.length}; hash:"${hastStr}"\n`;    
     for (var k = 0; k < ast.astLeaves.length; k++) {
         sb += astToString(ast.astLeaves[k], recDepth + 1, k == ast.astLeaves.length - 1);
         if (ast.astSeps[k] !== undefined)
@@ -996,6 +1004,7 @@ let BasicAST = function() {
     this.astSeps = [];
     this.astValue = undefined;
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
+    this.astHash = Math.floor(Math.random() * (1 << 30));
 }
 bF._opPrc = {
     // function call in itself has highest precedence
