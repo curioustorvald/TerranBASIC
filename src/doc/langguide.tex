@@ -185,7 +185,7 @@ No, we want to be up-to-date; we don't always want every function to be global; 
 30 PRINT K
 \end{lstlisting}
 
-Here, \code{[N]$\sim\!>$\,\ldots} defines a \emph{closure} (anonymous function) that has single parameter \code{N}, then assigns it to global variable \code{FAC}.
+Here, \code{[N]\basicclosure\,\ldots} defines a \emph{closure} (anonymous function) that has single parameter \code{N}, then assigns it to global variable \code{FAC}.
 
 But \emph{stop right there, criminal scum}: in what way is that an \emph{anonymous function}?
 
@@ -196,7 +196,7 @@ Ah-ha, take a look at this:
 20 PRINT F(1 TO 10)
 \end{lstlisting}
 
-Here, \code{MAP} inside of the global function \code{F} has an internal function: \code{[X]$\sim\!>$[X]<=5}
+Here, \code{MAP} inside of the global function \code{F} has an internal function: \code{[X]\basicclosure[X]<=5}
 
 This function is anonymous: only the \code{MAP} can use it and is not accessible from the other scopes. Even if the \code{F} and the anonymous function use same parameter name of \code{X}, they don't matter because two functions are different.
 
@@ -218,9 +218,9 @@ This function is anonymous: only the \code{MAP} can use it and is not accessible
 \end{lstlisting}
 
 % NOTE: you can't use \basiccurry within \code{}
-Here, \code{CF} is a curried function of \code{F}; built-in operator \code{$\sim\!<$} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
+Here, \code{CF} is a curried function of \code{F}; built-in operator \code{\basiccurry} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
 
-But, what if we pre-cook the curry before serve? The \code{$\sim\!<$} operator is there to curry an un-curried function; we rarely need that if the function was curried in the begin with.
+But, what if we pre-cook the curry before serve? The \code{\basiccurry} operator is there to curry an un-curried function; we rarely need that if the function was curried in the begin with.
 
 Here, \emph{closure} do wonders as well; for a fun of it, let's re-write the \code{F(K,T)} to be pre-curried:
 
@@ -231,7 +231,7 @@ Here, \emph{closure} do wonders as well; for a fun of it, let's re-write the \co
 40 PRINT CF(-32) : REM will print 'true'
 \end{lstlisting}
 
-The function \code{F}, when called, returns its inner function \code{[T]$\sim\!>$ABS(T)==K} with \code{K} being substituted with the argument that were applied to \code{F}, so the function \code{CF} here can be expressed as: \code{[T]$\sim\!>$ABS(T)==32}
+The function \code{F}, when called, returns its inner function \code{[T]\basicclosure ABS(T)==K} with \code{K} being substituted with the argument that were applied to \code{F}, so the function \code{CF} here can be expressed as: \code{[T]\basicclosure(T)==32}
 
 The subsequent calls for \code{CF} returns appropriate values, in the same manner as the descriptions above.
 

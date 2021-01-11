@@ -102,27 +102,27 @@ Order & Op & Associativity \\
 4 & \basicplus\quad\basicminus & Left \\
 5 & \basicnot\quad\basicbnot & Left \\
 6 & \basicshl\quad\basicshr & Left \\
-7 & \basicls\enskip\basicgt\enskip\basiclseqB\enskip\basiclseqA\enskip\basicgteqB\enskip\basicgteqA & Left \\
+\multirow{2}{*}{7} & \basicls\quad\basiclseqB\quad\basiclseqA & \multirow{2}{*}{Left} \\
+\ & \basicgt\quad\basicgteqB\quad\basicgteqA & \ \\
 8 & \basiceq\quad\basicneqA\quad\basicneqB & Left \\
 9 & \basicmin\quad\basicmax & Left \\
 10 & \basicband & Left \\
 11 & \basicbxor & Left \\
-12 & \basicbor & Left \\
 \end{tabulary}
 \begin{tabulary}{\textwidth}{cCc}
 Order & Op & Associativity \\
 \hline
+12 & \basicbor & Left \\
 13 & \basicand & Left \\
 14 & \basicor & Left \\
 15 & \basicto\quad\basicstep & Left \\
 16 & \basiccons & Right \\
 17 & \basicpush & Left\\
 18 & \basicconcat & Left \\
-19 & \basiccompo & Right \\
+19 & \basiccompo\quad\basicapply & Right \\
 20 & \basiccurry & Left \\
-21 & \basicapply & Right \\
-22 & \basicclosure & Right \\
-23 & \basicasgn & Right \\
+21 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
+22 & \basicasgn & Right \\
 \ & \ & \ \\
 \end{tabulary}
 \end{longtable}

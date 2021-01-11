@@ -35,6 +35,8 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{makeidx}
+\usepackage{multirow}
+\usepackage{textcomp}
 
 \usepackage{lineno} % debug
 
@@ -63,6 +65,7 @@
 \newcommand\forceindent{\hskip1.5em}
 
 %% BASIC operators %%
+\newcommand\tildechar{{\large\raisebox{-0.27ex}{\char`\~}}}
 \newcommand\basicasgn{$=$}
 \newcommand\basicmul{$\,\ast\,$}
 \newcommand\basicdiv{$\,/\,$}
@@ -82,10 +85,12 @@
 \newcommand\basicto{{\condensedfont{TO}}}
 \newcommand\basicstep{{\condensedfont{STEP}}}
 \newcommand\basiccons{$\,!\,$}
-\newcommand\basicpush{$\sim$}
+\newcommand\basicpush{\tildechar}
 \newcommand\basicconcat{$\,\#\,$}
-\newcommand\basiccurry{$\sim\!<$}
-\newcommand\basicclosure{$\sim\!>$}
+\newcommand\basiccurry{\tildechar\hspace*{-0.167em}<}
+\newcommand\basicclosure{\tildechar\hspace*{-0.167em}>}
+\newcommand\basicmseq{>\hspace*{-0.167em}>\hspace*{-0.167em}\tildechar}
+\newcommand\basicmbind{>\hspace*{-0.167em}>\hspace*{-0.167em}=}
 \newcommand\basiclseqA{<\hspace*{-0.167em}=}
 \newcommand\basicgteqA{>\hspace*{-0.167em}=}
 \newcommand\basiclseqB{=\hspace*{-0.167em}<}
