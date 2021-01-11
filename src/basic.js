@@ -566,7 +566,7 @@ bStatus.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
 /**
  * @return a Javascript function that when called, evaluates the exprTree
  */
-bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
+bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, makeRunnableFromTree) {
     if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
 
     let tree = cloneObject(exprTree); // ALWAYS create new tree instance!
@@ -574,67 +574,72 @@ bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
     return function(lnum, stmtnum, args, seps) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
         
-        if (!norename) {
-            let argsMap = args.map(it => {
-                argCheckErr(lnum, it);
-                let rit = resolve(it);
-                return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
-            }).reverse();
-            
-            if (DBGON) {
-                serial.println("[BASIC.getDefunThunk.invoke] unthunking: ");
-                serial.println(astToString(tree));
-                serial.println("[BASIC.getDefunThunk.invoke] thunk args:");
-                serial.println(argsMap);
+        let argsMap = args.map(it => {
+            argCheckErr(lnum, it);
+            let rit = resolve(it);
+            return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
+        }).reverse();
+        
+        if (!makeRunnableFromTree) {
+            lambdaBoundVars.unshift(argsMap);
+        }
+        
+        if (DBGON) {
+            serial.println("[BASIC.getDefunThunk.invoke] unthunking: ");
+            serial.println(astToString(tree));
+            serial.println("[BASIC.getDefunThunk.invoke] thunk args:");
+            serial.println(argsMap);
+            if (!makeRunnableFromTree) {
+                serial.println("[BASIC.getDefunThunk.invoke] lambdaBoundVars:");
+                serial.println(theLambdaBoundVars());
             }
+        }
 
-            // perform renaming
-            bF._recurseApplyAST(tree, (it) => {
-                if ("defun_args" == it.astType && it.astValue[0] == highestIndex[0]) {
-                    if (DBGON) {
-                        serial.println("[BASIC.getDefunThunk.invoke] thunk renaming arg-tree branch:");
-                        serial.println(astToString(it));
-                    }
-
-                    let recIndex = it.astValue[0];
-                    let argIndex = it.astValue[1];
-                    
-                    let theArg = argsMap[argIndex]; // instanceof theArg == resolved version of SyntaxTreeReturnObj
-
-                    if (theArg !== undefined) { // this "forgiveness" is required to implement currying
-                        if (DBGON) {
-                            serial.println("[BASIC.getDefunThunk.invoke] thunk renaming-theArg: "+theArg);
-                            serial.println(`${Object.entries(theArg)}`);
-                        }
-
-                        it.astValue = theArg[1];
-                        it.astType = theArg[0];
-                    }
-
-                    if (DBGON) {
-                        serial.println("[BASIC.getDefunThunk.invoke] thunk successfully renamed arg-tree branch:");
-                        serial.println(astToString(it));
-                    }
+        // perform renaming
+        bF._recurseApplyAST(tree, (it) => {
+            if ("defun_args" == it.astType && (makeRunnableFromTree ? (it.astValue[0] == highestIndex[0]) : true)) {
+                if (DBGON) {
+                    serial.println("[BASIC.getDefunThunk.invoke] thunk renaming arg-tree branch:");
+                    serial.println(astToString(it));
                 }
-            });
+
+                let recIndex = it.astValue[0];
+                let argIndex = it.astValue[1];
+                
+                let theArg = (makeRunnableFromTree) ? argsMap[argIndex] : lambdaBoundVars[recIndex][argIndex]; // instanceof theArg == resolved version of SyntaxTreeReturnObj
+
+                if (theArg !== undefined) { // this "forgiveness" is required to implement currying
+                    if (DBGON) {
+                        serial.println("[BASIC.getDefunThunk.invoke] thunk renaming-theArg: "+theArg);
+                        serial.println(`${Object.entries(theArg)}`);
+                    }
+
+                    it.astValue = theArg[1];
+                    it.astType = theArg[0];
+                }
+
+                if (DBGON) {
+                    serial.println("[BASIC.getDefunThunk.invoke] thunk successfully renamed arg-tree branch:");
+                    serial.println(astToString(it));
+                }
+            }
+        });
+        
+        if (DBGON) {
+            serial.println("[BASIC.getDefunThunk.invoke] resulting thunk tree:");
+            serial.println(astToString(tree));
+        }
             
-            if (DBGON) {
-                serial.println("[BASIC.getDefunThunk.invoke] resulting thunk tree:");
-                serial.println(astToString(tree));
-            }
-        }
-        else {
-            if (DBGON) {
-                serial.println("[BASIC.getDefunThunk.invoke] no rename, resulting thunk tree:");
-                serial.println(astToString(tree));
-            }
-        }
 
         // evaluate new tree
         if (DBGON) {
             serial.println("[BASIC.getDefunThunk.invoke] evaluating tree:");
         }
         let ret = resolve(bF._executeSyntaxTree(lnum, stmtnum, tree, 0));
+        
+        if (!makeRunnableFromTree) {
+            lambdaBoundVars.shift();
+        }
         
         return ret;
     }
@@ -3058,7 +3063,8 @@ bF._pruneTree = function(lnum, tree, recDepth) {
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
                 try {
-                    let dbi = bF._findDeBruijnIndex(it.astValue, highestIndex[0] + 1);
+                    //let dbi = bF._findDeBruijnIndex(it.astValue, highestIndex[0] + 1);
+                    let dbi = bF._findDeBruijnIndex(it.astValue);
                     
                     if (DBGON) {
                         serial.println(`index for ${it.astValue}: ${dbi}`)
@@ -3206,7 +3212,7 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
     
     lambdaBoundVars.shift();
     
-    return bStatus.getDefunThunk(lnum, stmtnum, expression);
+    return bStatus.getDefunThunk(lnum, stmtnum, expression, true);
 }
 /**
  * @param lnum line number of BASIC
