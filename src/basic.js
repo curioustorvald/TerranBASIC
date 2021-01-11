@@ -1335,28 +1335,24 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "HEAD" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, lh => {
-        if (isNumable(lh)) return lh*1; // FIXME JS scalar array destruction
         if (lh.length === undefined || lh.length < 1) throw lang.illegalType();
         return lh[0];
     });
 }},
 "TAIL" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, lh => {
-        if (isNumable(lh)) return []; // FIXME JS scalar array destruction
         if (lh.length === undefined || lh.length < 1) throw lang.illegalType();
         return lh.slice(1, lh.length);
     });
 }},
 "INIT" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, lh => {
-        if (isNumable(lh)) return []; // FIXME JS scalar array destruction
         if (lh.length === undefined || lh.length < 1) throw lang.illegalType();
         return lh.slice(0, lh.length - 1);
     });
 }},
 "LAST" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, lh => {
-        if (isNumable(lh)) return lh*1; // FIXME JS scalar array destruction
         if (lh.length === undefined || lh.length < 1) throw lang.illegalType();
         return lh[lh.length - 1];
     });
