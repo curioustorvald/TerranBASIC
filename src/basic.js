@@ -387,7 +387,7 @@ let curryDefun = function(inputTree, inputValue) {
     bF._recurseApplyAST(exprTree, it => {
         return (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === highestIndex[1]) ? substitution : it
     });
-
+    
     return exprTree;
 }
 let countArgs = function(defunTree) {
@@ -566,78 +566,82 @@ bStatus.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
 /**
  * @return a Javascript function that when called, evaluates the exprTree
  */
-bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, makeRunnableFromTree) {
+bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
     if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
-
+    
     let tree = cloneObject(exprTree); // ALWAYS create new tree instance!
-    let highestIndex = findHighestIndex(tree);
     return function(lnum, stmtnum, args, seps) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
         
-        let argsMap = args.map(it => {
-            argCheckErr(lnum, it);
-            let rit = resolve(it);
-            return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
-        }).reverse();
-        
-        if (!makeRunnableFromTree) {
+        if (!norename) {
+            let argsMap = args.map(it => {
+                argCheckErr(lnum, it);
+                let rit = resolve(it);
+                return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
+            }).reverse();
+            
+            // bind arguments
             lambdaBoundVars.unshift(argsMap);
-        }
-        
-        if (DBGON) {
-            serial.println("[BASIC.getDefunThunk.invoke] unthunking: ");
-            serial.println(astToString(tree));
-            serial.println("[BASIC.getDefunThunk.invoke] thunk args:");
-            serial.println(argsMap);
-            if (!makeRunnableFromTree) {
-                serial.println("[BASIC.getDefunThunk.invoke] lambdaBoundVars:");
+            
+            if (DBGON) {
+                serial.println("[BASIC.getDefunThunk.invoke] unthunking: ");
+                serial.println(astToString(tree));
+                serial.println("[BASIC.getDefunThunk.invoke] thunk args:");
+                serial.println(argsMap);
+                serial.println("[BASIC.getDefunThunk.invoke] lambda bound vars:");
                 serial.println(theLambdaBoundVars());
             }
-        }
-
-        // perform renaming
-        bF._recurseApplyAST(tree, (it) => {
-            if ("defun_args" == it.astType && (makeRunnableFromTree ? (it.astValue[0] == highestIndex[0]) : true)) {
-                if (DBGON) {
-                    serial.println("[BASIC.getDefunThunk.invoke] thunk renaming arg-tree branch:");
-                    serial.println(astToString(it));
-                }
-
-                let recIndex = it.astValue[0];
-                let argIndex = it.astValue[1];
-                
-                let theArg = (makeRunnableFromTree) ? argsMap[argIndex] : lambdaBoundVars[recIndex][argIndex]; // instanceof theArg == resolved version of SyntaxTreeReturnObj
-
-                if (theArg !== undefined) { // this "forgiveness" is required to implement currying
-                    if (DBGON) {
-                        serial.println("[BASIC.getDefunThunk.invoke] thunk renaming-theArg: "+theArg);
-                        serial.println(`${Object.entries(theArg)}`);
-                    }
-
-                    it.astValue = theArg[1];
-                    it.astType = theArg[0];
-                }
-
-                if (DBGON) {
-                    serial.println("[BASIC.getDefunThunk.invoke] thunk successfully renamed arg-tree branch:");
-                    serial.println(astToString(it));
-                }
-            }
-        });
-        
-        if (DBGON) {
-            serial.println("[BASIC.getDefunThunk.invoke] resulting thunk tree:");
-            serial.println(astToString(tree));
-        }
             
-
+            // perform renaming
+            bF._recurseApplyAST(tree, (it) => {
+                if ("defun_args" == it.astType) {
+                    if (DBGON) {
+                        serial.println("[BASIC.getDefunThunk.invoke] thunk renaming arg-tree branch:");
+                        serial.println(astToString(it));
+                    }
+                    
+                    let recIndex = it.astValue[0];
+                    let argIndex = it.astValue[1];
+                    
+                    let theArg = lambdaBoundVars[recIndex][argIndex]; // instanceof theArg == resolved version of SyntaxTreeReturnObj
+                    
+                    if (theArg !== undefined) { // this "forgiveness" is required to implement currying
+                        if (DBGON) {
+                            serial.println("[BASIC.getDefunThunk.invoke] thunk renaming-theArg: "+theArg);
+                            serial.println(`${Object.entries(theArg)}`);
+                        }
+                        
+                        it.astValue = theArg[1];
+                        it.astType = theArg[0];
+                    }
+                    
+                    if (DBGON) {
+                        serial.println("[BASIC.getDefunThunk.invoke] thunk successfully renamed arg-tree branch:");
+                        serial.println(astToString(it));
+                    }
+                }
+            });
+            
+            if (DBGON) {
+                serial.println("[BASIC.getDefunThunk.invoke] resulting thunk tree:");
+                serial.println(astToString(tree));
+            }
+        }
+        else {
+            if (DBGON) {
+                serial.println("[BASIC.getDefunThunk.invoke] no rename, resulting thunk tree:");
+                serial.println(astToString(tree));
+            }
+        }
+        
         // evaluate new tree
         if (DBGON) {
             serial.println("[BASIC.getDefunThunk.invoke] evaluating tree:");
         }
         let ret = resolve(bF._executeSyntaxTree(lnum, stmtnum, tree, 0));
         
-        if (!makeRunnableFromTree) {
+        // unbind previously bound arguments
+        if (!norename) {
             lambdaBoundVars.shift();
         }
         
@@ -3156,38 +3160,39 @@ let JumpObj = function(targetLnum, targetStmtNum, fromLnum, rawValue) {
 }
 bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args, recDepth, _debugExec, recWedge) {
     // register variables
-    let highestIndex = findHighestIndex(expression);
     let defunArgs = args.map(it => {
         let rit = resolve(it)
         return [JStoBASICtype(rit), rit];
     }).reverse();
     lambdaBoundVars.unshift(defunArgs);
-    // at this point, highest index of lambdaBoundVars corresponds to highest d-index
-    // e.g. if lambdaBoundVars = [[3], [4], [2]], highest d = [7,*], d[5,0] must refer to 3, d[6,0] must refer to 4, d[7,0] must refer to 2 respectively.
     
-    // rename d-indices with corresponding arg values
+    if (_debugExec) {
+        serial.println(recWedge+"usrdefun dereference");
+        serial.println(recWedge+"usrdefun dereference function: ");
+        serial.println(astToString(expression));
+        serial.println(recWedge+"usrdefun dereference bound vars: "+theLambdaBoundVars());
+    }
+    
+    // insert bound variables to its places
     let bindVar = function(tree, recDepth) {
         bF._recurseApplyAST(tree, it => {
             
             if (_debugExec) {
-                serial.println(recWedge+`usrdefun dereference bound vars: `+theLambdaBoundVars());
-                serial.println(recWedge+`usrdefun original tree:`);
+                serial.println(recWedge+`usrdefun${recDepth} trying to bind some variables to:`);
                 serial.println(astToString(it));
             }
             
             if (it.astType == "defun_args") {
-                let recIndex = it.astValue[0];
+                let recIndex = it.astValue[0] - recDepth;
                 let varIndex = it.astValue[1];
                 
                 if (_debugExec) {
-                    serial.println(recWedge+`usrdefun bindvar d(${recIndex},${varIndex})`);
-                    serial.println(recWedge+`usrdefun highest d(${highestIndex[0]},*)`);
+                    serial.println(recWedge+`usrdefun${recDepth} bindvar d(${recIndex},${varIndex})`);
                 }
                 
                 let theVariable = undefined;
                 try {
-                    let recIndexOffset = highestIndex[0] + 1 - defunArgs.length;
-                    theVariable = lambdaBoundVars[recIndex - recIndexOffset][varIndex];
+                    theVariable = lambdaBoundVars[recIndex][varIndex];
                 }
                 catch (e0) {}
                 
@@ -3198,19 +3203,23 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
                 }
                 
                 if (_debugExec) {
-                    serial.println(recWedge+`usrdefun the bindvar: ${theVariable}`);
-                    serial.println(recWedge+`usrdefun modified tree:`);
+                    serial.println(recWedge+`usrdefun${recDepth} the bindvar: ${theVariable}`);
+                    serial.println(recWedge+`usrdefun${recDepth} modified tree:`);
                     serial.println(astToString(it));
                 }
             }
             // function in a function
-            else if (isAST(it.astValue)) {
+            else if (it.astType == "usrdefun") {
                 bindVar(it.astValue, recDepth + 1);
             }
         });
     };bindVar(expression, 0);
     
-    lambdaBoundVars.shift();
+    
+    if (_debugExec) {
+        serial.println(recWedge+"usrdefun dereference final tree:");
+        serial.println(astToString(expression));
+    }
     
     return bStatus.getDefunThunk(lnum, stmtnum, expression, true);
 }
@@ -3371,12 +3380,15 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             }
 
             let funcCallResult = func(lnum, stmtnum, args, syntaxTree.astSeps);
+            
+            if (funcCallResult instanceof SyntaxTreeReturnObj) return funcCallResult;
+            
             let retVal = (funcCallResult instanceof JumpObj) ? funcCallResult.jmpReturningValue : funcCallResult;
-
+            
             let theRealRet = new SyntaxTreeReturnObj(
-                    JStoBASICtype(retVal),
-                    retVal,
-                    (funcCallResult instanceof JumpObj) ? funcCallResult.jmpNext : [lnum, stmtnum + 1]
+                JStoBASICtype(retVal),
+                retVal,
+                (funcCallResult instanceof JumpObj) ? funcCallResult.jmpNext : [lnum, stmtnum + 1]
             );
             
             // unregister variables
