@@ -299,12 +299,15 @@ let BasicAST = function() {
 /** A 'Computation Description' aka Monad
  * @param m BasicAST (a monadic value)
  */
-let BasicComputeUnit = function(m) {
+let BasicFunSeqMonad = function(m) {
+    // common values that all Monads must have
+    this.mType = "funseq"; // semi-meaningless metadata for an instance of Monad
     this.mVal = m;
+    // funseq specific
     this.seq = undefined;
 }
 // I'm basically duck-typing here...
-let isMonad = (o) => (o === undefined) ? false : (o.mVal !== undefined) 
+let isMonad = (o) => (o === undefined) ? false : (o.mType !== undefined);
 
 let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun", "monad"];
 /*
@@ -1455,7 +1458,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "MRETURN" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, fn => {
-        return new BasicComputeUnit(fn);
+        return new BasicFunSeqMonad(fn);
     });
 }},
 "MBIND" : {f:function(lnum, stmtnum, args) {
