@@ -390,6 +390,16 @@ let curryDefun = function(inputTree, inputValue) {
     
     return exprTree;
 }
+let getMonadDerefFun = (monad) => function(lnum, stmtnum, args, sep) {
+    if (!isMonad(monad)) throw lang.badFunctionCallFormat(lnum);
+    
+    let mval = (isAST(monad.mVal)) ? bStatus.getDefunThunk(lnum, stmtnum, monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+    
+    if (monad.seq === undefined) return mval;
+    
+    let sval = bStatus.getDefunThunk(lnum, stmtnum, monad.seq)(lnum, stmtnum, [mval]);
+    return sval;
+}
 let countArgs = function(defunTree) {
     let cnt = -1;
     bF._recurseApplyAST(defunTree, it => {
@@ -1467,16 +1477,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "MDEREF" : {f:function(lnum, stmtnum, args) {
     return varArg(lnum, stmtnum, args, rgs => {
         let m = rgs[0];
-        let callArgs = rgs.slice(1, rgs.length);
-        
-        if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum);
-                  
-        let mval = (isAST(m.mVal)) ? bStatus.getDefunThunk(lnum, stmtnum, m.mVal)(lnum, stmtnum, callArgs) : m.mVal;
-        
-        if (m.seq === undefined) return mval;
-        
-        let sval = bStatus.getDefunThunk(lnum, stmtnum, m.seq)(lnum, stmtnum, [mval]);
-        return sval;
+        let args = rgs.slice(1, rgs.length);
+        return getMonadDerefFun(m)(lnum, stmtnum, args);
     });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
@@ -3367,6 +3369,9 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                     let expression = cloneObject(someVar.bvLiteral);
                     lambdaBoundVarsAppended = true;
                     func = bF._makeRunnableFunctionFromExprTree(lnum, stmtnum, expression, args, recDepth, _debugExec, recWedge);
+                }
+                else if ("monad" == someVar.bvType) {
+                    func = getMonadDerefFun(someVar.bvLiteral);
                 }
                 else {
                     throw lang.syntaxfehler(lnum, funcName + " is not a function or an array");
