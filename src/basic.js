@@ -218,7 +218,7 @@ let reLineNum = /^[0-9]+ /;
 //var reBin = /^(0[Bb][01_]+)$/;
 
 // must match partial
-let reNumber = /([0-9]*[.][0-9]+[eE]*[\-+0-9]*[fF]*|[0-9]+[.eEfF][0-9+\-]*[fF]?)|([0-9_]+)|(0[Xx][0-9A-Fa-f_]+)|(0[Bb][01_]+)/;
+let reNumber = /([0-9]*[.][0-9]+[eE]*[\-+0-9]*[fF]*|[0-9]+[.eEfF][0-9+\-]*[fF]?)|([0-9]+(\_[0-9])*)|(0[Xx][0-9A-Fa-f_]+)|(0[Bb][01_]+)/;
 //let reOps = /\^|;|\*|\/|\+|\-|[<>=]{1,2}/;
 
 let reNum = /[0-9]+/;
@@ -313,7 +313,7 @@ let BasicFunSeqMonad = function(m) {
     this.mVal = m; // a monadic value
     this.seq = undefined; // a pointer to next Monad, bind to this using (>>=) or (>>~)
     
-    if (!isAST(m)) throw lang.badFunctionCallFormat(undefined, "Function monad expected a usrdefun but got "+JStoBASICtype(m));
+    //if (!isAST(m)) throw lang.badFunctionCallFormat(undefined, "Function monad expected a usrdefun but got "+JStoBASICtype(m));
 }
 // I'm basically duck-typing here...
 let isMonad = (o) => (o === undefined) ? false : (o.mType !== undefined);
@@ -411,7 +411,7 @@ let getMonadEvalFun = (monad) => function(lnum, stmtnum, args, sep) {
         serial.println(monadToString(monad));
     }
     
-    let mval = (monad.mType == "funseq") ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+    let mval = (monad.mType == "funseq" && isAST(monad.mValue)) ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
     
     if (DBGON) {
         serial.println("[BASIC.MONADEVAL] passing value:");
@@ -1504,15 +1504,35 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
  * @return another monad
  */
 ">>=" : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (m, fnb) => {
-        if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum, "left-hand is not a monad: got "+JStoBASICtype(m));
-        if (!isAST(fnb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a usrdefun: got "+JStoBASICtype(fnb));
+    return twoArg(lnum, stmtnum, args, (ma, a_to_mb) => {
+        if (!isMonad(ma)) throw lang.badFunctionCallFormat(lnum, "left-hand is not a monad: got "+JStoBASICtype(ma));
+        if (!isAST(a_to_mb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a usrdefun: got "+JStoBASICtype(a_to_mb));
         
-        let ma = cloneObject(m);
-        monadAppendAtEnd(ma, bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]));
-        //ma.seq = bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]);
+        if (DBGON) {
+            serial.println("[BASIC.BIND] binder:");
+            serial.println(monadToString(ma));
+            serial.println("[BASIC.BIND] bindee:");
+            serial.println(astToString(a_to_mb));
+        }
         
-        return ma;
+        //let mb = cloneObject(m);
+        //monadAppendAtEnd(mb, bStatus.getDefunThunk(a_to_mb)(lnum, stmtnum, [ma.mVal]));
+        // return mb;
+        
+        let a = (isAST(ma.mVal)) ? bStatus.getDefunThunk(ma.mVal)(lnum, stmtnum, []) : ma.mVal;
+        let mb = bStatus.getDefunThunk(a_to_mb)(lnum, stmtnum, [a]);
+        
+        if (!isMonad(mb)) throw lang.badFunctionCallFormat(lnum, "right-hand function did not return a monad");
+        
+        let nma = mb;
+        //let nma = monadAppendAtEnd(cloneObject(ma), mb);
+                  
+        if (DBGON) {
+            serial.println("[BASIC.BIND] bound monad:");
+            serial.println(monadToString(nma));
+        }
+        
+        return nma;
     });
 }},
 /** type: m a -> m b -> m b
@@ -1525,11 +1545,17 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         if (!isMonad(ma)) throw lang.badFunctionCallFormat(lnum, "left-hand is not a monad: got "+JStoBASICtype(ma));
         if (!isMonad(mb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a monad: got "+JStoBASICtype(mb));
         
-        let nma = cloneObject(ma);
-        monadAppendAtEnd(nma, mb);
-        //nma.seq = mb;
+        if (DBGON) {
+            serial.println("[BASIC.BIND] binder:");
+            serial.println(monadToString(ma));
+            serial.println("[BASIC.BIND] bindee:");
+            serial.println(monadToString(mb));
+        }
         
-        return nma;
+        let a = (isAST(ma.mVal)) ? bStatus.getDefunThunk(ma.mVal)(lnum, stmtnum, []) : ma.mVal;
+        let b = (isAST(mb.mVal)) ? bStatus.getDefunThunk(mb.mVal)(lnum, stmtnum, []) : mb.mVal;
+
+        return mb;
     });
 }},
 /** type: (b -> c) -> (a -> b) -> (a -> c)
@@ -1554,14 +1580,14 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         let m = (isMonad(fb)) ? fb : new BasicFunSeqMonad(fb);
         
         // travel thru the bottommost node
-        monadAppendAtEnd(m, new BasicFunSeqMonad(fa));
+        let m2 = monadAppendAtEnd(cloneObject(m), new BasicFunSeqMonad(fa));
        
         if (DBGON) {
             serial.println("[BASIC.COMPO] new monad:")
-            serial.println(monadToString(m));
+            serial.println(monadToString(m2));
         }
         
-        return m;
+        return m2;
     });
 }},
 "MFUNSEQ" : {f:function(lnum, stmtnum, args) {
@@ -1569,7 +1595,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return new BasicFunSeqMonad(fn);
     });
 }},
-"MEVAL" : {f:function(lnum, stmtnum, args) {
+"EVALMONAD" : {f:function(lnum, stmtnum, args) {
     return varArg(lnum, stmtnum, args, rgs => {
         let m = rgs[0];
         let args = rgs.slice(1, rgs.length);
@@ -2146,6 +2172,8 @@ bF._parserElaboration = function(lnum, tokens, states) {
  * 
  * To NOT modify the tree, make sure you're not modifying any properties of the object */
 bF._recurseApplyAST = function(tree, action) {
+    if (!isAST(tree)) throw new InternalError(`tree is not a AST (${tree})`);
+    
     if (tree.astLeaves !== undefined && tree.astLeaves[0] === undefined) {
         /*if (DBGON) {
             serial.println(`RECURSE astleaf`);
