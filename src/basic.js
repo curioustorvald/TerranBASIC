@@ -411,7 +411,9 @@ let getMonadEvalFun = (monad) => function(lnum, stmtnum, args, sep) {
         serial.println(monadToString(monad));
     }
     
-    let mval = (monad.mType == "funseq" && isAST(monad.mValue)) ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+    //let mval = (monad.mType == "funseq" && isAST(monad.mValue)) ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal; // FIXME wut? why this line does not work but the very next line does?
+    let mval = (monad.mType == "funseq") ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+
     
     if (DBGON) {
         serial.println("[BASIC.MONADEVAL] passing value:");
@@ -1580,14 +1582,14 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         let m = (isMonad(fb)) ? fb : new BasicFunSeqMonad(fb);
         
         // travel thru the bottommost node
-        let m2 = monadAppendAtEnd(cloneObject(m), new BasicFunSeqMonad(fa));
+        monadAppendAtEnd(m, new BasicFunSeqMonad(fa));
        
         if (DBGON) {
             serial.println("[BASIC.COMPO] new monad:")
-            serial.println(monadToString(m2));
+            serial.println(monadToString(m));
         }
         
-        return m2;
+        return m;
     });
 }},
 "MFUNSEQ" : {f:function(lnum, stmtnum, args) {
