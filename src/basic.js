@@ -271,8 +271,7 @@ let astToString = function(ast, depth, isFinalLeaf) {
 let monadToString = function(monad, depth) {
     let recDepth = depth || 0;
     let l__ = "  ";
-    let sb = (depth > 0) ? "seq: " : "";
-    sb += monad.mType+" "+((monad.mVal === undefined) ? "(undefined)" : (monad.mType === "funseq") ? `"${monad.mVal.astHash}"` : monad.mVal);
+    let sb = `M"${monad.mHash}": `+monad.mType+((monad.mVal === undefined) ? "(undefined)" : (monad.mType === "funseq") ? `"${monad.mVal.astHash}"` : monad.mVal);
     if (monad.seq !== undefined) {
         sb += '\n'+(l__).repeat(recDepth)+"L "+monadToString(monad.seq, recDepth + 1);
     }
@@ -291,20 +290,25 @@ let theLambdaBoundVars = function() {
     })
     return sb;
 }
-let astHashChars = "YBNDRFG8EJKMCPQXOTLVWIS2A345H769";    
+let makeBase32Hash = function() {
+    let e = "YBNDRFG8EJKMCPQXOTLVWIS2A345H769";
+    let m = e.length;
+    return e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)]
+}
 let BasicAST = function() {
     this.astLnum = 0;
     this.astLeaves = [];
     this.astSeps = [];
     this.astValue = undefined;
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
-    this.astHash = astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)];
+    this.astHash = makeBase32Hash();
 }
 
 /** A 'Computation Description' aka Monad
  * @param m BasicAST (a monadic value)
  */
 let BasicFunSeqMonad = function(m) {
+    this.mHash = makeBase32Hash();
     this.mType = "funseq"; // semi-meaningless metadata for an instance of Monad
     this.mVal = m; // a monadic value
     this.seq = undefined; // a pointer to next Monad, bind to this using (>>=) or (>>~)
@@ -1505,7 +1509,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         if (!isAST(fnb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a usrdefun: got "+JStoBASICtype(fnb));
         
         let ma = cloneObject(m);
-        ma.seq = bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]);
+        monadAppendAtEnd(ma, bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]));
+        //ma.seq = bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]);
         
         return ma;
     });
@@ -1521,7 +1526,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         if (!isMonad(mb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a monad: got "+JStoBASICtype(mb));
         
         let nma = cloneObject(ma);
-        nma.seq = mb;
+        monadAppendAtEnd(nma, mb);
+        //nma.seq = mb;
         
         return nma;
     });
