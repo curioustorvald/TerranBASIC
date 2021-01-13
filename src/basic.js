@@ -323,6 +323,7 @@ let resolve = function(variable) {
 
         if (isNumable(variable)) return variable*1;
         if (Array.isArray(variable)) return variable;
+        if (isGenerator(variable) || isAST(variable) || isMonad(variable)) return variable;
         if (typeof variable == "object")
             throw Error(`BasicIntpError: trying to resolve unknown object '${variable}' with entries ${Object.entries(variable)}`);
         return variable;
@@ -396,11 +397,13 @@ let curryDefun = function(inputTree, inputValue) {
 let getMonadDerefFun = (monad) => function(lnum, stmtnum, args, sep) {
     if (!isMonad(monad)) throw lang.badFunctionCallFormat(lnum);
     
-    let mval = (isAST(monad.mVal)) ? bStatus.getDefunThunk(lnum, stmtnum, monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+    // TODO cascading evaluation of seq
+    
+    let mval = (isAST(monad.mVal)) ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
     
     if (monad.seq === undefined) return mval;
     
-    let sval = bStatus.getDefunThunk(lnum, stmtnum, monad.seq)(lnum, stmtnum, [mval]);
+    let sval = bStatus.getDefunThunk(monad.seq.mVal)(lnum, stmtnum, [mval]);
     return sval;
 }
 let countArgs = function(defunTree) {
@@ -579,9 +582,7 @@ bStatus.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
 /**
  * @return a Javascript function that when called, evaluates the exprTree
  */
-bStatus.getDefunThunk = function(lnum, stmtnum, exprTree, norename) {
-    if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
-    
+bStatus.getDefunThunk = function(exprTree, norename) {
     let tree = cloneObject(exprTree); // ALWAYS create new tree instance!
     return function(lnum, stmtnum, args, seps) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
@@ -1242,7 +1243,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
 
-        return functor.map(it => bStatus.getDefunThunk(lnum, stmtnum, fn)(lnum, stmtnum, [it]));
+        return functor.map(it => bStatus.getDefunThunk(fn)(lnum, stmtnum, [it]));
     });
 }},
 /* Synopsis: FOLD function, init_value, functor
@@ -1258,7 +1259,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 
         let akku = init;
         functor.forEach(it => {
-            akku = bStatus.getDefunThunk(lnum, stmtnum, fn)(lnum, stmtnum, [akku, it]);
+            akku = bStatus.getDefunThunk(fn)(lnum, stmtnum, [akku, it]);
         });
 
         return akku;
@@ -1274,7 +1275,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         // generator?
         if (isGenerator(functor)) functor = genToArray(functor);
 
-        return functor.filter(it => bStatus.getDefunThunk(lnum, stmtnum, fn)(lnum, stmtnum, [it]));
+        return functor.filter(it => bStatus.getDefunThunk(fn)(lnum, stmtnum, [it]));
     });
 }},
 /* GOTO and GOSUB won't work but that's probably the best...? */
@@ -1456,19 +1457,26 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "." : {f:function(lnum, stmtnum, args) {
     throw lang.syntaxfehler(lnum, "TODO");
 }},
-"MRETURN" : {f:function(lnum, stmtnum, args) {
+"MRETFUNCOMPMONAD" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, fn => {
         return new BasicFunSeqMonad(fn);
     });
 }},
+/** type: m a -> (a -> m b) -> m b
+ */
 "MBIND" : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (ma, fn) => {
-        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum);
-        ma.seq = fn;
+    return twoArg(lnum, stmtnum, args, (m, fnb) => {
+        if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum);
+        if (!isAST(fnb)) throw lang.badFunctionCallFormat(lnum);
+        
+        let ma = cloneObject(m);
+        ma.seq = bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]);
         
         return ma;
     });
 }},
+/** type: m a -> m b -> m b
+ */
 "MSEQ" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (ma, fn) => {
         if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum);
@@ -1477,7 +1485,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return ma;
     });
 }},
-"MDEREF" : {f:function(lnum, stmtnum, args) {
+"MEVAL" : {f:function(lnum, stmtnum, args) {
     return varArg(lnum, stmtnum, args, rgs => {
         let m = rgs[0];
         let args = rgs.slice(1, rgs.length);
@@ -3226,7 +3234,7 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
         serial.println(astToString(expression));
     }
     
-    return bStatus.getDefunThunk(lnum, stmtnum, expression, true);
+    return bStatus.getDefunThunk(expression, true);
 }
 /**
  * @param lnum line number of BASIC
