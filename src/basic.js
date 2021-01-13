@@ -1457,8 +1457,21 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         throw lang.syntaxfehler(lnum);
     }
 }},
+/** type: (b -> c) -> (a -> b) -> (a -> c)
+ * @param fa a function
+ * @param fb a function or a monad
+ * @return another monad
+ */
 "." : {f:function(lnum, stmtnum, args) {
-    throw lang.syntaxfehler(lnum, "TODO");
+    return twoArg(lnum, stmtnum, args, (fa, fb) => {
+        if (!isAST(fa)) throw lang.badFunctionCallFormat(lnum);
+        if (!isAST(fb) && !isMonad(fb)) throw lang.badFunctionCallFormat(lnum);
+        
+        let ma = new BasicFunSeqMonad(fa);
+        ma.seq = (isAST(fb)) ? new BasicFunSeqMonad(fb) : fb;
+        
+        return ma;
+    });
 }},
 "MRETFUNCOMPMONAD" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, fn => {
@@ -1466,8 +1479,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     });
 }},
 /** type: m a -> (a -> m b) -> m b
- * @param m a funseq monad
+ * @param m a monad
  * @param fnb a function that takes a monadic value from m and returns a new monad. IT'S ENTIRELY YOUR RESPONSIBILITY TO MAKE SURE THIS FUNCTION TO RETURN RIGHT KIND OF MONAD!
+ * @return another monad
  */
 ">>=" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (m, fnb) => {
@@ -1481,8 +1495,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     });
 }},
 /** type: m a -> m b -> m b
- * @param m a funseq monad
+ * @param m a monad
  * @param fnb a function that returns a new monad. IT'S ENTIRELY YOUR RESPONSIBILITY TO MAKE SURE THIS FUNCTION TO RETURN RIGHT KIND OF MONAD!
+ * @return another monad
  */
 ">>~" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (ma, fn) => {
