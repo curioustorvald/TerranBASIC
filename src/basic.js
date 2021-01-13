@@ -300,11 +300,9 @@ let BasicAST = function() {
  * @param m BasicAST (a monadic value)
  */
 let BasicFunSeqMonad = function(m) {
-    // common values that all Monads must have
     this.mType = "funseq"; // semi-meaningless metadata for an instance of Monad
-    this.mVal = m;
-    // funseq specific
-    this.seq = undefined;
+    this.mVal = m; // a monadic value
+    this.seq = undefined; // a pointer to next Monad, bind to this using (>>=) or (>>~)
 }
 // I'm basically duck-typing here...
 let isMonad = (o) => (o === undefined) ? false : (o.mType !== undefined);
@@ -396,15 +394,16 @@ let curryDefun = function(inputTree, inputValue) {
 }
 let getMonadDerefFun = (monad) => function(lnum, stmtnum, args, sep) {
     if (!isMonad(monad)) throw lang.badFunctionCallFormat(lnum);
-    
-    // TODO cascading evaluation of seq
-    
+        
     let mval = (isAST(monad.mVal)) ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
     
-    if (monad.seq === undefined) return mval;
+    let innard = monad.seq;
+    while (innard !== undefined) {
+        mval = bStatus.getDefunThunk(innard.mVal)(lnum, stmtnum, [mval]);
+        innard = innard.seq;
+    }
     
-    let sval = bStatus.getDefunThunk(monad.seq.mVal)(lnum, stmtnum, [mval]);
-    return sval;
+    return mval;
 }
 let countArgs = function(defunTree) {
     let cnt = -1;
@@ -1345,8 +1344,12 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "TYPEOF" : {f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, bv => {
-        if (bv.bvType === undefined || !(bv instanceof BasicVar))
-            return JStoBASICtype(bv);
+        if (bv.bvType === undefined || !(bv instanceof BasicVar)) {
+            let typestr = JStoBASICtype(bv);
+            if (typestr == "monad")
+                return typestr+":"+bv.mType;
+            else return typestr;
+        }
         return bv.bvType;
     });
 }},
@@ -1463,8 +1466,10 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     });
 }},
 /** type: m a -> (a -> m b) -> m b
+ * @param m a funseq monad
+ * @param fnb a function that takes a monadic value from m and returns a new monad. IT'S ENTIRELY YOUR RESPONSIBILITY TO MAKE SURE THIS FUNCTION TO RETURN RIGHT KIND OF MONAD!
  */
-"MBIND" : {f:function(lnum, stmtnum, args) {
+">>=" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (m, fnb) => {
         if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum);
         if (!isAST(fnb)) throw lang.badFunctionCallFormat(lnum);
@@ -1476,8 +1481,10 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     });
 }},
 /** type: m a -> m b -> m b
+ * @param m a funseq monad
+ * @param fnb a function that returns a new monad. IT'S ENTIRELY YOUR RESPONSIBILITY TO MAKE SURE THIS FUNCTION TO RETURN RIGHT KIND OF MONAD!
  */
-"MSEQ" : {f:function(lnum, stmtnum, args) {
+">>~" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (ma, fn) => {
         if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum);
         ma.seq = fn;
