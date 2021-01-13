@@ -246,18 +246,12 @@ let BasicVar = function(literal, type) {
 // Abstract Syntax Tree
 // creates empty tree node
 let astToString = function(ast, depth, isFinalLeaf) {
-    let b = "YBNDRFG8EJKMCPQXOTLVWIS2A345H769";
     let l__ = "| ";
     
     let recDepth = depth || 0;
     if (!isAST(ast)) return "";
     
-    let hastStr = //b[(ast.astHash & 1040187392) >> 25] +
-            b[(ast.astHash & 32505856) >> 20] +
-            b[(ast.astHash & 1015808) >> 15] +
-            b[(ast.astHash & 31744) >> 10] +
-            b[(ast.astHash & 992) >> 5] +
-            b[ast.astHash & 31];
+    let hastStr = ast.astHash;
     let sb = "";
     let marker = ("lit" == ast.astType) ? "i" :
                  ("op" == ast.astType) ? "+" :
@@ -274,6 +268,16 @@ let astToString = function(ast, depth, isFinalLeaf) {
     sb += l__.repeat(recDepth)+"`"+"-".repeat(22)+'\n';
     return sb;
 }
+let monadToString = function(monad, depth) {
+    let recDepth = depth || 0;
+    let l__ = "  ";
+    let sb = (depth > 0) ? "seq: " : "";
+    sb += monad.mType+" "+((monad.mVal === undefined) ? "(undefined)" : (monad.mType === "funseq") ? `"${monad.mVal.astHash}"` : monad.mVal);
+    if (monad.seq !== undefined) {
+        sb += '\n'+(l__).repeat(recDepth)+"L "+monadToString(monad.seq, recDepth + 1);
+    }
+    return sb;
+}
 let theLambdaBoundVars = function() {
     let sb = "";
     lambdaBoundVars.forEach((it,i) => {
@@ -287,13 +291,14 @@ let theLambdaBoundVars = function() {
     })
     return sb;
 }
+let astHashChars = "YBNDRFG8EJKMCPQXOTLVWIS2A345H769";    
 let BasicAST = function() {
     this.astLnum = 0;
     this.astLeaves = [];
     this.astSeps = [];
     this.astValue = undefined;
     this.astType = "null"; // lit, op, string, num, array, function, null, defun_args (! NOT usrdefun !)
-    this.astHash = Math.floor(Math.random() * (1 << 25));
+    this.astHash = astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)] + astHashChars[Math.floor(Math.random() * 32)];
 }
 
 /** A 'Computation Description' aka Monad
@@ -303,6 +308,8 @@ let BasicFunSeqMonad = function(m) {
     this.mType = "funseq"; // semi-meaningless metadata for an instance of Monad
     this.mVal = m; // a monadic value
     this.seq = undefined; // a pointer to next Monad, bind to this using (>>=) or (>>~)
+    
+    if (!isAST(m)) throw lang.badFunctionCallFormat(undefined, "Function monad expected a usrdefun but got "+JStoBASICtype(m));
 }
 // I'm basically duck-typing here...
 let isMonad = (o) => (o === undefined) ? false : (o.mType !== undefined);
@@ -392,18 +399,48 @@ let curryDefun = function(inputTree, inputValue) {
     
     return exprTree;
 }
-let getMonadDerefFun = (monad) => function(lnum, stmtnum, args, sep) {
-    if (!isMonad(monad)) throw lang.badFunctionCallFormat(lnum);
+let getMonadEvalFun = (monad) => function(lnum, stmtnum, args, sep) {
+    if (!isMonad(monad)) throw lang.badFunctionCallFormat(lnum, "not a monad");
         
-    let mval = (isAST(monad.mVal)) ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+    if (DBGON) {
+        serial.println("[BASIC.MONADEVAL] monad:");
+        serial.println(monadToString(monad));
+    }
+    
+    let mval = (monad.mType == "funseq") ? bStatus.getDefunThunk(monad.mVal)(lnum, stmtnum, args) : monad.mVal;
+    
+    if (DBGON) {
+        serial.println("[BASIC.MONADEVAL] passing value:");
+        serial.println(mval);
+    }
     
     let innard = monad.seq;
     while (innard !== undefined) {
+        if (DBGON) {
+            serial.println("[BASIC.MONADEVAL] monad:");
+            serial.println(monadToString(innard));
+            serial.println("[BASIC.MONADEVAL] received value:");
+            serial.println(mval);
+        }
+        
         mval = bStatus.getDefunThunk(innard.mVal)(lnum, stmtnum, [mval]);
         innard = innard.seq;
+        
+        if (DBGON) {
+            serial.println("[BASIC.MONADEVAL] passing value:");
+            serial.println(mval);
+        }
     }
     
     return mval;
+}
+let monadAppendAtEnd = function(parentm, childm) {
+    if (parentm.seq === undefined)
+        parentm.seq = childm;
+    else
+        monadAppendAtEnd(parentm.seq, childm);
+    
+    return parentm;
 }
 let countArgs = function(defunTree) {
     let cnt = -1;
@@ -1347,7 +1384,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         if (bv.bvType === undefined || !(bv instanceof BasicVar)) {
             let typestr = JStoBASICtype(bv);
             if (typestr == "monad")
-                return typestr+":"+bv.mType;
+                return bv.mType+"-"+typestr;
             else return typestr;
         }
         return bv.bvType;
@@ -1457,27 +1494,6 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         throw lang.syntaxfehler(lnum);
     }
 }},
-/** type: (b -> c) -> (a -> b) -> (a -> c)
- * @param fa a function
- * @param fb a function or a monad
- * @return another monad
- */
-"." : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (fa, fb) => {
-        if (!isAST(fa)) throw lang.badFunctionCallFormat(lnum);
-        if (!isAST(fb) && !isMonad(fb)) throw lang.badFunctionCallFormat(lnum);
-        
-        let ma = new BasicFunSeqMonad(fa);
-        ma.seq = (isAST(fb)) ? new BasicFunSeqMonad(fb) : fb;
-        
-        return ma;
-    });
-}},
-"MRETFUNCOMPMONAD" : {f:function(lnum, stmtnum, args) {
-    return oneArg(lnum, stmtnum, args, fn => {
-        return new BasicFunSeqMonad(fn);
-    });
-}},
 /** type: m a -> (a -> m b) -> m b
  * @param m a monad
  * @param fnb a function that takes a monadic value from m and returns a new monad. IT'S ENTIRELY YOUR RESPONSIBILITY TO MAKE SURE THIS FUNCTION TO RETURN RIGHT KIND OF MONAD!
@@ -1485,8 +1501,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
  */
 ">>=" : {f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (m, fnb) => {
-        if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum);
-        if (!isAST(fnb)) throw lang.badFunctionCallFormat(lnum);
+        if (!isMonad(m)) throw lang.badFunctionCallFormat(lnum, "left-hand is not a monad: got "+JStoBASICtype(m));
+        if (!isAST(fnb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a usrdefun: got "+JStoBASICtype(fnb));
         
         let ma = cloneObject(m);
         ma.seq = bStatus.getDefunThunk(fnb)(lnum, stmtnum, [ma.mVal]);
@@ -1500,18 +1516,58 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
  * @return another monad
  */
 ">>~" : {f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (ma, fn) => {
-        if (!isAST(fn)) throw lang.badFunctionCallFormat(lnum);
-        ma.seq = fn;
+    return twoArg(lnum, stmtnum, args, (ma, mb) => {
+        if (!isMonad(ma)) throw lang.badFunctionCallFormat(lnum, "left-hand is not a monad: got "+JStoBASICtype(ma));
+        if (!isMonad(mb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a monad: got "+JStoBASICtype(mb));
         
-        return ma;
+        let nma = cloneObject(ma);
+        nma.seq = mb;
+        
+        return nma;
+    });
+}},
+/** type: (b -> c) -> (a -> b) -> (a -> c)
+ * @param fa a function
+ * @param fb a function or a monad
+ * @return another monad
+ */
+"." : {f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (fa, fb) => {
+        if (!isAST(fa)) throw lang.badFunctionCallFormat(lnum, "left-hand is not a usrdefun: got "+JStoBASICtype(fa));
+        if (!isAST(fb) && !isMonad(fb)) throw lang.badFunctionCallFormat(lnum, "right-hand is not a usrdefun nor funseq-monad: got "+JStoBASICtype(fb));
+        
+        if (isMonad(fb) && fb.mType != "funseq") throw lang.badFunctionCallFormat(lnum, "right-hand is a monad but not a funseq: got "+fb.mType);
+                  
+        if (DBGON) {
+            serial.println("[BASIC.COMPO] fa:");
+            serial.println(astToString(fa));
+            serial.println(`[BASIC.COMPO] fb: (${JStoBASICtype(fb)})`);
+            serial.println((isMonad(fb)) ? monadToString(fb) : astToString(fb));
+        }
+        
+        let m = (isMonad(fb)) ? fb : new BasicFunSeqMonad(fb);
+        
+        // travel thru the bottommost node
+        monadAppendAtEnd(m, new BasicFunSeqMonad(fa));
+       
+        if (DBGON) {
+            serial.println("[BASIC.COMPO] new monad:")
+            serial.println(monadToString(m));
+        }
+        
+        return m;
+    });
+}},
+"MFUNSEQ" : {f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, fn => {
+        return new BasicFunSeqMonad(fn);
     });
 }},
 "MEVAL" : {f:function(lnum, stmtnum, args) {
     return varArg(lnum, stmtnum, args, rgs => {
         let m = rgs[0];
         let args = rgs.slice(1, rgs.length);
-        return getMonadDerefFun(m)(lnum, stmtnum, args);
+        return getMonadEvalFun(m)(lnum, stmtnum, args);
     });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
@@ -3404,7 +3460,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                     func = bF._makeRunnableFunctionFromExprTree(lnum, stmtnum, expression, args, recDepth, _debugExec, recWedge);
                 }
                 else if ("monad" == someVar.bvType) {
-                    func = getMonadDerefFun(someVar.bvLiteral);
+                    func = getMonadEvalFun(someVar.bvLiteral);
                 }
                 else {
                     throw lang.syntaxfehler(lnum, funcName + " is not a function or an array");
