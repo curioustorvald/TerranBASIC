@@ -280,7 +280,7 @@ Monad operators\index{monad operators} operate on monads and some values.
 \index{\basicmbind}\index{\basicmseq}
 Code & Operation & Result \\
 \hline
-\emph{m a}\enskip\basicmbind\enskip\emph{f\,:\,a\,\rightarrow\,m b} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that consumens value \emph{a} and returns new monad \emph{m b}\\
+\emph{m a}\enskip\basicmbind\enskip\emph{f\,:\,a\,\rightarrow\,m b} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that returns new monad \emph{m b} using value \emph{a}\\
 \emph{m a}\enskip\basicmseq\enskip\emph{m b} & Sequence & Discards inner value of the monad \emph{m a} and returns new monad \emph{m b}\\
 \end{tabulary}
 

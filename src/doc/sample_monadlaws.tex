@@ -1,13 +1,11 @@
 This is a proof that value-monad of the \tbas\ obeys monad laws.
 
-Monad laws are three equations that make sure monads to have sensible behaviours.
-
+Monad laws are three equations that make sure monads to have sensible behaviours:
 \begin{align*}
 \text{return}\ a \text{\enskip\basicmbind\enskip}& f &\equiv&\enskip f a\\
 m \text{\enskip\basicmbind\enskip}& \text{return} &\equiv&\enskip m\\
 m \text{\enskip\basicmbind\enskip}& (\lambda x \rightarrow k\ x \text{\enskip\basicmbind\enskip} h) &\equiv&\enskip (m \text{\enskip\basicmbind\enskip} k) \text{\enskip\basicmbind\enskip} h
 \end{align*}
-
 These are referred as \emph{Left identity}, \emph{Right identity} and \emph{Associativity} respectively.
 
 \begin{lstlisting}

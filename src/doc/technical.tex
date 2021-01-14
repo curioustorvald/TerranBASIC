@@ -65,15 +65,12 @@ However, in the creation and execution of a syntax tree, the bound variables mus
 In 1972, dutch mathematician Nicolaas de Bruijn invented \emph{de Bruijn Indexing}, a system we use to solve the forementioned problems. In de Bruijn Indexing, the innermost bound variable has index of zero\footnote{Smallest number in the set of natural numbers, which can be zero or one depending on your definition of natural numbers; we've obviously chose zero.} and outer variables have greater indices. For example, $\lambda x . \lambda y . \lambda z . x\ z (y\ z)$ is represented as $\lambda\ \lambda\ \lambda\ 2\ 0\ (1\ 0)$
 
 Since closures in \tbas\ can have multiple bound variables instead of just one as in lambda calculus, we deploy a modified version of the indexing:
-
 \begin{align*}
 recIndex &:= \text{index of recursion depth}\\
 ordIndex &:= \text{reverse order of a bound variable within a level}\\
 index &:= \text{array of}\ [recIndex, ordIndex]
 \end{align*}
-
 And consider following example code:
-
 \begin{lstlisting}
 [X,Y]~>[C]~>ZIP(C,FILTER([M]~>C,ZIP(X,Y)))
 \end{lstlisting}
