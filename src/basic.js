@@ -332,9 +332,7 @@ let BasicFunSeqMonad = function(m) {
 120 PRINT MAGICK_L()
  */
 /* Value-monad satisfies monad laws, test with following program
-10 F=[X]~>X*2
-20 G=[X]~>X^3
-30 RETN=[X]~>MRET(X)
+10 F=[X]~>X*2 : G=[X]~>X^3 : RETN=[X]~>MRET(X)
 
 100 PRINT:PRINT "First law: 'return a >>= k' equals to 'k a'"
 110 K=[X]~>RETN(F(X)) : REM K is monad-returning function
@@ -1725,68 +1723,43 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         TRACEON = (1 == lh|0);
     });
 }},
-"PRINTMONAD" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        return oneArg(lnum, stmtnum, args, (it) => {
-            println(monadToString(it));
-        });
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
+"PRINTMONAD" : {debugonly:1, f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, (it) => {
+        println(monadToString(it));
+    });
 }},
-"RESOLVE" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        return oneArg(lnum, stmtnum, args, (it) => {
-            if (isAST(it)) {
-                println(lnum+" RESOLVE PRINTTREE")
-                println(astToString(it));
-                if (typeof it.astValue == "object") {
-                    if (isAST(it.astValue)) {
-                        println(lnum+" RESOLVE PRINTTREE ASTVALUE PRINTTREE");
-                        println(astToString(it.astValue));
-                    }
-                    else {
-                        println(lnum+" RESOLVE PRINTTREE ASTVALUE");
-                        println(it.astValue);
-                    }
+"RESOLVE" : {debugonly:1, f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, (it) => {
+        if (isAST(it)) {
+            println(lnum+" RESOLVE PRINTTREE")
+            println(astToString(it));
+            if (typeof it.astValue == "object") {
+                if (isAST(it.astValue)) {
+                    println(lnum+" RESOLVE PRINTTREE ASTVALUE PRINTTREE");
+                    println(astToString(it.astValue));
+                }
+                else {
+                    println(lnum+" RESOLVE PRINTTREE ASTVALUE");
+                    println(it.astValue);
                 }
             }
-            else
-                println(it);
-        });
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
+        }
+        else
+            println(it);
+    });
 }},
-"RESOLVEVAR" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        return oneArg(lnum, stmtnum, args, (it) => {
-            let v = bStatus.vars[args[0].troValue];
-            if (v === undefined) println("Undefined variable: "+args[0].troValue);
-            else println(`type: ${v.bvType}, value: ${v.bvLiteral}`);
-        });
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
+"RESOLVEVAR" : {debugonly:1, f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, (it) => {
+        let v = bStatus.vars[args[0].troValue];
+        if (v === undefined) println("Undefined variable: "+args[0].troValue);
+        else println(`type: ${v.bvType}, value: ${v.bvLiteral}`);
+    });
 }},
-"UNRESOLVE" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        println(args[0]);
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
+"UNRESOLVE" : {debugonly:1, f:function(lnum, stmtnum, args) {
+    println(args[0]);
 }},
-"UNRESOLVE0" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) {
-        println(Object.entries(args[0]));
-    }
-    else {
-        throw lang.syntaxfehler(lnum);
-    }
+"UNRESOLVE0" : {debugonly:1, f:function(lnum, stmtnum, args) {
+    println(Object.entries(args[0]));
 }}
 };
 Object.freeze(bStatus.builtin);

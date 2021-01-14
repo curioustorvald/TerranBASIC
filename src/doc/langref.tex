@@ -272,17 +272,32 @@ Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an ope
 
 \emph{Closure}\index{closure}\index{\basicclosure} defines anonymous function with given parameters and the expression, and returns the function.
 
+\subsection{Monad Operators}
+
+Monad operators\index{monad operators} operate on monads and some values.
+
+\begin{tabulary}{\textwidth}{clL}
+\index{\basicmbind}\index{\basicmseq}
+Code & Operation & Result \\
+\hline
+\emph{m a}\enskip\basicmbind\enskip\emph{f\,:\,a\,\rightarrow\,m b} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that consumens value \emph{a} and returns new monad \emph{m b}\\
+\emph{m a}\enskip\basicmseq\enskip\emph{m b} & Sequence & Discards inner value of the monad \emph{m a} and returns new monad \emph{m b}\\
+\end{tabulary}
+
+
+
 \section{Constants}
 
-Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{NIL (constant)}\index{PI (constant)}\index{TAU (constant)}\index{EULER (constant)}
+Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{PI (constant)}\index{TAU (constant)}\index{EULER (constant)}\index{NIL (constant)}\index{ID (constant)}
 
 \begin{tabulary}{\textwidth}{rllL}
 Name & Type & Value & Description \\
 \hline
-NIL & Array & Empty Array & Used to construct arbitrary array using CONS-operator \\
 PI & Number & $3.141592653589793$ & $\pi$ \\
 TAU & Number & $6.283185307179586$ & $2 \pi$ \\
 EULER & Number & $2.718281828459045$ & Euler's number $e$ \\
+NIL & Array & Empty Array & Used to construct arbitrary array using CONS-operator \\
+ID & Function & \code{[X]\basicclosure X} & An identity function that is not ``built-in'' so it can be used with MAP/FOLD/etc. \\
 \end{tabulary}
 
 \section{Syntax In EBNF}

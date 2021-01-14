@@ -182,6 +182,15 @@ Functions are a form of expression that may taks input arguments surrounded by p
     \subsection{TAIL}
         \index{TAIL (function)}\codeline{K \textbf{= TAIL(}X\textbf{)}}\par
         Constructs the new array from array \code{X} that has its head element removed.
+
+\section{Monad Manipulation}
+
+    \subsection{EVALMONAD}
+        \index{EVALMONAD (function)}\codeline{K \textbf{= EVALMONAD(} M [\textbf{,} args]\ldots\ \textbf{)}}\par
+        Evaluates the monad and returns its final return value.
+    \subsection{MRET}
+        \index{MRET (function)}\codeline{M \textbf{= MRET(}X\textbf{)}}\par
+        Returns a value-monad that contains a given value.
         
 \section{Graphics}
 
@@ -222,13 +231,15 @@ Functions are a form of expression that may taks input arguments surrounded by p
         Number & \ttfamily{num} \\
         Boolean & \ttfamily{bool} \\
         String & \ttfamily{str} \\
+        Array & \ttfamily{array} \\
         \end{tabulary}
         \begin{tabulary}{\textwidth}{rl}
         BASIC Type & Returned Value \\
         \hline
-        Array & \ttfamily{array} \\
         Generator & \ttfamily{generator} \\
-        User Function & \ttfamily{usrdefun}
+        User Function & \ttfamily{usrdefun} \\
+        Monad & \ttfamily{<subtype>-monad} \\
+        \ & \ \\
         \end{tabulary}
         \end{longtable}
     

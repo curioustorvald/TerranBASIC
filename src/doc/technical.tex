@@ -66,11 +66,11 @@ In 1972, dutch mathematician Nicolaas de Bruijn invented \emph{de Bruijn Indexin
 
 Since closures in \tbas\ can have multiple bound variables instead of just one as in lambda calculus, we deploy a modified version of the indexing:
 
-\begin{align}
+\begin{align*}
 recIndex &:= \text{index of recursion depth}\\
 ordIndex &:= \text{reverse order of a bound variable within a level}\\
 index &:= \text{array of}\ [recIndex, ordIndex]
-\end{align}
+\end{align*}
 
 And consider following example code:
 
