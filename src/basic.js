@@ -3507,8 +3507,9 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 )
             : (bStatus.builtin[funcName] === undefined)
                 ? undefined
-            : bStatus.builtin[funcName].f;
+            : (!DBGON && bStatus.builtin[funcName].debugonly) ? "NO_DBG4U" : bStatus.builtin[funcName].f;
 
+        if (func === "NO_DBG4U") throw lang.syntaxfehler(lnum);
 
         if ("IF" == funcName) {
             if (syntaxTree.astLeaves.length != 2 && syntaxTree.astLeaves.length != 3) throw lang.syntaxfehler(lnum);
