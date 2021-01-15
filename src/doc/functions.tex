@@ -263,7 +263,7 @@ Functions are a form of expression that may taks input arguments surrounded by p
         Returns an array of values from the \code{ITERABLE} that passes the given function. i.e. values that makes \code{FUNCTION(VALUE\_FROM\_ITERABLE)} true.
         \subsubsection*{Parameters}
         \begin{itemlist}
-        \item \code{FUNCTION} is a user-defined function with single parameter.
+        \item \code{FUNCTION} is a user-defined or builtin function with single parameter.
         \item \code{ITERABLE} is either an array or a generator.
         \end{itemlist}
     \subsection{FOLD}
@@ -278,5 +278,5 @@ Functions are a form of expression that may taks input arguments surrounded by p
         Applies given function onto the every element in the iterable, and returns an array that contains such items. i.e. returns tranformation of \code{ITERABLE} of which the transformation is \code{FUNCTION}. The \code{ITERABLE} will not be modified after the execution.
         \subsubsection*{Parameters}
         \begin{itemlist}
-        \item \code{FUNCTION} is a user-defined function with single parameter.
+        \item \code{FUNCTION} is a user-defined or builtin function with single parameter.
         \end{itemlist}

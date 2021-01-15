@@ -62,11 +62,11 @@ Hexadecimal and binary literals are always interpreted as \emph{unsigned} intege
 
 \subsection{Variables} 
 
-Variable\index{variable naming} names must start with a letter and all characters of the name must be letters \code{A-Z}, figures \code{0-9}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
+Variable\index{variable naming} names must not begin with a figure and all characters of the name must be letters \code{A-Z}, figures \code{0-9} and underscores \code{\_}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
 
 Unlike conventional BASIC dialects (especially GW-BASIC), name pool of variables are shared between all the types. For example, if you have a numeric variable \code{A}, and define an array named \code{A} later in the program, the new array will overwrite your numeric \code{A}.
 
-Furthermore, \emph{sigils} are not used in the \tbas\ and attempting to use one will raise syntax-error or undefined behaviour.
+Furthermore, \emph{sigils} are not used in the \tbas\ and attempting to use one will raise syntax-error (the \code{\$} is an operator in \tbas) or undefined behaviours.
 
 \subsection{Types}
 
@@ -75,7 +75,7 @@ Types\index{types} of data recognised by \tbas\ are distinguished by some arcane
 \begin{tabulary}{\textwidth}{rCL}
 Type & Range & Precision \\
 \hline
-String & As many as the machine can handle & \, \\
+String & As many as the machine can handle & always precise \\
 Integer & $ \pm 2^{53}-1 $ & exact within the range \\
 Float & $ \pm 4.9406564584124654 \times 10^{-324} $ -- $ \pm 1.7976931348623157 \times 10^{308} $ & about 16 significant figures \\
 \end{tabulary}
@@ -122,6 +122,7 @@ Order & Op & Associativity \\
 19 & \basiccompo\quad\basicapply & Right \\
 20 & \basiccurry & Left \\
 21 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
+%21 & \basicmcons\enskip\basicmpush\enskip\basicmconcat & Right \\
 22 & \basicasgn & Right \\
 \ & \ & \ \\
 \end{tabulary}
@@ -277,14 +278,18 @@ Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an ope
 Monad operators\index{monad operators} operate on monads and some values.
 
 \begin{tabulary}{\textwidth}{clL}
-\index{\basicmbind}\index{\basicmseq}
+\index{bind (operator)}\index{\basicmbind}
+\index{sequnece (operator)}\index{\basicmseq}
 Code & Operation & Result \\
 \hline
-\emph{m a}\enskip\basicmbind\enskip\emph{f\,:\,a\,\rightarrow\,m b} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that returns new monad \emph{m b} using value \emph{a}\\
-\emph{m a}\enskip\basicmseq\enskip\emph{m b} & Sequence & Discards inner value of the monad \emph{m a} and returns new monad \emph{m b}\\
+\emph{m a} \basicmbind\ \emph{f} : \emph{a} \rightarrow\ \emph{m b} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that returns new monad \emph{m b} using value \emph{a}\\
+\emph{m a} \basicmseq\ \emph{m b} & Sequence & Discards inner value of the monad \emph{m a} and returns new monad \emph{m b}\\
 \end{tabulary}
 
-
+\subsubsection*{Notes}
+\begin{itemlist}
+\item Not all monad types obey monad laws, especially the funseq-monad.
+\end{itemlist}
 
 \section{Constants}
 

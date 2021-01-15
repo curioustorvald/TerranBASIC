@@ -37,9 +37,12 @@
 \usepackage{makeidx}
 \usepackage{multirow}
 \usepackage{textcomp}
+\usepackage{makecell}
 
 \usepackage{lineno} % debug
 
+
+\renewcommand\theadalign{bc}
 
 \makeatletter
 \newlength{\mytextsize}
@@ -65,7 +68,7 @@
 \newcommand\forceindent{\hskip1.5em}
 
 %% BASIC operators %%
-\newcommand\tildechar{{\large\raisebox{-0.27ex}{\char`\~}}}
+\newcommand\tildechar{{\large\raisebox{-0.22ex}{\char`\~}}}
 \newcommand\basicasgn{$=$}
 \newcommand\basicmul{$\,\ast\,$}
 \newcommand\basicdiv{$\,/\,$}
@@ -105,6 +108,9 @@
 \newcommand\basiccompo{\,{\LARGE\raisebox{0.03ex}{.}}\,}
 \newcommand\basicapply{\,\$\,}
 \newcommand\basicexp{\raisebox{0.25ex}{\scriptsize\wedge}}
+\newcommand\basicmcons{>$!$>}
+\newcommand\basicmpush{>\hspace*{-0.167em}\tildechar\hspace*{-0.167em}>}
+\newcommand\basicmconcat{>$\#$>}
 
 % Title styling
 \pretitle{\begin{flushright}}
@@ -200,7 +206,7 @@
 \newcommand{\thismachine}{TSVM}
 \newcommand{\tbasver}{1.1}
 \newcommand{\theedition}{Second Edition}
-\newcommand{\thepublishingdate}{2021-01-14}
+\newcommand{\thepublishingdate}{2021-01-15}
 \newcommand{\oreallypress}{\begingroup\hspace{0.083em}\large\textbf{O'REALLY\raisebox{1ex}{\scriptsize ?}} \large Press\endgroup}
 
 \title{\HUGE\textbf{\MakeUppercase{\tbas} \\ REFERENCE MANUAL} \\ \Large \vspace{1em} For Language Version \tbasver\hspace{0.75em}|\hspace{0.75em}\theedition}
