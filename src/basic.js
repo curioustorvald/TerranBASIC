@@ -362,7 +362,7 @@ let BasicMemoMonad = function(m) {
     this.mHash = makeBase32Hash();
     this.mType = "value"; // semi-meaningless metadata for an instance of Monad
     this.mVal = m; // a monadic value
-    this.seq = undefined;
+    this.seq = undefined; // unused
 }
 // I'm basically duck-typing here...
 let isMonad = (o) => (o === undefined) ? false : (o.mType !== undefined);
@@ -914,7 +914,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return [lh].concat(rh);
     });
 }},
-">!>" : {f:function(lnum, stmtnum, args) { // CONS on funseq monad
+">!>" : {noprod:1, f:function(lnum, stmtnum, args) { // CONS on funseq monad
     return twoArg(lnum, stmtnum, args, (lh,rh) => {
         if (!isAST(lh))
             throw lang.illegalType(lnum, lh);
@@ -933,7 +933,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return lh.concat([rh]);
     });
 }},
-">~>" : {f:function(lnum, stmtnum, args) { // APPEND on funseq monad
+">~>" : {noprod:1, f:function(lnum, stmtnum, args) { // APPEND on funseq monad
     return twoArg(lnum, stmtnum, args, (lh,rh) => {
         if (rh.mType !== "funseq")
             throw lang.illegalType(lnum, lh);
@@ -951,7 +951,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return lh.concat(rh);
     });
 }},
-">#>" : {f:function(lnum, stmtnum, args) { // funseq monad SEQ
+">#>" : {noprod:1, f:function(lnum, stmtnum, args) { // funseq monad SEQ
     return twoArg(lnum, stmtnum, args, (lh,rh) => {
         if (rh.mType !== "funseq")
             throw lang.illegalType(lnum, rh);
@@ -1552,64 +1552,64 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             serial.println(Object.entries(value));
     }
     
-    let valueTree = new BasicAST();
-    valueTree.astLnum = lnum;
-    valueTree.astType = JStoBASICtype(value);
-    valueTree.astValue = value;
-    
-    
-    let newTree = new BasicAST();
-    newTree.astLnum = lnum;
-    newTree.astValue = fn;
-    newTree.astType = "usrdefun";
-    newTree.astLeaves = [valueTree];
-
-    if (DBGON) {
-        serial.println("[BASIC.BUILTIN.APPLY] Here's your applied tree:");
-        serial.println(astToString(newTree));
-    }
-    
-    return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
-}},
-"REDUCE" : {f:function(lnum, stmtnum, args) {
-    if (DBGON) { // NOT ready for production
-        return oneArg(lnum, stmtnum, args, bv => {
-            if (isAST(bv)) {            
-                if (DBGON) {
-                    serial.println("[BASIC.BUILTIN.REDUCE] reducing:");
-                    serial.println(astToString(bv));
-                    /*if (tree.astType == "usrdefun") {
-                        serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
-                        serial.println(astToString(tree.astValue));
-                    }*/
-                }
-                
-                let reduced = bF._uncapAST(bv, it => {
-                    // TODO beta-eta reduction
-                    return it;
-                });
-                
-                if (DBGON) {
-                    serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+reduced);
-                    serial.println(astToString(reduced));
-                }
-                
-                // re-wrap because tree-executor wants encapsulated function
-                let newTree = new BasicAST();
-                newTree.astLnum = lnum;
-                newTree.astType = JStoBASICtype(reduced);
-                newTree.astValue = reduced;
-                
-                return newTree;
-            }
-            else {
-                return bv;
-            }
-        });
+    if (fn.mType == "funseq") {
+        return getMonadEvalFun(fn)(lnum, stmtnum, [value]);
     }
     else {
-        throw lang.syntaxfehler(lnum);
+        let valueTree = new BasicAST();
+        valueTree.astLnum = lnum;
+        valueTree.astType = JStoBASICtype(value);
+        valueTree.astValue = value;
+        
+        
+        let newTree = new BasicAST();
+        newTree.astLnum = lnum;
+        newTree.astValue = fn;
+        newTree.astType = "usrdefun";
+        newTree.astLeaves = [valueTree];
+
+        if (DBGON) {
+            serial.println("[BASIC.BUILTIN.APPLY] Here's your applied tree:");
+            serial.println(astToString(newTree));
+        }
+        
+        return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
     }
+}},
+"REDUCE" : {noprod:1, f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, bv => {
+        if (isAST(bv)) {            
+            if (DBGON) {
+                serial.println("[BASIC.BUILTIN.REDUCE] reducing:");
+                serial.println(astToString(bv));
+                /*if (tree.astType == "usrdefun") {
+                    serial.println("[BASIC.BUILTIN.REDUCE] usrdefun unpack:");
+                    serial.println(astToString(tree.astValue));
+                }*/
+            }
+            
+            let reduced = bF._uncapAST(bv, it => {
+                // TODO beta-eta reduction
+                return it;
+            });
+            
+            if (DBGON) {
+                serial.println("[BASIC.BUILTIN.REDUCE] reduced: "+reduced);
+                serial.println(astToString(reduced));
+            }
+            
+            // re-wrap because tree-executor wants encapsulated function
+            let newTree = new BasicAST();
+            newTree.astLnum = lnum;
+            newTree.astType = JStoBASICtype(reduced);
+            newTree.astValue = reduced;
+            
+            return newTree;
+        }
+        else {
+            return bv;
+        }
+    });
 }},
 /** type: m a -> (a -> m b) -> m b
  * @param m a monad
@@ -1700,7 +1700,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return m;
     });
 }},
-"MFUNSEQ" : {f:function(lnum, stmtnum, args) {
+"MFUNSEQ" : {noprod:1, f:function(lnum, stmtnum, args) {
     return oneArgNul(lnum, stmtnum, args, fn => {
         return new BasicFunSeqMonad(fn);
     });
@@ -1972,15 +1972,12 @@ bF._tokenise = function(lnum, cmd) {
             }
         }
         else if ("op" == mode) {
-            if (bF._is2o(charCode) && bF._opPrc[sb + char]) {
+            if (bF._is2o(charCode)) {
                 sb += char;
                 mode = "o2";
             }
             else if (bF._isUnary(charCode)) {
                 tokens.push(sb); sb = "" + char; states.push(mode);
-            }
-            else if (bF._is1o(charCode)) {
-                throw lang.syntaxfehler(lnum, lang.badOperatorFormat);
             }
             else if (bF._isNum(charCode)) {
                 tokens.push(sb); sb = "" + char; states.push(mode);
@@ -2008,12 +2005,9 @@ bF._tokenise = function(lnum, cmd) {
             }
         }
         else if ("o2" == mode) {
-            if (bF._is3o(charCode) && bF._opPrc[sb + char]) {
+            if (bF._is3o(charCode)) {
                 sb += char;
                 mode = "o3";
-            }
-            else if (bF._is1o(charCode) || bF._is2o(charCode)) {
-                throw lang.syntaxfehler(lnum, lang.badOperatorFormat);
             }
             else if (bF._isNum(charCode)) {
                 tokens.push(sb); sb = "" + char; states.push("op");
@@ -3522,9 +3516,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
                 )
             : (bStatus.builtin[funcName] === undefined)
                 ? undefined
-            : (!DBGON && bStatus.builtin[funcName].debugonly) ? "NO_DBG4U" : bStatus.builtin[funcName].f;
+            : (!DBGON && bStatus.builtin[funcName].debugonly) ? "NO_DBG4U" : (PROD && bStatus.builtin[funcName].noprod) ? "NO_PRODREADY" : bStatus.builtin[funcName].f;
 
         if (func === "NO_DBG4U") throw lang.syntaxfehler(lnum);
+        if (func === "NO_PRODREADY") throw lang.syntaxfehler(lnum);
 
         if ("IF" == funcName) {
             if (syntaxTree.astLeaves.length != 2 && syntaxTree.astLeaves.length != 3) throw lang.syntaxfehler(lnum);
