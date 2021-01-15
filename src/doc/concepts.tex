@@ -11,11 +11,11 @@ BASIC is a \emph{Dynamically Typed Language}, which means variables do not know 
 
 There are seven basic types: \emph{number}, \emph{boolean}, \emph{string},  \emph{array}, \emph{generator}, \emph{function} and \emph{monad}.
 
-\emph{Number}\index{number (type)} represents real (double-precision floating-point or actually, \emph{rational}) numbers. Operations on numbers follow the same rules of the underlying virtual machine\footnote{if you are not a computer person, disregard}, and such machines must follow the IEEE 754 standard\footnote{ditto.}. 
+\emph{Number}\index{number (type)} represents real (double-precision floating-point or actually, \emph{rational}) numbers. Operations on numbers follow the same rules of the underlying virtual machine\footnote{If you are not a computer person, disregard.}, and such machines must follow the IEEE 754 standard\footnote{ditto.}. 
 
 \emph{Boolean}\index{boolean (type)} is type of the value that is either \codebf{TRUE} or \codebf{FALSE}. Number \codebf{0} and \codebf{FALSE} make the condition \emph{false}. When used in numeric context, \codebf{FALSE} will be interpreted as 0 and \codebf{TRUE} as 1.
 
-\emph{String}\index{string (type)} represents immutable\footnote{Cannot be altered directly} sequences of bytes.
+\emph{String}\index{string (type)} represents immutable\footnote{Cannot be altered directly.} sequences of bytes.
 
 \emph{Array}\index{array (type)} represents a collection of numbers in one or more dimensions.
 
@@ -31,7 +31,7 @@ A program is executed starting with its lowest line number. Statements on a line
 
 You can dive into other lines in the middle of the program with \code{GOTO}. The program flow will continue normally at the new line \emph{and it will never know ya just did that}.
 
-If you want less insane jumping, \code{GOSUB} is used to jump to a subroutine. Subroutine is a little section of a code that serves as a tiny program inside of a program. \code{GOSUB} will remember from which statement in the line you have came from, and will return your program flow to that line when \code{RETURN} statement is encountered. (of course, if \code{RETURN} is used without \code{GOSUB}, program will raise some error) Do note that while you can reserve some portion of a program line as a \code{subroutine}, \tbas\ will not provide local variables and whatnot as all variables in BASIC are global, and you can just \code{GOTO} out of a subroutine to anywhere you desire and wreak havoc \emph{if you really wanted to}.
+If you want less insane jumping, \code{GOSUB} is used to jump to a subroutine. Subroutine is a little section of a code that serves as a tiny program inside of a program. \code{GOSUB} will remember from which statement in the line you have came from, and will return your program flow to that line when \code{RETURN} statement is encountered. (of course, if \code{RETURN} is used without \code{GOSUB}, program will raise some error) Do note that while you can reserve some portion of a program line as a \code{subroutine}, \tbas\ does not provide local variables and whatnot\footnote{If you really need some local variables, use the black magic of Monad.} as all variables in BASIC are global, and you can just \code{GOTO} out of a subroutine to anywhere you desire and wreak havoc \emph{if you really wanted to}.
 
 The \code{ON} statement provides alternative branching construct. You can enter multiple line numbers and let your variable (or mathematical expression) to choose which index of line numbers to \code{GOTO}- or \code{GOSUB} into.
 
