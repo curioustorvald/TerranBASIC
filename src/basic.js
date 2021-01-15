@@ -362,9 +362,7 @@ let BasicMemoMonad = function(m) {
     this.mHash = makeBase32Hash();
     this.mType = "value"; // semi-meaningless metadata for an instance of Monad
     this.mVal = m; // a monadic value
-    this.seq = undefined; // a pointer to next Monad, bind to this using (>>=) or (>>~)
-    
-    if (isAST(m)) throw lang.badFunctionCallFormat(undefined, "Value monad expected a primitive value but got "+JStoBASICtype(m));
+    this.seq = undefined;
 }
 // I'm basically duck-typing here...
 let isMonad = (o) => (o === undefined) ? false : (o.mType !== undefined);
@@ -376,6 +374,7 @@ let literalTypes = ["string", "num", "bool", "array", "generator", "usrdefun", "
         BASIC variable table and return the literal value of the BasicVar; undefined will be returned if no such var exists.
 */
 let resolve = function(variable) {
+    if (variable === undefined) return undefined;
     // head error checking
     if (variable.troType === undefined) {
         // primitves types somehow injected from elsewhere (main culprit: MAP)
@@ -521,6 +520,11 @@ let argCheckErr = function(lnum, o) {
 let oneArg = function(lnum, stmtnum, args, action) {
     if (args.length != 1) throw lang.syntaxfehler(lnum, args.length+lang.aG);
     argCheckErr(lnum, args[0]);
+    var rsvArg0 = resolve(args[0]);
+    return action(rsvArg0);
+}
+let oneArgNul = function(lnum, stmtnum, args, action) {
+    if (args.length != 1) throw lang.syntaxfehler(lnum, args.length+lang.aG);
     var rsvArg0 = resolve(args[0]);
     return action(rsvArg0);
 }
@@ -699,13 +703,14 @@ bStatus.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
  * @return a Javascript function that when called, evaluates the exprTree
  */
 bStatus.getDefunThunk = function(exprTree, norename) {
+    if (!isAST(exprTree)) throw new InternalError("not a syntax tree");
     let tree = cloneObject(exprTree); // ALWAYS create new tree instance!
     return function(lnum, stmtnum, args, seps) {
         if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
         
         if (!norename) {
             let argsMap = args.map(it => {
-                argCheckErr(lnum, it);
+                //argCheckErr(lnum, it);
                 let rit = resolve(it);
                 return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
             }).reverse();
@@ -739,6 +744,10 @@ bStatus.getDefunThunk = function(exprTree, norename) {
                         if (DBGON) {
                             serial.println("[BASIC.getDefunThunk.invoke] thunk renaming-theArg: "+theArg);
                             serial.println(`${Object.entries(theArg)}`);
+                        }
+                        
+                        if (theArg[0] === "null") {
+                            throw new InternalError(`Bound variable is ${theArg}; lambdaBoundVars: ${theLambdaBoundVars()}`);
                         }
                         
                         it.astValue = theArg[1];
@@ -1623,20 +1632,17 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         //monadAppendAtEnd(mb, bStatus.getDefunThunk(a_to_mb)(lnum, stmtnum, [ma.mVal]));
         // return mb;
         
-        let a = (isAST(ma.mVal)) ? bStatus.getDefunThunk(ma.mVal)(lnum, stmtnum, []) : ma.mVal;
+        let a = ma.mVal;//(isAST(ma.mVal)) ? bStatus.getDefunThunk(ma.mVal)(lnum, stmtnum, []) : ma.mVal;
         let mb = bStatus.getDefunThunk(a_to_mb)(lnum, stmtnum, [a]);
         
         if (!isMonad(mb)) throw lang.badFunctionCallFormat(lnum, "right-hand function did not return a monad");
-        
-        let nma = mb;
-        //let nma = monadAppendAtEnd(cloneObject(ma), mb);
                   
         if (DBGON) {
             serial.println("[BASIC.BIND] bound monad:");
-            serial.println(monadToString(nma));
+            serial.println(monadToString(mb));
         }
         
-        return nma;
+        return mb;
     });
 }},
 /** type: m a -> m b -> m b
@@ -1656,9 +1662,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             serial.println(monadToString(mb));
         }
         
-        let a = (isAST(ma.mVal)) ? bStatus.getDefunThunk(ma.mVal)(lnum, stmtnum, []) : ma.mVal;
-        let b = (isAST(mb.mVal)) ? bStatus.getDefunThunk(mb.mVal)(lnum, stmtnum, []) : mb.mVal;
-
+        let a = ma.mVal;//(isAST(ma.mVal)) ? bStatus.getDefunThunk(ma.mVal)(lnum, stmtnum, []) : ma.mVal;
+        let b = mb.mVal;//bStatus.getDefunThunk(a_to_mb)(lnum, stmtnum, [a]);
+        
         return mb;
     });
 }},
@@ -1695,13 +1701,19 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     });
 }},
 "MFUNSEQ" : {f:function(lnum, stmtnum, args) {
-    return oneArg(lnum, stmtnum, args, fn => {
+    return oneArgNul(lnum, stmtnum, args, fn => {
         return new BasicFunSeqMonad(fn);
     });
 }},
 "MRET" : {f:function(lnum, stmtnum, args) {
-    return oneArg(lnum, stmtnum, args, fn => {
+    return oneArgNul(lnum, stmtnum, args, fn => {
         return new BasicMemoMonad(fn);
+    });
+}},
+"MJOIN" : {f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, m => {
+        if (!isMonad(m)) throw lang.illegalType(lnum, m);
+        return m.mValue;
     });
 }},
 "EVALMONAD" : {f:function(lnum, stmtnum, args) {
@@ -3452,6 +3464,11 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
  */
 bF._troNOP = function(lnum, stmtnum) { return new SyntaxTreeReturnObj("null", undefined, [lnum, stmtnum+1]); }
 bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
+    if (syntaxTree == undefined) return bF._troNOP(lnum, stmtnum);
+    if (syntaxTree.astLeaves === undefined && syntaxTree.astValue === undefined) {
+        throw new InternalError("not a syntax tree");
+    }
+    
     if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
 
     let _debugExec = (!PROD) && true;
@@ -3464,8 +3481,6 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
         serial.println("Syntax Tree in "+lnum+":");
         serial.println(astToString(syntaxTree));
     }
-
-    if (syntaxTree == undefined) return bF._troNOP(lnum, stmtnum);
 
     let callingUsrdefun = (syntaxTree.astType == "usrdefun" && syntaxTree.astLeaves[0] !== undefined); // usually (~<) will make this 'true'
     
