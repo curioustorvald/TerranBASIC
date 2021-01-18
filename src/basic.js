@@ -371,15 +371,15 @@ let BasicListMonad = function(m) {
 120 A=42
 130 KM=RETN(A)>>=K
 140 KO=K(A)
-150 PRINT("KM is ";TYPEOF(KM);", ";EVALMONAD(KM))
-160 PRINT("KO is ";TYPEOF(KO);", ";EVALMONAD(KO))
+150 PRINT("KM is ";TYPEOF(KM);", ";MEVAL(KM))
+160 PRINT("KO is ";TYPEOF(KO);", ";MEVAL(KO))
 
 200 PRINT:PRINT "Second law: 'm >>= return' equals to 'm'"
 210 M=MRET(G(42))
 220 MM=M>>=RETN
 230 MO=M
-240 PRINT("MM is ";TYPEOF(MM);", ";EVALMONAD(MM))
-250 PRINT("MO is ";TYPEOF(MO);", ";EVALMONAD(MO))
+240 PRINT("MM is ";TYPEOF(MM);", ";MEVAL(MM))
+250 PRINT("MO is ";TYPEOF(MO);", ";MEVAL(MO))
 
 300 PRINT:PRINT "Third law: 'm >>= (\x -> k x >>= h)' equals to '(m >>= k) >>= h'"
 310 REM see line 110 for the definition of K
@@ -387,8 +387,8 @@ let BasicListMonad = function(m) {
 330 M=MRET(69)
 340 M1=M>>=([X]~>K(X)>>=H)
 350 M2=(M>>=K)>>=H
-360 PRINT("M1 is ";TYPEOF(M1);", ";EVALMONAD(M1))
-370 PRINT("M2 is ";TYPEOF(M2);", ";EVALMONAD(M2))
+360 PRINT("M1 is ";TYPEOF(M1);", ";MEVAL(M1))
+370 PRINT("M2 is ";TYPEOF(M2);", ";MEVAL(M2))
  */
 let BasicMemoMonad = function(m) {
     this.mHash = makeBase32Hash();
@@ -1718,7 +1718,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return m.mValue;
     });
 }},
-"EVALMONAD" : {argc:1, f:function(lnum, stmtnum, args) {
+"MEVAL" : {argc:1, f:function(lnum, stmtnum, args) {
     return varArg(lnum, stmtnum, args, rgs => {
         let m = rgs[0];
         let args = rgs.slice(1, rgs.length);

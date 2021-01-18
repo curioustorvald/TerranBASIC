@@ -185,9 +185,12 @@ Functions are a form of expression that may taks input arguments surrounded by p
 
 \section{Monad Manipulation}
 
-    \subsection{EVALMONAD}
-        \index{EVALMONAD (function)}\codeline{K \textbf{= EVALMONAD(} M [\textbf{,} args]\ldots\ \textbf{)}}\par
+    \subsection{MEVAL}
+        \index{MEVAL (function)}\codeline{K \textbf{= MEVAL(} M [\textbf{,} args]\ldots\ \textbf{)}}\par
         Evaluates the monad and returns its final return value.
+    \subsection{MJOIN}
+        \index{MJOIN (function)}\codeline{K \textbf{= MJOIN(}M\textbf{)}}\par
+        Returns the inner value of the given monad.
     \subsection{MRET}
         \index{MRET (function)}\codeline{M \textbf{= MRET(}X\textbf{)}}\par
         Returns a value-monad that contains a given value.
