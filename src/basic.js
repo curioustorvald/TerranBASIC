@@ -271,9 +271,9 @@ let astToString = function(ast, depth, isFinalLeaf) {
 let monadToString = function(monad, depth) {
     let recDepth = depth || 0;
     let l__ = "  ";
-    let sb = `M"${monad.mHash}": `+monad.mType+((monad.mVal === undefined) ? "(undefined)" : (monad.mType === "funseq") ? `"${monad.mVal.astHash}"` : monad.mVal);
+    let sb = ` M"${monad.mHash}"(${monad.mType}): `+((monad.mVal === undefined) ? "(undefined)" : (isAST(monad.mVal)) ? `f"${monad.mVal.astHash}"` : (isMonad(monad.mVal)) ? `M"${monad.mVal.mHash}"` : monad.mVal);
     if (monad.seq !== undefined) {
-        sb += '\n'+(l__).repeat(recDepth)+"L "+monadToString(monad.seq, recDepth + 1);
+        sb += '\n '+(l__).repeat(recDepth)+"L "+monadToString(monad.seq, recDepth + 1);
     }
     return sb;
 }
@@ -315,7 +315,7 @@ let BasicFunSeqMonad = function(m) {
     this.mVal = m; // a monadic value
     this.seq = undefined; // a pointer to next Monad, bind to this using (>>=) or (>>~)
     
-    if (!isAST(m)) throw lang.badFunctionCallFormat(undefined, "Function monad expected a usrdefun but got "+JStoBASICtype(m));
+    //if (!isAST(m)) throw lang.badFunctionCallFormat(undefined, "Function monad expected a usrdefun but got "+JStoBASICtype(m));
 }
 /** A Memoisation Monad
  * This monad MUST follow the monad law!
@@ -965,10 +965,10 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 ">~>" : {noprod:1, f:function(lnum, stmtnum, args) { // APPEND on funseq monad
     return twoArg(lnum, stmtnum, args, (lh,rh) => {
-        if (rh.mType !== "funseq")
+        if (lh.mType !== "funseq")
             throw lang.illegalType(lnum, lh);
-        if (!isAST(rh))
-            throw lang.illegalType(lnum, rh);
+        //if (!isAST(rh))
+        //    throw lang.illegalType(lnum, rh);
         return monadAppendAtEnd(lh, new BasicFunSeqMonad(rh));
     });
 }},
@@ -1726,7 +1726,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return m;
     });
 }},
-"MFUNSEQ" : {noprod:1, argc:1, f:function(lnum, stmtnum, args) {
+"MLIST" : {noprod:1, argc:1, f:function(lnum, stmtnum, args) {
     return oneArgNul(lnum, stmtnum, args, fn => {
         return new BasicFunSeqMonad(fn);
     });
@@ -1749,6 +1749,11 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return getMonadEvalFun(m)(lnum, stmtnum, args);
     });
 }},
+"GOTOYX" : {argc:2, f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (y, x) => {
+        con.move(y + (1-INDEX_BASE),x + (1-INDEX_BASE));
+    });
+}},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
         if (lh != 0 && lh != 1) throw lang.syntaxfehler(line);
@@ -1765,7 +1770,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     return oneArg(lnum, stmtnum, args, (it) => {
         println(monadToString(it));
     });
-}},
+}}, 
 "RESOLVE" : {debugonly:1, argc:1, f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, (it) => {
         if (isAST(it)) {
@@ -1867,14 +1872,14 @@ bF._opPrc = {
     ".": 60, // compo operator
     "$": 60, // apply operator
     "~<": 61, // curry operator
+    "~>": 100, // closure operator
     ">>~": 100, // monad sequnce operator
     ">>=": 100, // monad bind operator
-    "~>": 100, // closure operator
     ">!>": 100, // monad CONS
     ">~>": 100, // monad PUSH
     ">#>": 100, // monad concat
     "=":999,"IN":999
-};
+}; // when to ops have same index of prc but different in associativity, right associative op gets higher priority (at least for the current parser implementation)
 bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {

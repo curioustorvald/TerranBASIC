@@ -197,10 +197,14 @@ Functions are a form of expression that may taks input arguments surrounded by p
     \subsection{CLS}
         \index{CLS (function)}\codeline{\textbf{CLS}}\par
         Clears text view and moves text cursor to top-left.
+    \subsection{GOTOYX}
+        \index{GOTOYX (function)}\codeline{\textbf{GOTOYX(} ROW \textbf{,} COLUMN \textbf{)}}\par
+        Moves text cursor to given row and column.\par
+        When \code{OPTIONBASE 1} is specified, first row and column will be 1, otherwise it will be 0.
     \subsection{PLOT}
         \index{PLOT (function)}\codeline{\textbf{PLOT(} X\_POS \textbf{,} Y\_POS \textbf{,} COLOUR \textbf{)}}\par
         Plots a pixel to the framebuffer of the display, at XY-position of \code{X\_POS} and \code{Y\_POS}, with colour of \code{COLOUR}.\par
-        Top-left corner of the pixel will be 1 if \code{OPTIONBASE 1} is specified; otherwise it will be 0.
+        Top-left corner of the pixel will be 1 if \code{OPTIONBASE 1} is specified, otherwise it will be 0.
 
 \section{Meta}
 
