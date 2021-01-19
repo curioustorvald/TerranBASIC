@@ -557,6 +557,12 @@ let twoArg = function(lnum, stmtnum, args, action) {
     var rsvArg1 = resolve(args[1]);
     return action(rsvArg0, rsvArg1);
 }
+let twoArgNul = function(lnum, stmtnum, args, action) {
+    if (args.length != 2) throw lang.syntaxfehler(lnum, args.length+lang.aG);
+    var rsvArg0 = resolve(args[0]);
+    var rsvArg1 = resolve(args[1]);
+    return action(rsvArg0, rsvArg1);
+}
 let twoArgNum = function(lnum, stmtnum, args, action) {
     if (args.length != 2) throw lang.syntaxfehler(lnum, args.length+lang.aG);
     argCheckErr(lnum, args[0]);
@@ -625,7 +631,8 @@ let _basicConsts = {
    "PI": new BasicVar(Math.PI, "num"),
    "TAU": new BasicVar(Math.PI * 2.0, "num"),
    "EULER": new BasicVar(Math.E, "num"),
-   "ID": new BasicVar(makeIdFun(), "usrdefun")
+   "ID": new BasicVar(makeIdFun(), "usrdefun"),
+   "UNDEFINED": new BasicVar(undefined, "null")
 };
 Object.freeze(_basicConsts);
 let initBvars = function() {
@@ -889,7 +896,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     }
 }},
 "==" : {argc:2, f:function(lnum, stmtnum, args) {
-    return twoArg(lnum, stmtnum, args, (lh,rh) => lh == rh);
+    return twoArgNul(lnum, stmtnum, args, (lh,rh) => lh == rh);
 }},
 "<>" : {argc:2, f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (lh,rh) => lh != rh);
@@ -1052,7 +1059,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             }
 
             var rsvArg = resolve(args[llll]);
-            if (rsvArg === undefined && args[llll] !== undefined && args[llll].troType != "null") throw lang.refError(lnum, args[llll].troValue);
+            //if (rsvArg === undefined && args[llll] !== undefined && args[llll].troType != "null") throw lang.refError(lnum, args[llll].troValue);
 
             //serial.println(`${lnum} PRINT ${lang.ord(llll)} arg: ${Object.entries(args[llll])}, resolved: ${rsvArg}`);
 
