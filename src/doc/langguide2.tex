@@ -1,0 +1,27 @@
+This chapter contains little more advanced but still short example programs. Wonder how these programs work? Go figure!
+
+\section{Quick Sort}
+
+Prerequisites: Array, Function, Recursion, Closure
+
+\begin{lstlisting}
+10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE 
+    QSORT(FILTER([X]~>X<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
+    QSORT(FILTER([X]~>X>=HEAD XS,TAIL XS))
+100 L=7!9!4!5!2!3!1!8!6!NIL
+110 PRINT L
+120 PRINT QSORT(L)
+\end{lstlisting}
+
+\section{Fast Fibonacci Sequence}
+
+Prerequisites: Array, Function, Recursion, Closure, Monad
+
+\begin{lstlisting}
+10 FIB_=[N,M]~>IF LEN(MJOIN(M))>=N THEN HEAD(MJOIN(M)) ELSE
+    FIB_(N,M>>=([XS]~>MRET((XS(0)+XS(1))!XS)))
+11 FIB=[N]~>FIB_(N,MRET(1!1!NIL))
+100 FOR K=1 TO 10
+110 PRINT FIB(K);" ";
+120 NEXT
+\end{lstlisting}

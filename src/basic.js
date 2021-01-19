@@ -1715,7 +1715,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "MJOIN" : {argc:1, f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, m => {
         if (!isMonad(m)) throw lang.illegalType(lnum, m);
-        return m.mValue;
+        return m.mVal;
     });
 }},
 "MEVAL" : {argc:1, f:function(lnum, stmtnum, args) {
@@ -3581,7 +3581,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             
             if (_debugExec) {
                 serial.println(recWedge+"fn call name: "+funcName);
-                serial.println(recWedge+"fn call args: "+(args.map(it => it.troType+" "+it.troValue)).join(", "));
+                serial.println(recWedge+"fn call args: "+(args.map(it => (it == undefined) ? it : (it.troType+" "+it.troValue)).join(", ")));
             }
                         
             // func not in builtins (e.g. array access, user-defined function defuns)

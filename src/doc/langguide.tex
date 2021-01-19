@@ -217,7 +217,6 @@ This function is anonymous: only the \code{MAP} can use it and is not accessible
 40 PRINT CF(-32) : REM will print 'true'
 \end{lstlisting}
 
-% NOTE: you can't use \basiccurry within \code{}
 Here, \code{CF} is a curried function of \code{F}; built-in operator \code{\basiccurry} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
 
 But, what if we pre-cook the curry before serve? The \code{\basiccurry} operator is there to curry an un-curried function; we rarely need that if the function was curried in the begin with.
@@ -251,13 +250,3 @@ Using all the knowledge we have learned, it should be trivial\footnote{/s} to wr
 \end{lstlisting}
 
 Line 12 implements quicksort algorithm, using \code{LESS} and \code{GTEQ} as helper functions. \code{LESS} is a user-function version of less-than operator, and \code{GTEQ} is similar. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}\footnote{Stands for \emph{X's}.} with \code{HEAD(XS)}, then utilises curried version of \code{LESS} and \code{GTEQ} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL(XS)} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Currying is exploited to give comparison functions a pivot-value to compare against, and also because \code{FILTER} wants a \emph{function} and not an \emph{expression}. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
-
-Using the closure, the definition of \code{QSORT} no longer need helper functions, can truly be a one-liner and be \emph{even more cryptic}:
-
-\begin{lstlisting}
-10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE 
-    QSORT(FILTER([X]~>X<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
-    QSORT(FILTER([X]~>X>=HEAD XS,TAIL XS))
-\end{lstlisting}
-
-Compare with the lengthy version and this one, and try to tell how it works; this is the today's excercise.
