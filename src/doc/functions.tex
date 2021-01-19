@@ -100,7 +100,7 @@ Functions are a form of expression that may taks input arguments surrounded by p
 
     \subsection{EMIT}
         \index{EMIT (function)}\codeline{\textbf{EMIT(} EXPR [\{\textbf{,}|\textbf{;}\} EXPR]\ldots\ \textbf{)}}\par
-        Prints out characters corresponding to given number on the code page being used.\par
+        Prints out characters corresponding to given number on the code page being used. For the code page itself, see \ref{codepage}.\par
         \code{EXPR} is numeric expression.
     \subsection{PRINT}
         \index{PRINT (function)}\codeline{\textbf{PRINT(} EXPR [\{\textbf{,}|\textbf{;}\} EXPR]\ldots\ \textbf{)}}\par
@@ -206,7 +206,7 @@ Functions are a form of expression that may taks input arguments surrounded by p
         When \code{OPTIONBASE 1} is specified, first row and column will be 1, otherwise it will be 0.
     \subsection{PLOT}
         \index{PLOT (function)}\codeline{\textbf{PLOT(} X\_POS \textbf{,} Y\_POS \textbf{,} COLOUR \textbf{)}}\par
-        Plots a pixel to the framebuffer of the display, at XY-position of \code{X\_POS} and \code{Y\_POS}, with colour of \code{COLOUR}.\par
+        Plots a pixel to the framebuffer of the display, at XY-position of \code{X\_POS} and \code{Y\_POS}, with colour of \code{COLOUR}. For the available colours, see \ref{colourpalette}\par
         Top-left corner of the pixel will be 1 if \code{OPTIONBASE 1} is specified, otherwise it will be 0.
 
 \section{Meta}

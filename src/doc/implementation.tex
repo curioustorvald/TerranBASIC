@@ -4,7 +4,7 @@ This chapter explains implementation details of \tbas\ running on \thismachine.
 
 \section{Keycodes}
 
-This is a table of keycodes recognised by the LibGDX, a framework that \thismachine\ runs on.
+\index{keycodes}This is a table of keycodes recognised by the LibGDX, a framework that \thismachine\ runs on.
 
 \begin{longtable}{*{2}{m{\textwidth}}}\hline
 \endfirsthead
@@ -123,11 +123,24 @@ F11 & 254 \\
 Keys not listed on the table may not be available depending on the system, for example, F12 may not be recognised.
 
 \section{Code Page}
+\label{codepage}
 
-By default \thismachine\ uses slightly modified version of CP-437, this is a character map of it:
+\index{code page}By default \thismachine\ uses slightly modified version of CP-437, this is a character map of it:
 
 {\centering
 \includegraphics[width=\linewidth]{tsvmcp.png}
 \captionof{figure}{\thismachine\ Character Map}
+\label{fig:codepage}
+}
+\newpage
+
+\section{Colour Palette}
+\label{colourpalette}
+
+\index{colour palette}By default the reference graphics adapter of the \thismachine\ uses following colour palette:
+
+{\centering
+\includegraphics[width=\linewidth]{tsvmpal.png}
+\captionof{figure}{\thismachine\ Colour Palette}
 \label{fig:codepage}
 }
