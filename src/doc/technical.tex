@@ -15,6 +15,7 @@ Typical User Input & TYPEOF(\textbf{Q}) & Instanceof \\
 \code{DEFUN \textbf{Q}(X)=X+3} & {\ttfamily usrdefun} & BasicAST \\
 \code{\textbf{Q}=MRET(X)} & value-monad & BasicMemoMonad \\
 \code{\textbf{Q}=F.G} & funseq-monad & BasicFunSeqMonad \\
+\code{\textbf{Q}=UNDEFINED} & undefined & \emph{primitive} \\
 \end{tabulary}
 
 \subsection*{Notes}
@@ -48,6 +49,7 @@ String & {\ttfamily string} \\
 Array & {\ttfamily array} \\
 Generator & {\ttfamily generator} \\
 \emph{subtype}-monad & {\ttfamily monad} \\
+Undefined & {\ttfamily null} \\
 DEFUN'd Function & {\ttfamily internal\_lambda} \\
 Array Indexing & {\ttfamily internal\_arrindexing\_lazy} \\
 Assignment & {\ttfamily internal\_assignment\_object} \\
@@ -71,7 +73,7 @@ In 1972, dutch mathematician Nicolaas de Bruijn invented \emph{de Bruijn Indexin
 Since closures in \tbas\ can have multiple bound variables instead of just one as in lambda calculus, we deploy a modified version of the indexing:
 \begin{align*}
 recIndex &:= \text{index of recursion depth}\\
-ordIndex &:= \text{reverse order of a bound variable within a level}\\
+ordIndex &:= \text{index of a bound variable within a level}\\
 index &:= \text{array of}\ [recIndex, ordIndex]
 \end{align*}
 And consider following example code:
@@ -84,8 +86,8 @@ In this code, variables will have following indices:
 \begin{tabulary}{\textwidth}{cC|cC|cC}
 Variable & Index & Variable & Index & Variable & Index \\
 \hline
-C {\condensedfont (in filter of M)} & $[1,0]$ & X & $[1,1]$ & M & $[0,0]$ \\
-C {\condensedfont (in outer ZIP)} & $[0,0]$ & Y & $[1,0]$ & \ & \ \\
+C {\condensedfont (in filter of M)} & $[1,0]$ & X & $[1,0]$ & M & $[0,0]$ \\
+C {\condensedfont (in outer ZIP)} & $[0,0]$ & Y & $[1,1]$ & \ & \ \\
 \end{tabulary}
 
 and the program tree would look like this:

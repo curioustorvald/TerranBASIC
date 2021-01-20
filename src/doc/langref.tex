@@ -292,7 +292,7 @@ Code & Operation & Result \\
 
 \section{Constants}
 
-Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{PI (constant)}\index{TAU (constant)}\index{EULER (constant)}\index{NIL (constant)}\index{ID (constant)}
+Some variables are pre-defined on the language itself and cannot be modified; such variables are called \emph{constants}.\index{constants}\index{PI (constant)}\index{TAU (constant)}\index{EULER (constant)}\index{NIL (constant)}\index{ID (constant)}\index{UNDEFINED (constant)}
 
 \begin{tabulary}{\textwidth}{rllL}
 Name & Type & Value & Description \\
@@ -301,7 +301,8 @@ PI & Number & $3.141592653589793$ & $\pi$ \\
 TAU & Number & $6.283185307179586$ & $2 \pi$ \\
 EULER & Number & $2.718281828459045$ & Euler's number $e$ \\
 NIL & Array & Empty Array & Used to construct arbitrary array using CONS-operator \\
-ID & Function & \code{[X]\basicclosure X} & An identity function that is not ``built-in'' so it can be used with MAP/FOLD/etc. \\
+ID & Function & \code{[X]\basicclosure X} & An identity function \\
+UNDEFINED & Undefined & undefined & Undefined \\
 \end{tabulary}
 
 \section{Syntax In EBNF}

@@ -466,10 +466,18 @@ let findHighestIndex = function(exprTree) {
     };rec(exprTree);
     return highestIndex;
 }
+let indexDec = function(node, recIndex) {
+    if (node.astType == "defun_args" && node.astValue[0] === recIndex) {
+        let newNode = cloneObject(node);
+        newNode.astValue[1] -= 1;
+        return newNode;
+    }
+    else return node;
+}
 let curryDefun = function(inputTree, inputValue) {    
     let exprTree = cloneObject(inputTree);
     let value = cloneObject(inputValue);
-    let highestIndex = findHighestIndex(exprTree);
+    let highestIndex = findHighestIndex(exprTree)[0];
     
     if (DBGON) {
         serial.println("[curryDefun] highest index to curry: "+highestIndex);
@@ -486,8 +494,15 @@ let curryDefun = function(inputTree, inputValue) {
     }
     
     // substitute the highest index with given value
-    bF._recurseApplyAST(exprTree, it => {
+    /*bF._recurseApplyAST(exprTree, it => {
         return (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === highestIndex[1]) ? substitution : it
+    });*/
+    
+    // substitute the highest index [max recIndex, 0] with given value
+    // and if recIndex is same as the highestIndex and ordIndex is greater than zero,
+    // decrement the ordIndex
+    bF._recurseApplyAST(exprTree, it => {
+        return (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === 0) ? substitution : indexDec(it, highestIndex[0])
     });
     
     return exprTree;
@@ -735,7 +750,7 @@ bStatus.getDefunThunk = function(exprTree, norename) {
                 //argCheckErr(lnum, it);
                 let rit = resolve(it);
                 return [JStoBASICtype(rit), rit]; // substitute for [astType, astValue]
-            }).reverse();
+            });//.reverse();
             
             // bind arguments
             lambdaBoundVars.unshift(argsMap);
@@ -815,7 +830,7 @@ bStatus.wrapBuiltinToUsrdefun = function(funcname) {
     if (argCount === undefined) throw new InternalError(`${funcname} cannot be wrapped into usrdefun`);
     
     let leaves = [];
-    for (let k = argCount - 1; k >= 0; k--) {
+    for (let k = 0; k < argCount; k++) {
         let l = new BasicAST();
         l.astLnum = "**";
         l.astValue = [0,k];
@@ -1525,7 +1540,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
     });
 }},
 "TYPEOF" : {argc:1, f:function(lnum, stmtnum, args) {
-    return oneArg(lnum, stmtnum, args, bv => {
+    return oneArgNul(lnum, stmtnum, args, bv => {
+        if (bv === undefined) return "undefined";
         if (bv.bvType === undefined || !(bv instanceof BasicVar)) {
             let typestr = JStoBASICtype(bv);
             if (typestr == "monad")
@@ -3212,7 +3228,7 @@ bF._parseLit = function(lnum, tokens, states, recDepth, functionMode) {
     return treeHead;
 }
 /**
- * @return: Array of [recurseIndex, orderlyIndex], both corresponds to the de-bruijn indexing
+ * @return: Array of [recurseIndex, orderlyIndex], where recurseIndex is in reverse and orderlyIndex is not
  */
 bF._findDeBruijnIndex = function(varname, offset) {
     let recurseIndex = -1;
@@ -3255,7 +3271,7 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         let vars = nameTree.astLeaves.map((it, i) => {
             if (it.astType !== "lit") throw new ParserError("Malformed bound variable for function definition; tree:\n"+astToString(nameTree));
             return it.astValue;
-        }).reverse();
+        });//.reverse();
         
         lambdaBoundVars.unshift(vars);
         
@@ -3292,12 +3308,10 @@ bF._pruneTree = function(lnum, tree, recDepth) {
         
         let nameTree = tree.astLeaves[0];
         let exprTree = tree.astLeaves[1];
-        let highestIndex = findHighestIndex(exprTree);
         
         // test print new tree
         if (DBGON) {
             serial.println("[Parser.PRUNE.~>] closure bound variables: "+Object.entries(lambdaBoundVars));
-            serial.println(`[Parser.PRUNE.~>] existing highest index: d(${highestIndex[0]},*)`);
         }
         
         // rename the parameters
@@ -3306,7 +3320,6 @@ bF._pruneTree = function(lnum, tree, recDepth) {
                 // check if parameter name is valid
                 // if the name is invalid, regard it as a global variable (i.e. do nothing)
                 try {
-                    //let dbi = bF._findDeBruijnIndex(it.astValue, highestIndex[0] + 1);
                     let dbi = bF._findDeBruijnIndex(it.astValue);
                     
                     if (DBGON) {
@@ -3400,7 +3413,7 @@ bF._makeRunnableFunctionFromExprTree = function(lnum, stmtnum, expression, args,
     let defunArgs = args.map(it => {
         let rit = resolve(it);
         return [JStoBASICtype(rit), rit];
-    }).reverse();
+    });//.reverse();
     lambdaBoundVars.unshift(defunArgs);
     
     if (_debugExec) {

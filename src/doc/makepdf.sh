@@ -15,6 +15,9 @@ rm $TEXJOBNAME.toc
 rm $TEXJOBNAME.ilg
 rm $TEXJOBNAME.aux
 
+# we REALLY need triple-compilation here because LaTeX, otherwise 'constants' will point to p.24 when it should be p.26
+
+lualatex $TEXJOBNAME.tex
 lualatex $TEXJOBNAME.tex
 makeindex $TEXJOBNAME
 lualatex $TEXJOBNAME.tex
