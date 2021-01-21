@@ -68,10 +68,8 @@ function isNumable(s) {
     if (s === undefined) return false;
     // null string?
     if (typeof s.trim == "function" && s.trim.length == 0) return false;
-    // string?
-    if (typeof s.trim == "function" && s.trim.length > 0) return !isNaN(s); // NOTE: isNaN("") === false
     // else?
-    return !isNaN(s);
+    return !isNaN(s); // NOTE: isNaN('') == false
 }
 
 function cloneObject(o) { return JSON.parse(JSON.stringify(o)); }
