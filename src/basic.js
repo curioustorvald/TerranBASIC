@@ -66,8 +66,10 @@ function isNumable(s) {
     if (Array.isArray(s)) return false;
     // undefined?
     if (s === undefined) return false;
+    // null string?
+    if (typeof s.trim == "function" && s.trim.length == 0) return false;
     // string?
-    if (typeof s.trim == "function" && typeof s.trim.length > 0) return !isNaN(s);
+    if (typeof s.trim == "function" && s.trim.length > 0) return !isNaN(s); // NOTE: isNaN("") === false
     // else?
     return !isNaN(s);
 }
@@ -1807,8 +1809,8 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 Object.freeze(bStatus.builtin);
 let bF = {};
 bF._1os = {"!":1,"~":1,"#":1,"<":1,"=":1,">":1,"*":1,"+":1,"-":1,"/":1,"^":1,":":1,"$":1,".":1};
-bF._2os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1,"!":1,"#":1};
-bF._3os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1}
+//bF._2os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1,"!":1,"#":1};
+//bF._3os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1}
 bF._uos = {"+":1,"-":1,"NOT":1,"BNOT":1};
 bF._isNum = function(code) {
     return (code >= 0x30 && code <= 0x39) || code == 0x5F;
@@ -1822,12 +1824,12 @@ bF._isNumSep = function(code) {
 bF._is1o = function(code) {
     return bF._1os[String.fromCharCode(code)]
 };
-bF._is2o = function(code) {
+/*bF._is2o = function(code) {
     return bF._2os[String.fromCharCode(code)]
 };
 bF._is3o = function(code) {
     return bF._3os[String.fromCharCode(code)]
-};
+};*/
 bF._isUnary = function(code) {
     return bF._uos[String.fromCharCode(code)]
 }
@@ -1999,9 +2001,9 @@ bF._tokenise = function(lnum, cmd) {
             }
         }
         else if ("op" == mode) {
-            if (bF._is2o(charCode)) {
-                sb += char;
-                mode = "o2";
+            if (bF._is1o(charCode)) {
+                tokens.push(sb); sb = "" + char; states.push(mode);
+                mode = "op";
             }
             else if (bF._isUnary(charCode)) {
                 tokens.push(sb); sb = "" + char; states.push(mode);
@@ -2028,65 +2030,6 @@ bF._tokenise = function(lnum, cmd) {
             }
             else {
                 tokens.push(sb); sb = "" + char; states.push(mode);
-                mode = "lit";
-            }
-        }
-        else if ("o2" == mode) {
-            if (bF._is3o(charCode)) {
-                sb += char;
-                mode = "o3";
-            }
-            else if (bF._isNum(charCode)) {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "num";
-            }
-            else if (0x22 == charCode) {
-                tokens.push(sb); sb = ""; states.push("op");
-                mode = "qot";
-            }
-            else if (" " == char) {
-                tokens.push(sb); sb = ""; states.push("op");
-                mode = "limbo";
-            }
-            else if (bF._isParen(charCode)) {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "paren"
-            }
-            else if (bF._isSep(charCode)) {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "sep";
-            }
-            else {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "lit";
-            }
-        }
-        else if ("o3" == mode) {
-            if (bF._is1o(charCode) || bF._is2o(charCode) || bF._is3o(charCode)) {
-                throw lang.syntaxfehler(lnum, lang.badOperatorFormat);
-            }
-            else if (bF._isNum(charCode)) {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "num";
-            }
-            else if (0x22 == charCode) {
-                tokens.push(sb); sb = ""; states.push("op");
-                mode = "qot";
-            }
-            else if (" " == char) {
-                tokens.push(sb); sb = ""; states.push("op");
-                mode = "limbo";
-            }
-            else if (bF._isParen(charCode)) {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "paren"
-            }
-            else if (bF._isSep(charCode)) {
-                tokens.push(sb); sb = "" + char; states.push("op");
-                mode = "sep";
-            }
-            else {
-                tokens.push(sb); sb = "" + char; states.push("op");
                 mode = "lit";
             }
         }
@@ -2269,23 +2212,28 @@ bF._tokenise = function(lnum, cmd) {
 
     return { "tokens": tokens, "states": states };
 };
-bF._parserElaboration = function(lnum, tokens, states) {
-    var _debugprintElaboration = false;
+bF._parserElaboration = function(lnum, ltokens, lstates) {
+    let _debugprintElaboration = false;
     if (_debugprintElaboration) println("@@ ELABORATION @@");
-    var k = 0;
+    
+    let tokens = cloneObject(ltokens);
+    let states = cloneObject(lstates);
+    
+    let k = 0;
 
     // NOTE: malformed numbers (e.g. "_b3", "_", "__") must be re-marked as literal or syntax error
-
+    
     while (k < states.length) { // using while loop because array size will change during the execution
+        // turn errenously checked as number back into a literal
         if (states[k] == "num" && !reNumber.test(tokens[k]))
             states[k] = "lit";
+        // turn back into an op if operator is errenously checked as a literal
         else if (states[k] == "lit" && bF._opPrc[tokens[k].toUpperCase()] !== undefined)
             states[k] = "op";
-        else if (tokens[k].toUpperCase() == "TRUE" || tokens[k].toUpperCase() == "FALSE")
+        // turn TRUE and FALSE into boolean
+        else if ((tokens[k].toUpperCase() == "TRUE" || tokens[k].toUpperCase() == "FALSE") && states[k] != "qot")
             states[k] = "bool";
-        else if (tokens[k] == ":" && states[k] == "op")
-            states[k] = "seq";
-
+        
         // decimalise hex/bin numbers (because Nashorn does not support binary literal)
         if (states[k] == "num") {
             if (tokens[k].toUpperCase().startsWith("0B")) {
@@ -2293,9 +2241,48 @@ bF._parserElaboration = function(lnum, tokens, states) {
             }
         }
 
+        k += 1;
+    }
+        
+    k = 0; let l = states.length;
+    while (k < l) {
+        let lookahead012 = tokens[k]+tokens[k+1]+tokens[k+2];
+        let lookahead01 = tokens[k]+tokens[k+1]
+        
+        // turn three consecutive ops into a trigraph
+        if (k < states.length - 3 && states[k] == "op" && states[k+1] == "op" && states[k+2] == "op" && bF._opPrc[lookahead012]) {
+            serial.println(`[ParserElaboration] Line ${lnum}: Trigraph (${lookahead012}) found starting from the ${lang.ord(k+1)} token of [${tokens}]`);
+            
+            tokens[k] = lookahead012
+            
+            // remove two future elements by splicing them
+            let oldtkn = cloneObject(tokens);
+            let oldsts = cloneObject(states);
+            tokens = oldtkn.slice(0, k+1).concat(oldtkn.slice(k+3, oldtkn.length));
+            states = oldsts.slice(0, k+1).concat(oldsts.slice(k+3, oldsts.length));
+            l -= 2;
+        }
+        // turn two consecutive ops into a digraph
+        else if (k < states.length - 2 && states[k] == "op" && states[k+1] == "op" && bF._opPrc[lookahead01]) {
+            serial.println(`[ParserElaboration] Line ${lnum}: Digraph (${lookahead01}) found starting from the ${lang.ord(k+1)} token of [${tokens}]`);
+            
+            tokens[k] = lookahead01;
+            
+            // remove two future elements by splicing them
+            let oldtkn = cloneObject(tokens);
+            let oldsts = cloneObject(states);
+            tokens = oldtkn.slice(0, k+1).concat(oldtkn.slice(k+2, oldtkn.length));
+            states = oldsts.slice(0, k+1).concat(oldsts.slice(k+2, oldsts.length));
+            l -= 1;
+        }
+        // turn (:) into a seq
+        else if (tokens[k] == ":" && states[k] == "op")
+            states[k] = "seq";
 
         k += 1;
     }
+    
+    return {"tokens":tokens, "states":states};
 };
 /**
  * Destructively transforms an AST (won't unpack capsulated trees by default)
@@ -3718,8 +3705,10 @@ bF._interpretLine = function(lnum, cmd) {
 
 
     // ELABORATION : distinguish numbers and operators from literals
-    bF._parserElaboration(lnum, tokens, states);
-
+    let newtoks = bF._parserElaboration(lnum, tokens, states);
+    tokens = newtoks.tokens;
+    states = newtoks.states;
+    
     // PARSING (SYNTAX ANALYSIS)
     let syntaxTrees = bF._parseTokens(lnum, tokens, states).map(it => {
         if (lambdaBoundVars.length != 0)
