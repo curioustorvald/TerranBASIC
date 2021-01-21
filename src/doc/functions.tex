@@ -254,11 +254,12 @@ Functions are a form of expression that may taks input arguments surrounded by p
 
     \subsection{PEEK}
         \index{PEEK (function)}\codeline{BYTE \textbf{= PEEK(} MEM\_ADDR \textbf{)}}\par
-        Returns whatever the value stored in the \code{MEM\_ADDR} of the Scratchpad Memory.\par
-        Address mirroring, illegal access, etc. are entirely up to the virtual machine which the BASIC interpreter is running on.
+        Returns whatever the value stored in the \code{MEM\_ADDR} of the Scratchpad- or Machine Memory.\par
+        Address mirroring, illegal access, etc. are entirely up to the virtual machine which the BASIC interpreter is running on.\par
+        For Machine Memory addresses, see \ref{mmio}.
     \subsection{POKE}
         \index{POKE (function)}\codeline{\textbf{POKE(} MEM\_ADDR \textbf{,} BYTE \textbf{)}}\par
-        Puts a \code{BYTE} into the \code{MEM\_ADDR} of the Scratchpad Memory.
+        Puts a \code{BYTE} into the \code{MEM\_ADDR} of the Scratchpad- or Machine Memory.
 
 \section{Higher-order Function}
 

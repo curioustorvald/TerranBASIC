@@ -219,7 +219,7 @@ This function is anonymous: only the \code{MAP} can use it and is not accessible
 
 Here, \code{CF} is a curried function of \code{F}; built-in operator \code{\basiccurry} applies \code{32} to the first parameter of the function \code{F}, which dynamically returns a \emph{function} of \code{CF(T) = ABS(T) == 32}. The fact that Curry Operator returns a \emph{function} opens many possibilities, for example, you can create loads of sibling functions without making loads of duplicate codes.
 
-But, what if we pre-cook the curry before serve? The \code{\basiccurry} operator is there to curry an un-curried function; we rarely need that if the function was curried in the begin with.
+But, what if we pre-cook the curry before serve? The \code{\basiccurry} operator is there to curry an un-curried function; we wouldn't really need that if the function was curried in the begin with.
 
 Here, \emph{closure} do wonders as well; for a fun of it, let's re-write the \code{F(K,T)} to be pre-curried:
 
