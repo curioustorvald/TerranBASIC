@@ -502,7 +502,7 @@ let curryDefun = function(inputTree, inputValue) {
     // and if recIndex is same as the highestIndex and ordIndex is greater than zero,
     // decrement the ordIndex
     bF._recurseApplyAST(exprTree, it => {
-        return (it.astType == "defun_args" && it.astValue[0] === highestIndex[0] && it.astValue[1] === 0) ? substitution : indexDec(it, highestIndex[0])
+        return (it.astType == "defun_args" && it.astValue[0] === highestIndex && it.astValue[1] === 0) ? substitution : indexDec(it, highestIndex)
     });
     
     return exprTree;
