@@ -87,6 +87,8 @@ This short program will ask your name, and then it will greet you by the name yo
 \section[Function]{Function}
 
 \index{function (tutorial)}
+While you can put some pieces of codes some corner of the entire program and \code{GOSUB} there, they're honestly bad --- and you also have to keep track of which variables are used to hold temporary values, and there are more things that are just \emph{bunch of poopy nonsense}.
+
 Consider the following code:
 
 \begin{lstlisting}
@@ -103,7 +105,8 @@ Consider the following code:
 
 Here, we have defined two functions to use in the program: \code{POW2} and \code{DCOS}. Also observe that functions are defined using variable \code{N}s, but we use them with \code{X} in line 40 and with \code{A} in line 80: yes, functions can have their local name so you don't have to carefully choose which variable name to use in your subroutine.
 
-Except a function can't have statements that spans two- or more BASIC lines; but there are ways to get around that, including \code{DO} statement and \emph{functional currying}\newcounter{curryingappearance}\setcounter{curryingappearance}{\value{page}}
+\newcounter{curryingappearance}\setcounter{curryingappearance}{\value{page}}
+Except a function can't have statements that spans two- or more BASIC lines; but there are ways to get around that, including \code{DO} statement and \emph{functional currying.}
 
 This sample program also shows \code{FOREACH} statement, which is same as \code{FOR} but works with arrays.
 
@@ -200,15 +203,32 @@ Here, \code{MAP} inside of the global function \code{F} has an internal function
 
 This function is anonymous: only the \code{MAP} can use it and is not accessible from the other scopes. Even if the \code{F} and the anonymous function use same parameter name of \code{X}, they don't matter because two functions are different.
 
+\section{Monad}
+
+And obviously it's time to talk about the Monad. What is it? Well, you can say \emph{a monad is just a monoid in the category of endofunctors}\footnote{Saunders Mac Lane, \emph{Categories for the Working Mathematician}}, but it's not very helpful.
+
+Monad can be seen as a container that holds whatever the value it can accept, and allows alteration of the value by \emph{binding}, and its internals can be evaluated later.
+
+\ldots Pretty vague, eh? But thanks to its broad definition, it can be used to implement many things. For example, let me show you how monad can be used to add memoisation (and thus making it faster!) to the forementioned Fibonacci sequence generator, without clobbering a global variable, of course:
+
+\begin{lstlisting}
+10 FIB_=[N,M]~>IF LEN(MJOIN(M))>=N THEN HEAD(MJOIN(M)) ELSE FIB_(N,M>>=([XS]~>MRET((XS(0)+XS(1))!XS)))
+11 FIB=[N]~>FIB_(N,MRET(1!1!NIL))
+20 FOR K=1 TO 10
+30 PRINT FIB(K);" ";
+40 NEXT
+\end{lstlisting}
+
+One more function \code{FIB\_} had to be used,\footnote{It can be done without one by using \emph{undefined}, but then the code gets needlessly complex for a tutorial.} but the fibonacci sequence generator now runs much faster because the monad now holds the results from previous runs, making double-recursion run unnecessary unlike the previous fibonacci generator.
+
+And this is exactly what \emph{memoisation} is, remembering (or \emph{memo}ing) the previous results.
 
 \section[Currying]{Haskell Curry Wants to Know Your Location}
 \label{currying101}
 
-\newcounter{curryingselfref}
-\setcounter{curryingselfref}{\value{page} - \value{curryingappearance}}
-
+\vspace*{-\mytextsize}\ \par % a dummy paragraph to let the counter increment because motherfscking latex
 \index{curry (tutorial)}
-\cnttoenglish{\value{curryingselfref}}{page} ago there was a mentioning about something called \emph{functional currying}. So what the fsck is currying? Consider the following code:
+Just \newcounter{curryingselfref}\setcounter{curryingselfref}{\value{page} - \value{curryingappearance}}\cnttoenglish{\value{curryingselfref}}{page} ago there was a mentioning about something called \emph{functional currying}. So what the fsck is currying? Consider the following code:
 
 \begin{lstlisting}
 10 DEFUN F(K,T)=ABS(T)==K
@@ -239,14 +259,12 @@ The subsequent calls for \code{CF} returns appropriate values, in the same manne
 Using all the knowledge we have learned, it should be trivial\footnote{/s} to write a Quicksort function in \tbas, like this:
 
 \begin{lstlisting}
-10 DEFUN LESS(P,X)=X<P
-11 DEFUN GTEQ(P,X)=X>=P
-12 DEFUN QSORT(XS)=IF LEN(XS)<1 THEN NIL ELSE 
-    QSORT(FILTER(LESS~<HEAD(XS),TAIL(XS))) # HEAD(XS)!NIL # 
-    QSORT(FILTER(GTEQ~<HEAD(XS),TAIL(XS)))
+10 QSORT=[XS]~>IF LEN(XS)<1 THEN NIL ELSE 
+    QSORT(FILTER([X]~>X<HEAD XS,TAIL XS)) # HEAD(XS)!NIL # 
+    QSORT(FILTER([X]~>X>=HEAD XS,TAIL XS))
 100 L=7!9!4!5!2!3!1!8!6!NIL
 110 PRINT L
 120 PRINT QSORT(L)
 \end{lstlisting}
 
-Line 12 implements quicksort algorithm, using \code{LESS} and \code{GTEQ} as helper functions. \code{LESS} is a user-function version of less-than operator, and \code{GTEQ} is similar. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}\footnote{Stands for \emph{X's}.} with \code{HEAD(XS)}, then utilises curried version of \code{LESS} and \code{GTEQ} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL(XS)} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Currying is exploited to give comparison functions a pivot-value to compare against, and also because \code{FILTER} wants a \emph{function} and not an \emph{expression}. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
+Line 10 implements quicksort algorithm. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}\footnote{Stands for \emph{X's}.} with \code{HEAD XS}, then utilises anonymous functions \code{[X]\basicclosure X < HEAD XS} and \code{[X]\basicclosure X >= HEAD XS} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL XS} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Closure is exploited to define a comparison functions. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
