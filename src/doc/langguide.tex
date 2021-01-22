@@ -205,7 +205,7 @@ This function is anonymous: only the \code{MAP} can use it and is not accessible
 
 \section{Monad}
 
-And obviously it's time to talk about the Monad. What is it? Well, you can say \emph{a monad is just a monoid in the category of endofunctors}\footnote{Saunders Mac Lane, \emph{Categories for the Working Mathematician}}, but it's not very helpful.
+\index{monad (tutorial)}And obviously it's time to talk about the Monad. What is it? Well, you can say \emph{a monad is just a monoid in the category of endofunctors}\footnote{Saunders Mac Lane, \emph{Categories for the Working Mathematician}}, but it's not very helpful.
 
 Monad can be seen as a container that holds whatever the value it can accept, and allows alteration of the value by \emph{binding}, and its internals can be evaluated later.
 
@@ -218,6 +218,8 @@ Monad can be seen as a container that holds whatever the value it can accept, an
 30 PRINT FIB(K);" ";
 40 NEXT
 \end{lstlisting}
+
+In Line 10, \basicmbind\ (a \emph{bind} operator) extracts inner value of the monad \code{M} as \code{XS}\footnote{Stands for \emph{Xs} (plural form of \emph{X})} (which is an array), appends $XS(0) + XS(1)$ into the \code{XS}, then wraps the new array into a monad using \code{MRET} function and then passes the new monad into the \code{FIB\_}'s recurive call; if array length of the inner value of the monad reaches desired length, returns head-element of the value.
 
 One more function \code{FIB\_} had to be used,\footnote{It can be done without one by using \emph{undefined}, but then the code gets needlessly complex for a tutorial.} but the fibonacci sequence generator now runs much faster because the monad now holds the results from previous runs, making double-recursion run unnecessary unlike the previous fibonacci generator.
 
@@ -267,4 +269,4 @@ Using all the knowledge we have learned, it should be trivial\footnote{/s} to wr
 120 PRINT QSORT(L)
 \end{lstlisting}
 
-Line 10 implements quicksort algorithm. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}\footnote{Stands for \emph{X's}.} with \code{HEAD XS}, then utilises anonymous functions \code{[X]\basicclosure X < HEAD XS} and \code{[X]\basicclosure X >= HEAD XS} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL XS} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Closure is exploited to define a comparison functions. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
+Line 10 implements quicksort algorithm. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}. with \code{HEAD XS}, then utilises anonymous functions \code{[X]\basicclosure X < HEAD XS} and \code{[X]\basicclosure X >= HEAD XS} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL XS} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Closure is exploited to define a comparison functions. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
