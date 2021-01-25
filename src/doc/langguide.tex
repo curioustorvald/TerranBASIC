@@ -15,9 +15,9 @@ Oh \emph{boy} we just did a computation! It printed out \code{4} which is a corr
 \section[GOTO]{GOTO here and there}
 
 \index{GOTO (tutorial)}
-\code{GOTO} is used a lot in BASIC, and so does in \tbas. \code{GOTO} is a simplest method of diverging a program flow: execute only the part of the program conditionally and perform a loop.
+\code{GOTO} is used a lot in BASIC, and so does in \tbas. \code{GOTO} is the simplest method of diverging a program flow: execute only the part of the program conditionally and perform a loop.
 
-Following program attempts to calculate a square root of the input value,  showing how \code{GOTO} can be used in such manner.
+Following program attempts to calculate a square root of the input value,  showing how \code{GOTO} can be used in such a manner.
 
 \begin{lstlisting}
 10 X=1337
@@ -28,7 +28,7 @@ Following program attempts to calculate a square root of the input value,  showi
 100 PRINT "Square root of ";X;" is approximately ";Y
 \end{lstlisting}
 
-Here, \code{GOTO} in line 50 is used to perform a loop, which keeps looping until \code{Z} and \code{Y} becomes equal. This is a newtonian method of approximating a square root. 
+Here, \code{GOTO} in line 50 is used to perform a loop, which keeps looping until \code{Z} and \code{Y} becomes equal. This is a Newtonian method of approximating a square root. 
 
 \section[Subroutine with GOSUB]{What If We Wanted to Go Back?}
 
@@ -82,7 +82,7 @@ What fun is the program if it won't talk with you? You can make that happen with
 30 PRINT "HELLO, ";NAME
 \end{lstlisting}
 
-This short program will ask your name, and then it will greet you by the name you told to the computer.
+This short program will ask your name, and then it will greet you by the name you told the computer.
 
 \section[Function]{Function}
 
@@ -106,14 +106,14 @@ Consider the following code:
 Here, we have defined two functions to use in the program: \code{POW2} and \code{DCOS}. Also observe that functions are defined using variable \code{N}s, but we use them with \code{X} in line 40 and with \code{A} in line 80: yes, functions can have their local name so you don't have to carefully choose which variable name to use in your subroutine.
 
 \newcounter{curryingappearance}\setcounter{curryingappearance}{\value{page}}
-Except a function can't have statements that spans two- or more BASIC lines; but there are ways to get around that, including \code{DO} statement and \emph{functional currying.}
+Except a function can't have statements that span two- or more BASIC lines; but there are ways to get around that, including \code{DO} statement and \emph{functional currying.}
 
 This sample program also shows \code{FOREACH} statement, which is same as \code{FOR} but works with arrays.
 
 \section[Recursion]{BRB: Bad Recursion BRB: Bad Recursion BRB: Bad Recursion BRB: Bad RecursionBRB: Bad Recursion BRBRangeError: Maximum call stack size exceeded}
 
 \index{recursion (tutorial)}
-But don't get over-excited, as it's super-trivial to create unintentional infinite loop:
+But don't get over-excited, as it's super-trivial to create an unintentional infinite loop:
 
 \begin{lstlisting}
 10 DEFUN FAC(N)=N*FAC(N-1)
@@ -124,7 +124,7 @@ But don't get over-excited, as it's super-trivial to create unintentional infini
 
 (if you tried this and computer becomes unresponsive, hit Ctrl-C to terminate the execution)
 
-This failed attempt is to create a function that calculates a factorial of \code{N}. It didn't work because there is no \emph{halting condition}: didn't tell computer to when to escape from the loop.
+This failed attempt is to create a function that calculates the factorial of \code{N}. It didn't work because there is no \emph{halting condition}: didn't tell the computer to when to escape from the loop.
 
 $n \times 1$ is always $n$, and $0!$ is $1$, so it would be nice to break out of the loop when \code{N} reaches $0$; here is the modified program:
 
@@ -207,9 +207,9 @@ This function is anonymous: only the \code{MAP} can use it and is not accessible
 
 \index{monad (tutorial)}And obviously it's time to talk about the Monad. What is it? Well, you can say \emph{a monad is just a monoid in the category of endofunctors}\footnote{Saunders Mac Lane, \emph{Categories for the Working Mathematician}}, but it's not very helpful.
 
-Monad can be seen as a container that holds whatever the value it can accept, and allows alteration of the value by \emph{binding}, and its internals can be evaluated later.
+A monad can be seen as a container that holds whatever the value it can accept, and allows alteration of the value by \emph{binding}, and its internals can be evaluated later.
 
-\ldots Pretty vague, eh? But thanks to its broad definition, it can be used to implement many things. For example, let me show you how monad can be used to add memoisation (and thus making it faster!) to the forementioned Fibonacci sequence generator, without clobbering a global variable, of course:
+\ldots Pretty vague, eh? But thanks to its broad definition, it can be used to implement many things. For example, let me show you how monad can be used to add memoisation (and thus making it faster!) to the aforementioned Fibonacci sequence generator, without clobbering a global variable, of course:
 
 \begin{lstlisting}
 10 FIB_=[N,M]~>IF LEN(MJOIN(M))>=N THEN HEAD(MJOIN(M)) ELSE FIB_(N,M>>=([XS]~>MRET((XS(0)+XS(1))!XS)))
@@ -221,7 +221,7 @@ Monad can be seen as a container that holds whatever the value it can accept, an
 
 In Line 10, \basicmbind\ (a \emph{bind} operator) extracts inner value of the monad \code{M} as \code{XS}\footnote{Stands for \emph{Xs} (plural form of \emph{X})} (which is an array), appends $XS(0) + XS(1)$ into the \code{XS}, then wraps the new array into a monad using \code{MRET} function and then passes the new monad into the \code{FIB\_}'s recurive call; if array length of the inner value of the monad reaches desired length, returns head-element of the value.
 
-One more function \code{FIB\_} had to be used,\footnote{It can be done without one by using \emph{undefined}, but then the code gets needlessly complex for a tutorial.} but the fibonacci sequence generator now runs much faster because the monad now holds the results from previous runs, making double-recursion run unnecessary unlike the previous fibonacci generator.
+One more function \code{FIB\_} had to be used,\footnote{It can be done without one by using \emph{undefined}, but then the code gets needlessly complex for a tutorial.} but the Fibonacci sequence generator now runs much faster because the monad now holds the results from previous runs, making double-recursion run unnecessary, unlike the previous Fibonacci generator.
 
 And this is exactly what \emph{memoisation} is, remembering (or \emph{memo}ing) the previous results.
 
@@ -254,7 +254,7 @@ Here, \emph{closure} do wonders as well; for a fun of it, let's re-write the \co
 
 The function \code{F}, when called, returns its inner function \code{[T]\basicclosure ABS(T)==K} with \code{K} being substituted with the argument that were applied to \code{F}, so the function \code{CF} here can be expressed as: \code{[T]\basicclosure(T)==32}
 
-The subsequent calls for \code{CF} returns appropriate values, in the same manner as the descriptions above.
+The subsequent calls for \code{CF} return appropriate values, in the same manner as the descriptions above.
 
 \section[Wrapping-Up]{The Grand Unification}
 
@@ -269,4 +269,4 @@ Using all the knowledge we have learned, it should be trivial\footnote{/s} to wr
 120 PRINT QSORT(L)
 \end{lstlisting}
 
-Line 10 implements quicksort algorithm. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}. with \code{HEAD XS}, then utilises anonymous functions \code{[X]\basicclosure X < HEAD XS} and \code{[X]\basicclosure X >= HEAD XS} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL XS} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. Closure is exploited to define a comparison functions. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.
+Line 10 implements quicksort algorithm. \code{QSORT} selects a pivot by taking the head-element of the array \code{XS}. with \code{HEAD XS}, then utilises anonymous functions \code{[X]\basicclosure X < HEAD XS} and \code{[X]\basicclosure X >= HEAD XS} to move lesser-than-pivot values to the left and greater to the right (the head element itself does not get recursed, here \code{TAIL XS} is applied to make head-less copy of the array), and these two separated \emph{chunks} are recursively sorted using the same \code{QSORT} function. The closure is exploited to define comparison functions. \code{HEAD(XS)!NIL} creates a single-element array contains head-element of the \code{XS}.

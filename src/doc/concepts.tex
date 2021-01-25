@@ -29,14 +29,14 @@ There are eight basic types: \emph{number}, \emph{boolean}, \emph{string}, \emph
 
 \section{Control Flow}
 
-A program is executed starting with its lowest line number. Statements on a line are executed from left to right. When all Statements are finished execution, next lowest line number will be executed. Control flow functions can modify this normal flow.
+A program is executed starting with its lowest line number. Statements on a line are executed from left to right. When all Statements are finished execution, the next lowest line number will be executed. Control flow functions can modify this normal flow.
 
 You can dive into other lines in the middle of the program with \code{GOTO}. The program flow will continue normally at the new line \emph{and it will never know ya just did that}.
 
-If you want less insane jumping, \code{GOSUB} is used to jump to a subroutine. Subroutine is a little section of a code that serves as a tiny program inside of a program. \code{GOSUB} will remember from which statement in the line you have came from, and will return your program flow to that line when \code{RETURN} statement is encountered. (of course, if \code{RETURN} is used without \code{GOSUB}, program will raise some error) Do note that while you can reserve some portion of a program line as a \code{subroutine}, \tbas\ does not provide local variables and whatnot\footnote{If you really need some local variables, use the black magic of Monad.} as all variables in BASIC are global, and you can just \code{GOTO} out of a subroutine to anywhere you desire and wreak havoc \emph{if you really wanted to}.
+If you want less insane jumping, \code{GOSUB} is used to jump to a subroutine. A subroutine is a little section of a code that serves as a tiny program inside of a program. \code{GOSUB} will remember from which statement in the line you have came from, and will return your program flow to that line when \code{RETURN} statement is encountered. (of course, if \code{RETURN} is used without \code{GOSUB}, the program will raise some error) Do note that while you can reserve some portion of a program line as a \code{subroutine}, \tbas\ does not provide local variables and whatnot\footnote{If you really need some local variables, use the black magic of Monad.} as all variables in BASIC are global, and you can just \code{GOTO} out of a subroutine to anywhere you desire and wreak havoc \emph{if you really wanted to}.
 
-The \code{ON} statement provides alternative branching construct. You can enter multiple line numbers and let your variable (or mathematical expression) to choose which index of line numbers to \code{GOTO}- or \code{GOSUB} into.
+The \code{ON} statement provides an alternative branching construct. You can enter multiple line numbers and let your variable (or mathematical expression) to choose which index of line numbers to \code{GOTO}- or \code{GOSUB} into.
 
 The \code{IF-THEN-ELSE} lets you to conditionally select which of the two branches to execute.
 
-The \code{FOR-NEXT} lets you to loop a portion of a program while automatically counting your chosen variable up or down.
+The \code{FOR-NEXT} lets you loop a portion of a program while automatically counting your chosen variable up or down.

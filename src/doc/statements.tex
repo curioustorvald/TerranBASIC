@@ -6,7 +6,7 @@ A Program line is composed of a line number and one or more statements. Multiple
 
 \index{IF (statement)}\codeline{\textbf{IF} TRUTH\_VALUE \textbf{THEN} TRUE\_EXPRESSION [\textbf{ELSE} FALSE\_EXPERSSION]}
 
-If \code{TRUTH\_VALUE} is truthy, executes \code{TRUE\_EXPRESSION}. If \code{TRUTH\_VALUE} is falsy and \code{FALSE\_EXPERSSION} is specified, executes that expression; otherwise next line or next statement will be executed.
+If \code{TRUTH\_VALUE} is truthy, executes \code{TRUE\_EXPRESSION}. If \code{TRUTH\_VALUE} is falsy and \code{FALSE\_EXPERSSION} is specified, executes that expression; otherwise, the next line or next statement will be executed.
 
 \subsubsection*{Notes}
 
@@ -20,7 +20,7 @@ If \code{TRUTH\_VALUE} is truthy, executes \code{TRUE\_EXPRESSION}. If \code{TRU
 
 \index{ON (statement)}\codeline{\textbf{ON} INDEX\_EXPRESSION \{\textbf{GOTO}|\textbf{GOSUB}\} LINE0 [\textbf{,} LINE1]\ldots}
 
-Jumps to the line number returned by the \code{INDEX\_EXPRESSION}. If the result is outside of range of the arguments, no jump will be performed.
+Jumps to the line number returned by the \code{INDEX\_EXPRESSION}. If the result is outside of the range of the arguments, no jump will be performed.
 
 \subsubsection*{Parameters}
 

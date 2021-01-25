@@ -21,11 +21,11 @@ A \emph{Program Line}\index{program line} consists of a line number followed by 
 
 A \emph{Line Number}\index{line number} is an integer within the range of \intrange.
 
-A \emph{Statement}\index{statement} is special form of code which has special meaning. A program line can be composed of 1 or more statements, separated by colons. For the details of statements available in \tbas , see \ref{statements}.
+A \emph{Statement}\index{statement} is a special form of code which has special meaning. A program line can be composed of 1 or more statements, separated by colons. For the details of statements available in \tbas , see \ref{statements}.
 
 \codeline{STATEMENT [: STATEMENT]\ldots}
 
-An \emph{Expression}\index{expression} is rather normal program lines, e.g. mathematical equations and function calles. The expression takes one of the following forms. For the details of functions available in \tbas , see \ref{functions}.
+An \emph{Expression}\index{expression} is rather normal program lines, e.g. mathematical equations and function calls. The expression takes one of the following forms. For the details of functions available in \tbas , see \ref{functions}.
 
 \codeline{VARIABLE\_OR\_FUNCTION}\\
 \codeline{( EXPRESSION )}\\
@@ -64,7 +64,7 @@ Hexadecimal and binary literals are always interpreted as \emph{unsigned} intege
 
 Variable\index{variable naming} names must not begin with a figure and all characters of the name must be letters \code{A-Z}, figures \code{0-9} and underscores \code{\_}. Variable names must not be identical to reserved words, but may \emph{contain} one. Variable names are case-insensitive.
 
-Unlike conventional BASIC dialects (especially GW-BASIC), name pool of variables are shared between all the types. For example, if you have a numeric variable \code{A}, and define an array named \code{A} later in the program, the new array will overwrite your numeric \code{A}.
+Unlike conventional BASIC dialects (especially GW-BASIC), name pool of variables is shared between all the types. For example, if you have a numeric variable \code{A}, and define an array named \code{A} later in the program, the new array will overwrite your numeric \code{A}.
 
 Furthermore, \emph{sigils} are not used in the \tbas\ and attempting to use one will raise syntax-error (the \code{\$} is an operator in \tbas) or undefined behaviours.
 
@@ -83,7 +83,7 @@ Float & $ \pm 4.9406564584124654 \times 10^{-324} $ -- $ \pm 1.7976931348623157 
 \section{Operators}
 \subsection{Order of Precedence}
 
-The order of precedence\index{operator}\index{order of precedence} of the operators is as shown below, lower numbers means they have higher precedence (more tightly bound)
+The order of precedence\index{operator}\index{order of precedence} of the operators is as shown below, lower numbers mean they have higher precedence (more tightly bound)
 
 \begin{longtable}{*{2}{m{\textwidth}}}\hline
 \endfirsthead
@@ -135,7 +135,7 @@ Order & Op & Associativity \\
 
 \subsection{Mathematical Operators}
 
-Mathematical operators\index{mathematical oprator} operate on expressions that returns numeric value only, except for the \code{\basicplus} operator which will take the action of string concatenation if either of the operand is non-numeric.
+Mathematical operators\index{mathematical oprator} operate on expressions that return numeric value only, except for the \code{\basicplus} operator which will take the action of string concatenation if either of the operands is non-numeric.
 
 \begin{tabulary}{\textwidth}{clL}
 \index{\basicasgn}\index{\basicexp}\index{\basicmul}\index{\basicdiv}\index{\basicdivint}\index{MOD@\basicmod}\index{\basicplus}\index{\basicminus}\index{MIN@\basicmin}\index{MAX@\basicmax}
@@ -170,7 +170,7 @@ Code & Operation & Result \\
 
 \subsection{Comparison Operators}
 
-Comparison operator\index{comparison operator} can operate on numeric and string operands. String operands will be automatically converted to numeric value if they can be; if one operand is numeric and other is non-numeric string, the former will be converted to string value.
+Comparison operator\index{comparison operator} can operate on numeric and string operands. String operands will be automatically converted to numeric value if they can be; if one operand is numeric and other is a non-numeric string, the former will be converted to a string value.
 
 \begin{tabulary}{\textwidth}{clL}
 \index{\basiceq}\index{\basicneqA}\index{\basicneqB}\index{\basicls}\index{\basicgt}\index{\basiclseqA}\index{\basiclseqB}\index{\basicgteqA}\index{\basicgteqB}
@@ -210,7 +210,7 @@ Code & Operation & Result \\
 
 \subsection{Boolean Operators}
 
-Boolean operators\index{boolean operator} operate on boolean values. If one of the operand is not boolean, it will be cast to appropriate boolean value. See \ref{valuesandtypes} for casting rules.
+Boolean operators\index{boolean operator} operate on boolean values. If one of the operands is not boolean, it will be cast to an appropriate boolean value. See \ref{valuesandtypes} for casting rules.
 
 \begin{tabulary}{\textwidth}{clL}
 %\index{\basicnot}\index{\basicand}\index{\basicor}
