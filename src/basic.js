@@ -67,7 +67,7 @@ function isNumable(s) {
     // undefined?
     if (s === undefined) return false;
     // null string?
-    if (typeof s.trim == "function" && s.trim.length == 0) return false;
+    if (typeof s.trim == "function" && s.trim().length == 0) return false;
     // else?
     return !isNaN(s); // NOTE: isNaN('') == false
 }
@@ -647,7 +647,9 @@ let _basicConsts = {
    "TAU": new BasicVar(Math.PI * 2.0, "num"),
    "EULER": new BasicVar(Math.E, "num"),
    "ID": new BasicVar(makeIdFun(), "usrdefun"),
-   "UNDEFINED": new BasicVar(undefined, "null")
+   "UNDEFINED": new BasicVar(undefined, "null"),
+   "TRUE": new BasicVar(true, "bool"),
+   "FALSE": new BasicVar(false, "bool")
 };
 Object.freeze(_basicConsts);
 let initBvars = function() {
