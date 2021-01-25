@@ -3595,7 +3595,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             if (func === undefined) {
                 var someVar = bS.vars[funcName];
 
-                if (DBGON) {
+                if (someVar !== undefined && DBGON) {
                     serial.println(recWedge+`variable dereference of '${funcName}' : ${someVar.bvLiteral} (bvType: ${someVar.bvType})`);
                     if (typeof someVar.bvLiteral == "object")
                         serial.println(recWedge+"variable as an object : "+Object.entries(someVar.bvLiteral));
