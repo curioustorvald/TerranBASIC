@@ -81,7 +81,7 @@ class ParserError extends Error {
     }
 }
 
-class InternalError extends Error {
+class BASICerror extends Error {
     constructor(...args) {
         super(...args);
         Error.captureStackTrace(this, ParserError);
@@ -301,7 +301,7 @@ let monadToString = function(monad, depth) {
         }
     }
     else {
-        throw new InternalError("unknown monad subtype: "+m.mType);
+        throw new BASICerror("unknown monad subtype: "+m.mType);
     }*/
     return sb;
 }
@@ -335,7 +335,7 @@ let BasicAST = function() {
 let isAST = (object) => (object === undefined) ? false : object.astLeaves !== undefined && object.astHash !== undefined
 let isRunnable = (object) => isAST(object) || object.mType == "funseq";
 let BasicFunSeq = function(f) {
-    if (!Array.isArray(f) || !isAST(f[0])) throw new InternalError("Not an array of functions");
+    if (!Array.isArray(f) || !isAST(f[0])) throw new BASICerror("Not an array of functions");
     this.mHash = makeBase32Hash();
     this.mType = "funseq";
     this.mVal = f;
@@ -676,10 +676,8 @@ let genToArray = (gen) => {
 }
 let genHasHext = (o) => o.current*o.stepsgn + o.step*o.stepsgn <= (o.end + o.step)*o.stepsgn;
 let genGetNext = (gen, mutated) => {
-    //if (mutated === undefined) throw "InternalError: parameter is missing";
-    if (mutated !== undefined) gen.current = (mutated|0);
+    if (mutated !== undefined) gen.current = tonum(mutated);
     gen.current += gen.step;
-    //serial.println(`[BASIC.FORGEN] ${(mutated|0)} -> ${gen.current}`);
     return genHasHext(gen) ? gen.current : undefined;
 }
 let genToString = (gen) => `Generator: ${gen.start} to ${gen.end}`+((gen.step !== 1) ? ` step ${gen.step}` : '');
@@ -737,7 +735,7 @@ bS.getArrayIndexFun = function(lnum, stmtnum, arrayName, array) {
  * @return a Javascript function that when called, evaluates the exprTree
  */
 bS.getDefunThunk = function(exprTree, norename) {
-    if (!isRunnable(exprTree)) throw new InternalError("not a syntax tree");
+    if (!isRunnable(exprTree)) throw new BASICerror("not a syntax tree");
     
     // turns funseq-monad into runnable function
     if (isMonad(exprTree)) return getMonadEvalFun(exprTree);
@@ -786,7 +784,7 @@ bS.getDefunThunk = function(exprTree, norename) {
                         }
                         
                         if (theArg[0] === "null") {
-                            throw new InternalError(`Bound variable is ${theArg}; lambdaBoundVars: ${theLambdaBoundVars()}`);
+                            throw new BASICerror(`Bound variable is ${theArg}; lambdaBoundVars: ${theLambdaBoundVars()}`);
                         }
                         
                         it.astValue = theArg[1];
@@ -829,7 +827,7 @@ bS.getDefunThunk = function(exprTree, norename) {
 bS.wrapBuiltinToUsrdefun = function(funcname) {
     let argCount = bS.builtin[funcname].argc;
     
-    if (argCount === undefined) throw new InternalError(`${funcname} cannot be wrapped into usrdefun`);
+    if (argCount === undefined) throw new BASICerror(`${funcname} cannot be wrapped into usrdefun`);
     
     let leaves = [];
     for (let k = 0; k < argCount; k++) {
@@ -2206,7 +2204,7 @@ bF._tokenise = function(lnum, cmd) {
     }
 
     if (tokens.length != states.length) {
-        throw new InternalError("size of tokens and states does not match (line: "+lnum+")\n"+
+        throw new BASICerror("size of tokens and states does not match (line: "+lnum+")\n"+
         tokens+"\n"+states);
     }
 
@@ -2289,7 +2287,7 @@ bF._parserElaboration = function(lnum, ltokens, lstates) {
  * 
  * To NOT modify the tree, make sure you're not modifying any properties of the object */
 bF._recurseApplyAST = function(tree, action) {
-    if (!isAST(tree)) throw new InternalError(`tree is not a AST (${tree})`);
+    if (!isAST(tree)) throw new BASICerror(`tree is not a AST (${tree})`);
     
     if (tree.astLeaves !== undefined && tree.astLeaves[0] === undefined) {
         /*if (DBGON) {
@@ -3471,7 +3469,7 @@ bF._troNOP = function(lnum, stmtnum) { return new SyntaxTreeReturnObj("null", un
 bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     if (syntaxTree == undefined) return bF._troNOP(lnum, stmtnum);
     if (syntaxTree.astLeaves === undefined && syntaxTree.astValue === undefined) {
-        throw new InternalError("not a syntax tree");
+        throw new BASICerror("not a syntax tree");
     }
     
     if (lnum === undefined || stmtnum === undefined) throw Error(`Line or statement number is undefined: (${lnum},${stmtnum})`);
@@ -3511,10 +3509,10 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     // closure
     // type: closure_args ~> (expr)
     else if (syntaxTree.astType == "op" && syntaxTree.astValue == "~>") {
-        throw new InternalError("Untended closure"); // closure definition must be 'pruned' by the parser
+        throw new BASICerror("Untended closure"); // closure definition must be 'pruned' by the parser
     }
     else if (syntaxTree.astType == "function" && syntaxTree.astValue == "DEFUN") {
-        throw new InternalError("Untended DEFUN"); // DEFUN must be 'pruned' by the parser
+        throw new BASICerror("Untended DEFUN"); // DEFUN must be 'pruned' by the parser
     }
     else if (syntaxTree.astType == "function" || syntaxTree.astType == "op" || callingUsrdefun) {
         if (_debugExec) serial.println(recWedge+"function|operator");
@@ -3712,7 +3710,7 @@ bF._interpretLine = function(lnum, cmd) {
     // PARSING (SYNTAX ANALYSIS)
     let syntaxTrees = bF._parseTokens(lnum, tokens, states).map(it => {
         if (lambdaBoundVars.length != 0)
-            throw new InternalError("lambdaBoundVars not empty");
+            throw new BASICerror("lambdaBoundVars not empty");
         return bF._pruneTree(lnum, it, 0)
     });
 
@@ -3731,7 +3729,7 @@ bF._executeAndGet = function(lnum, stmtnum, syntaxTree) {
 
     // EXECUTE
     try {
-        if (lambdaBoundVars.length != 0) throw new InternalError();
+        if (lambdaBoundVars.length != 0) throw new BASICerror();
         var execResult = bF._executeSyntaxTree(lnum, stmtnum, syntaxTree, 0);
 
         if (DBGON) serial.println(`Line ${lnum} TRO: ${Object.entries(execResult)}`);
