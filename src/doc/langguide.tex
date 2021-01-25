@@ -203,9 +203,9 @@ Here, \code{MAP} inside of the global function \code{F} has an internal function
 
 This function is anonymous: only the \code{MAP} can use it and is not accessible from the other scopes. Even if the \code{F} and the anonymous function use same parameter name of \code{X}, they don't matter because two functions are different.
 
-\section{Monad}
+\section[Monad]{A Monad Is Just a Monoid in the Category of Endofunctors\footnote{Saunders Mac Lane, \emph{Categories for the Working Mathematician}}, What's the Problem?}
 
-\index{monad (tutorial)}And obviously it's time to talk about the Monad. What is it? Well, you can say \emph{a monad is just a monoid in the category of endofunctors}\footnote{Saunders Mac Lane, \emph{Categories for the Working Mathematician}}, but it's not very helpful.
+\index{monad (tutorial)}And obviously it's time to talk about the Monad. What is it? Well, I don't know about you but the section title is surely not very helpful.
 
 A monad can be seen as a container that holds whatever the value it can accept, and allows alteration of the value by \emph{binding}, and its internals can be evaluated later.
 
