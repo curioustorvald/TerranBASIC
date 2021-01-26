@@ -108,11 +108,11 @@ Order & Op & Associativity \\
 9 & \basiceq\quad\basicneqA\quad\basicneqB & Left \\
 10 & \basicmin\quad\basicmax & Left \\
 11 & \basicband & Left \\
+12 & \basicbxor & Left \\
 \end{tabulary}
 \begin{tabulary}{\textwidth}{cCc}
 Order & Op & Associativity \\
 \hline
-12 & \basicbxor & Left \\
 13 & \basicbor & Left \\
 14 & \basicand & Left \\
 15 & \basicor & Left \\
@@ -122,9 +122,10 @@ Order & Op & Associativity \\
 19 & \basicconcat & Left \\
 20 & \basiccompo\quad\basicapply & Right \\
 21 & \basiccurry & Left \\
-22 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
-23 & \basicasgn\quad\basicmret & Right \\
-%\ & \ & \ \\
+22 & \basicmret & Right \\
+23 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
+24 & \basicasgn & Right \\
+\ & \ & \ \\
 \end{tabulary}
 \end{longtable}
 

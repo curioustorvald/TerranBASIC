@@ -1872,10 +1872,10 @@ bF._opPrc = {
     ".": 600, // compo operator
     "$": 600, // apply operator
     "~<": 601, // curry operator
+    "@":700, // MRET
     "~>": 1000, // closure operator
     ">>~": 1000, // monad sequnce operator
     ">>=": 1000, // monad bind operator
-    "@":9999, // MRET
     "=":9999,"IN":9999
 }; // when to ops have same index of prc but different in associativity, right associative op gets higher priority (at least for the current parser implementation)
 bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1,"@":1,"`":1}; // ~< and ~> cannot have same associativity
