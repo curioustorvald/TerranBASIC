@@ -39,8 +39,6 @@ let DATA_CURSOR = 0;
 let DATA_CONSTS = [];
 const DEFUNS_BUILD_DEFUNS = false;
 const BASIC_HOME_PATH = "/home/basic/"
-let replCmdBuf = []; // used to store "load filename" and issues it when user confirmed potential data loss
-let replUsrConfirmed = false;
 
 if (system.maxmem() < 8192) {
     println("Out of memory. BASIC requires 8K or more User RAM");
@@ -54,6 +52,8 @@ let gotoLabels = {};
 let cmdbufMemFootPrint = 0;
 let prompt = "Ok";
 let prescan = false;
+let replCmdBuf = []; // used to store "load filename" and issues it when user confirmed potential data loss
+let replUsrConfirmed = false;
 
 // lambdaBoundVars is used in two different mode:
 //  - PARSER will just store a symbol as a string literal
@@ -371,15 +371,15 @@ let BasicListMonad = function(m) {
 120 A=42
 130 KM=RETN(A)>>=K
 140 KO=K(A)
-150 PRINT("KM is ";TYPEOF(KM);", ";MEVAL(KM))
-160 PRINT("KO is ";TYPEOF(KO);", ";MEVAL(KO))
+150 PRINT("KM is ";TYPEOF(KM);", ";MJOIN(KM))
+160 PRINT("KO is ";TYPEOF(KO);", ";MJOIN(KO))
 
 200 PRINT:PRINT "Second law: 'm >>= return' equals to 'm'"
 210 M=MRET(G(42))
 220 MM=M>>=RETN
 230 MO=M
-240 PRINT("MM is ";TYPEOF(MM);", ";MEVAL(MM))
-250 PRINT("MO is ";TYPEOF(MO);", ";MEVAL(MO))
+240 PRINT("MM is ";TYPEOF(MM);", ";MJOIN(MM))
+250 PRINT("MO is ";TYPEOF(MO);", ";MJOIN(MO))
 
 300 PRINT:PRINT "Third law: 'm >>= (\x -> k x >>= h)' equals to '(m >>= k) >>= h'"
 310 REM see line 110 for the definition of K
@@ -387,8 +387,8 @@ let BasicListMonad = function(m) {
 330 M=MRET(69)
 340 M1=M>>=([X]~>K(X)>>=H)
 350 M2=(M>>=K)>>=H
-360 PRINT("M1 is ";TYPEOF(M1);", ";MEVAL(M1))
-370 PRINT("M2 is ";TYPEOF(M2);", ";MEVAL(M2))
+360 PRINT("M1 is ";TYPEOF(M1);", ";MJOIN(M1))
+370 PRINT("M2 is ";TYPEOF(M2);", ";MJOIN(M2))
  */
 let BasicMemoMonad = function(m) {
     this.mHash = makeBase32Hash();
@@ -560,8 +560,8 @@ let oneArgNul = function(lnum, stmtnum, args, action) {
 let oneArgNum = function(lnum, stmtnum, args, action) {
     if (args.length != 1) throw lang.syntaxfehler(lnum, args.length+lang.aG);
     argCheckErr(lnum, args[0]);
-    var rsvArg0 = resolve(args[0]);
-    if (isNaN(rsvArg0)) throw lang.illegalType(lnum, args[0]);
+    var rsvArg0 = resolve(args[0], 1);
+    if (!isNumable(rsvArg0)) throw lang.illegalType(lnum, args[0]);
     return action(rsvArg0);
 }
 let twoArg = function(lnum, stmtnum, args, action) {
@@ -581,11 +581,11 @@ let twoArgNul = function(lnum, stmtnum, args, action) {
 let twoArgNum = function(lnum, stmtnum, args, action) {
     if (args.length != 2) throw lang.syntaxfehler(lnum, args.length+lang.aG);
     argCheckErr(lnum, args[0]);
-    var rsvArg0 = resolve(args[0]);
-    if (isNaN(rsvArg0)) throw lang.illegalType(lnum, "LH:"+Object.entries(args[0]));
+    var rsvArg0 = resolve(args[0], 1);
+    if (!isNumable(rsvArg0)) throw lang.illegalType(lnum, "LH:"+Object.entries(args[0]));
     argCheckErr(lnum, args[1]);
-    var rsvArg1 = resolve(args[1]);
-    if (isNaN(rsvArg1)) throw lang.illegalType(lnum, "RH:"+Object.entries(args[1]));
+    var rsvArg1 = resolve(args[1], 1);
+    if (!isNumable(rsvArg1)) throw lang.illegalType(lnum, "RH:"+Object.entries(args[1]));
     return action(rsvArg0, rsvArg1);
 }
 let threeArg = function(lnum, stmtnum, args, action) {
@@ -600,15 +600,15 @@ let threeArg = function(lnum, stmtnum, args, action) {
 }
 let threeArgNum = function(lnum, stmtnum, args, action) {
     if (args.length != 3) throw lang.syntaxfehler(lnum, args.length+lang.aG);
-    if (rsvArg0 === undefined) throw lang.refError(lnum, args[0]);
     argCheckErr(lnum, args[0]);
-    if (isNaN(rsvArg0)) throw lang.illegalType(lnum, args[0]);
-    if (rsvArg1 === undefined) throw lang.refError(lnum, args[1]);
+    var rsvArg0 = resolve(args[0], 1);
+    if (!isNumable(rsvArg0)) throw lang.illegalType(lnum, "1H:"+Object.entries(args[0]));
     argCheckErr(lnum, args[1]);
-    if (isNaN(rsvArg1)) throw lang.illegalType(lnum, args[1]);
-    if (rsvArg2 === undefined) throw lang.refError(lnum, args[2]);
+    var rsvArg1 = resolve(args[1], 1);
+    if (!isNumable(rsvArg1)) throw lang.illegalType(lnum, "2H:"+Object.entries(args[1]));
     argCheckErr(lnum, args[2]);
-    if (isNaN(rsvArg2)) throw lang.illegalType(lnum, args[2]);
+    var rsvArg2 = resolve(args[2], 1);
+    if (!isNumable(rsvArg2)) throw lang.illegalType(lnum, "3H:"+Object.entries(args[2]));
     return action(rsvArg0, rsvArg1, rsvArg2);
 }
 let varArg = function(lnum, stmtnum, args, action) {
@@ -1741,13 +1741,13 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return m.mVal;
     });
 }},
-"MEVAL" : {argc:1, f:function(lnum, stmtnum, args) {
+/*"MEVAL" : {argc:1, f:function(lnum, stmtnum, args) {
     return varArg(lnum, stmtnum, args, rgs => {
         let m = rgs[0];
         let args = rgs.slice(1, rgs.length);
         return getMonadEvalFun(m)(lnum, stmtnum, args);
     });
-}},
+}},*/
 "GOTOYX" : {argc:2, f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (y, x) => {
         con.move(y + (1-INDEX_BASE),x + (1-INDEX_BASE));
