@@ -43,9 +43,9 @@ argsep = "," | ";" ;
 ident = alph , [digits] ; (* variable and function names *)
 lit = alph , [digits] | num | string ; (* ident + numbers and string literals *)
 op = "^" | "*" | "/" | "MOD" | "+" | "-" | "<<" | ">>" | "<" | ">" | "<="
-    | "=<" | ">=" | "=>" | "==" | "<>" | "><" | "BAND" | "BXOR" | "BOR"
-    | "AND" | "OR" | "TO" | "STEP" | "!" | "~" | "#" | "=" ;
-op_uni = "-" | "+" ;
+    | "=<" | ">=" | "=>" | "==" | "<>" | "><" | "BAND" | "BXOR" | "BOR" | "AND" | "OR"
+    | "TO" | "STEP" | "!" | "~" | "#" | "=" | "$" | "." | ">>=" | ">>~" ;
+op_uni = "-" | "+" | "NOT" | "BNOT" | "`" | "@" ;
 
 alph = letter | letter , alph ;
 digits = digit | digit , digits ;

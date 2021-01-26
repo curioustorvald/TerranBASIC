@@ -1806,10 +1806,10 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 };
 Object.freeze(bS.builtin);
 let bF = {}; // BASIC functions
-bF._1os = {"!":1,"~":1,"#":1,"<":1,"=":1,">":1,"*":1,"+":1,"-":1,"/":1,"^":1,":":1,"$":1,".":1};
+bF._1os = {"!":1,"~":1,"#":1,"<":1,"=":1,">":1,"*":1,"+":1,"-":1,"/":1,"^":1,":":1,"$":1,".":1,"@":1,"\\":1,"%":1,"|":1,"`":1};
 //bF._2os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1,"!":1,"#":1};
 //bF._3os = {"<":1,"=":1,">":1,"~":1,"-":1,"$":1,"*":1}
-bF._uos = {"+":1,"-":1,"NOT":1,"BNOT":1};
+bF._uos = {"+":1,"-":1,"NOT":1,"BNOT":1,"^":1,"@":1,"`":1};
 bF._isNum = function(code) {
     return (code >= 0x30 && code <= 0x39) || code == 0x5F;
 };
@@ -1850,33 +1850,35 @@ bF._isSep = function(code) {
 // NOTE: do NOT put falsy value (e.g. 0) here!!
 bF._opPrc = {
     // function call in itself has highest precedence
-    "^":1,
-    "*":2,"/":2,"\\":2,
-    "MOD":3,
-    "+":4,"-":4,
-    "NOT":5,"BNOT":5,
-    "<<":6,">>":6,
-    "<":7,">":7,"<=":7,"=<":7,">=":7,"=>":7,
-    "==":8,"<>":8,"><":8,
-    "MIN":10,"MAX":10,
-    "BAND":20,
-    "BXOR":21,
-    "BOR":22,
-    "AND":30,
-    "OR":31,
-    "TO":40,
-    "STEP":41,
-    "!":50,"~":51, // array CONS and PUSH
-    "#":52, // array concat
-    ".": 60, // compo operator
-    "$": 60, // apply operator
-    "~<": 61, // curry operator
-    "~>": 100, // closure operator
-    ">>~": 100, // monad sequnce operator
-    ">>=": 100, // monad bind operator
-    "=":999,"IN":999
+    "`":10, // MJOIN
+    "^":20,
+    "*":30,"/":30,"\\":20,
+    "MOD":40,
+    "+":50,"-":50,
+    "NOT":60,"BNOT":60,
+    "<<":70,">>":70,
+    "<":80,">":80,"<=":80,"=<":80,">=":80,"=>":80,
+    "==":90,"<>":90,"><":90,
+    "MIN":100,"MAX":100,
+    "BAND":200,
+    "BXOR":201,
+    "BOR":202,
+    "AND":300,
+    "OR":301,
+    "TO":400,
+    "STEP":401,
+    "!":500,"~":501, // array CONS and PUSH
+    "#":502, // array concat
+    ".": 600, // compo operator
+    "$": 600, // apply operator
+    "~<": 601, // curry operator
+    "~>": 1000, // closure operator
+    ">>~": 1000, // monad sequnce operator
+    ">>=": 1000, // monad bind operator
+    "@":9999, // MRET
+    "=":9999,"IN":9999
 }; // when to ops have same index of prc but different in associativity, right associative op gets higher priority (at least for the current parser implementation)
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1}; // ~< and ~> cannot have same associativity
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1,"@":1,"`":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {
     var _debugprintStateTransition = false;
@@ -2790,6 +2792,8 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     let parenStart = -1;
     let parenEnd = -1;
 
+    let uptkn = "";
+    
     // Scan for unmatched parens and mark off the right operator we must deal with
     // every function_call need to re-scan because it is recursively called
     for (let k = 0; k < tokens.length; k++) {
@@ -2806,12 +2810,14 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
         // determine the right operator to deal with
         if (parenDepth == 0) {
+            let uptkn = tokens[k].toUpperCase();
+            
             if (states[k] == "op" && bF.isSemanticLiteral(tokens[k-1], states[k-1]) &&
-                    ((bF._opPrc[tokens[k].toUpperCase()] > topmostOpPrc) ||
-                        (!bF._opRh[tokens[k].toUpperCase()] && bF._opPrc[tokens[k].toUpperCase()] == topmostOpPrc))
+                    ((bF._opPrc[uptkn] > topmostOpPrc) ||
+                        (!bF._opRh[uptkn] && bF._opPrc[uptkn] == topmostOpPrc))
             ) {
-                topmostOp = tokens[k].toUpperCase();
-                topmostOpPrc = bF._opPrc[tokens[k].toUpperCase()];
+                topmostOp = uptkn;
+                topmostOpPrc = bF._opPrc[uptkn];
                 operatorPos = k;
             }
         }
@@ -2926,7 +2932,9 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
             else if (topmostOp === "+") treeHead.astValue = "UNARYPLUS"
             else if (topmostOp === "NOT") treeHead.astValue = "UNARYLOGICNOT"
             else if (topmostOp === "BNOT") treeHead.astValue = "UNARYBNOT"
-            else throw new ParserError(`Unknown unary op '${topmostOp}'`)
+            else if (topmostOp === "@") treeHead.astValue = "MRET"
+            else if (topmostOp === "`") treeHead.astValue = "MJOIN"
+            else throw new ParserError(`Unknown unary op '${topmostOp}'`);
 
             treeHead.astLeaves[0] = bF._parseExpr(lnum,
                 tokens.slice(operatorPos + 1, tokens.length),
