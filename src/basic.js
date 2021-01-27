@@ -29,9 +29,9 @@ if (exec_args !== undefined && exec_args[1] !== undefined && exec_args[1].starts
     return 0;
 }
 
-const THEVERSION = "1.1-dev";
+const THEVERSION = "1.1";
 
-const PROD = false;
+const PROD = true;
 let INDEX_BASE = 0;
 let TRACEON = (!PROD) && true;
 let DBGON = (!PROD) && true;
@@ -2213,7 +2213,7 @@ bF._tokenise = function(lnum, cmd) {
     return { "tokens": tokens, "states": states };
 };
 bF._parserElaboration = function(lnum, ltokens, lstates) {
-    let _debugprintElaboration = false;
+    let _debugprintElaboration = (!PROD) && true;
     if (_debugprintElaboration) println("@@ ELABORATION @@");
     
     let tokens = cloneObject(ltokens);
@@ -2251,7 +2251,7 @@ bF._parserElaboration = function(lnum, ltokens, lstates) {
         
         // turn three consecutive ops into a trigraph
         if (k < states.length - 3 && states[k] == "op" && states[k+1] == "op" && states[k+2] == "op" && bF._opPrc[lookahead012]) {
-            serial.println(`[ParserElaboration] Line ${lnum}: Trigraph (${lookahead012}) found starting from the ${lang.ord(k+1)} token of [${tokens}]`);
+            if (_debugprintElaboration) serial.println(`[ParserElaboration] Line ${lnum}: Trigraph (${lookahead012}) found starting from the ${lang.ord(k+1)} token of [${tokens}]`);
             
             tokens[k] = lookahead012
             
@@ -2264,7 +2264,7 @@ bF._parserElaboration = function(lnum, ltokens, lstates) {
         }
         // turn two consecutive ops into a digraph
         else if (k < states.length - 2 && states[k] == "op" && states[k+1] == "op" && bF._opPrc[lookahead01]) {
-            serial.println(`[ParserElaboration] Line ${lnum}: Digraph (${lookahead01}) found starting from the ${lang.ord(k+1)} token of [${tokens}]`);
+            if (_debugprintElaboration) serial.println(`[ParserElaboration] Line ${lnum}: Digraph (${lookahead01}) found starting from the ${lang.ord(k+1)} token of [${tokens}]`);
             
             tokens[k] = lookahead01;
             

@@ -54,7 +54,9 @@ But with Terran BASIC you can do, I don't know, recursion:
 ...or use a monad to add a memoisation to your function:
 
 ```
-10 FIB=[N,M]~>IF M==UNDEFINED THEN FIB(N,MRET(1!1!NIL)) ELSE IF LEN(MJOIN(M))>=N THEN HEAD(MJOIN(M)) ELSE FIB(N,M>>=([XS]~>MRET((XS(0)+XS(1))!XS)))
+10 FIB=[N,M]~>IF M==UNDEFINED THEN FIB(N,MRET(1!1!NIL))
+    ELSE IF LEN(MJOIN(M))>=N THEN HEAD(MJOIN(M))
+    ELSE FIB(N,M>>=([XS]~>MRET((XS(0)+XS(1))!XS)))
 100 FOR K=1 TO 10
 110 PRINT FIB(K);" ";
 120 NEXT
