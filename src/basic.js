@@ -1,5 +1,6 @@
 // Created by CuriousTorvald on 2020-05-19
 // Version 1.0 Release Date 2020-12-28
+// Version 1.1 Release Date 2021-01-28
 
 /*
 Copyright (c) 2020-2021 CuriousTorvald
@@ -226,18 +227,22 @@ let reLineNum = /^[0-9]+ /;
 
 // must match partial
 let reNumber = /([0-9]*[.][0-9]+[eE]*[\-+0-9]*[fF]*|[0-9]+[.eEfF][0-9+\-]*[fF]?)|([0-9]+(\_[0-9])*)|(0[Xx][0-9A-Fa-f_]+)|(0[Bb][01_]+)/;
-//let reOps = /\^|;|\*|\/|\+|\-|[<>=]{1,2}/;
-
 let reNum = /[0-9]+/;
 let tbasexit = false;
 const greetText = `Terran BASIC ${THEVERSION}  `+String.fromCharCode(179)+"  Scratchpad Memory: "+vmemsize+" bytes";
-const greetLeftPad = (80 - greetText.length) >> 1;
-const greetRightPad = 80 - greetLeftPad - greetText.length;
+const greetLeftPad = (80 - greetText.length - 4) >> 1;
+const greetRightPad = 80 - greetLeftPad - greetText.length - 6;
 
+con.clear();
+con.color_pair(253,255);
+print('  ');con.addch(17);
 con.color_pair(0,253);
 print(" ".repeat(greetLeftPad)+greetText+" ".repeat(greetRightPad));
+con.color_pair(253,255);
+con.addch(16);
+con.move(3,1);
+
 con.color_pair(239,255);
-println();
 println(prompt);
 
 // variable object constructor
