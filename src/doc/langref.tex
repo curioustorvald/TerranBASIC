@@ -285,7 +285,7 @@ Monad operators\index{monad operators} operate on monads and some values.
 \index{return (operator)}\index{\begingroup\condensedfont{"@}\endgroup}%makeindex interprets ! @ | as formatting characters so they need to be escaped
 Code & Operation & Result \\
 \hline
-\emph{m a} \basicmbind\ \emph{f} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that returns new monad \emph{m b} using value \emph{a}\\
+\emph{m a} \basicmbind\ \emph{f} & Bind & Sends inner value \emph{a} from the monad \emph{m a} into the function \emph{f} that returns new monad \emph{m b} using the \emph{a}\\
 \emph{m a} \basicmseq\ \emph{m b} & Sequence & Discards inner value of the monad \emph{m a} and returns new monad \emph{m b}\\
 \basicmjoin\emph{m} & Join & Shorthand for \code{MJOIN(m)}\\
 \basicmret\emph{m} & Return & Shorthand for \code{MRET(m)}\\
