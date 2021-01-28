@@ -38,7 +38,6 @@ let TRACEON = (!PROD) && true;
 let DBGON = (!PROD) && true;
 let DATA_CURSOR = 0;
 let DATA_CONSTS = [];
-const DEFUNS_BUILD_DEFUNS = false;
 const BASIC_HOME_PATH = "/home/basic/"
 
 if (system.maxmem() < 8192) {
@@ -2219,7 +2218,7 @@ bF._tokenise = function(lnum, cmd) {
 };
 bF._parserElaboration = function(lnum, ltokens, lstates) {
     let _debugprintElaboration = (!PROD) && true;
-    if (_debugprintElaboration) println("@@ ELABORATION @@");
+    if (_debugprintElaboration) serial.println("@@ ELABORATION @@");
     
     let tokens = cloneObject(ltokens);
     let states = cloneObject(lstates);
@@ -2649,7 +2648,7 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
         treeHead.astLeaves[0].astLeaves = defunArgDeclSeps.map(i=>bF._parseIdent(lnum, [tokens[i]], [states[i]], recDepth + 1));
 
         // parse function body
-        let parseFunction = (DEFUNS_BUILD_DEFUNS) ? bF._parseStmt : bF._parseExpr;
+        let parseFunction = bF._parseExpr;
         treeHead.astLeaves[1] = parseFunction(lnum,
             tokens.slice(parenEnd + 2, tokens.length),
             states.slice(parenEnd + 2, states.length),
