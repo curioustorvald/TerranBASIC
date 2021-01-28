@@ -30,7 +30,7 @@ if (exec_args !== undefined && exec_args[1] !== undefined && exec_args[1].starts
     return 0;
 }
 
-const THEVERSION = "1.1";
+const THEVERSION = "1.2-dev";
 
 const PROD = true;
 let INDEX_BASE = 0;
@@ -228,9 +228,11 @@ let reLineNum = /^[0-9]+ /;
 let reNumber = /([0-9]*[.][0-9]+[eE]*[\-+0-9]*[fF]*|[0-9]+[.eEfF][0-9+\-]*[fF]?)|([0-9]+(\_[0-9])*)|(0[Xx][0-9A-Fa-f_]+)|(0[Bb][01_]+)/;
 let reNum = /[0-9]+/;
 let tbasexit = false;
-const greetText = `Terran BASIC ${THEVERSION}  `+String.fromCharCode(179)+"  Scratchpad Memory: "+vmemsize+" bytes";
-const greetLeftPad = (80 - greetText.length - 4) >> 1;
-const greetRightPad = 80 - greetLeftPad - greetText.length - 6;
+const termWidth = con.getmaxyx()[1];
+const termHeight = con.getmaxyx()[0];
+const greetText = (termWidth >= 70) ? `Terran BASIC ${THEVERSION}  `+String.fromCharCode(179)+"  Scratchpad Memory: "+vmemsize+" bytes" : `Terran BASIC ${THEVERSION}`;
+const greetLeftPad = (termWidth - greetText.length - 6) >> 1;
+const greetRightPad = termWidth - greetLeftPad - greetText.length - 6;
 
 con.clear();
 con.color_pair(253,255);
