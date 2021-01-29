@@ -236,11 +236,11 @@ const greetRightPad = termWidth - greetLeftPad - greetText.length - 6;
 
 con.clear();
 con.color_pair(253,255);
-print('  ');con.addch(17);
+print('  ');con.addch(17);con.curs_right();
 con.color_pair(0,253);
 print(" ".repeat(greetLeftPad)+greetText+" ".repeat(greetRightPad));
 con.color_pair(253,255);
-con.addch(16);
+con.addch(16);con.curs_right();print('  ');
 con.move(3,1);
 
 con.color_pair(239,255);
@@ -1117,9 +1117,10 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             let printstr = "";
             if (rsvArg === undefined)
                 print("")
-            else if (!isNaN(rsvArg)) {
+            else if (isNumable(rsvArg)) {
                 let c = con.getyx();
-                con.addch(rsvArg);
+                con.addch(tonum(rsvArg));
+                con.move(c[0],c[1]+1);
             }
             else if (rsvArg.toString !== undefined)
                 print(rsvArg.toString());
