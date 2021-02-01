@@ -219,7 +219,7 @@ A monad can be seen as a container that holds whatever the value it can accept, 
 40 NEXT
 \end{lstlisting}
 
-In Line 10, \basicmbind\ (a \emph{bind} operator) extracts inner value of the monad \code{M} as \code{XS}\footnote{Stands for \emph{Xs} (plural form of \emph{X})} (which is an array), appends $XS(0) + XS(1)$ into the \code{XS}, then wraps the new array into a monad using \code{MRET} function and then passes the new monad into the \code{FIB\_}'s recurive call; if array length of the inner value of the monad reaches desired length, returns head-element of the value.
+In Line 10, \basicmbind\ (a \emph{bind} operator) extracts inner value of the monad \code{M} as \code{XS}\footnote{Stands for \emph{Xs} (plural form of \emph{X})} (which is an array), prepends $XS(0) + XS(1)$ into the \code{XS}, then wraps the new array into a monad using \code{MRET} function and then passes the new monad into the \code{FIB\_}'s recurive call; if array length of the inner value of the monad reaches desired length, returns head-element of the value.
 
 One more function \code{FIB\_} had to be used,\footnote{It can be done without one by using \emph{undefined}, but then the code gets needlessly complex for a tutorial.} but the Fibonacci sequence generator now runs much faster because the monad now holds the results from previous runs, making double-recursion run unnecessary, unlike the previous Fibonacci generator.
 
