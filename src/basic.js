@@ -859,7 +859,6 @@ bS.wrapBuiltinToUsrdefun = function(funcname) {
  */
 bS.addAsBasicVar = function(lnum, troValue, rh) {
     if (troValue.arrFull !== undefined) { // assign to existing array
-        if (Array.isArray(rh)) throw lang.illegalType(lnum, rh); // no ragged array!
         let arr = eval("troValue.arrFull"+troValue.arrKey);
         if (Array.isArray(arr)) throw lang.subscrOutOfRng(lnum, arr);
         eval("troValue.arrFull"+troValue.arrKey+"=rh");
@@ -972,9 +971,6 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "!" : {argc:2, f:function(lnum, stmtnum, args) { // Haskell-style CONS
     return twoArg(lnum, stmtnum, args, (lh,rh) => {
-        if (Array.isArray(rh) && Array.isArray(lh))
-            throw lang.illegalType(lnum, lh); // NO ragged array for BASIC array!
-        
         if (Array.isArray(rh)) {
             return [lh].concat(rh);
         }
@@ -987,9 +983,6 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "~" : {argc:2, f:function(lnum, stmtnum, args) { // array PUSH
     return twoArg(lnum, stmtnum, args, (lh,rh) => {
-        if (Array.isArray(lh) && Array.isArray(rh))
-            throw lang.illegalType(lnum, rh); // NO ragged array for BASIC array!
-        
         if (Array.isArray(lh)) {
             return lh.concat([rh]);
         }
