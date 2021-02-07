@@ -32,7 +32,7 @@ if (exec_args !== undefined && exec_args[1] !== undefined && exec_args[1].starts
 
 const THEVERSION = "1.2-dev";
 
-const PROD = true;
+const PROD = false;
 let INDEX_BASE = 0;
 let TRACEON = (!PROD) && true;
 let DBGON = (!PROD) && true;
@@ -236,7 +236,7 @@ const greetRightPad = termWidth - greetLeftPad - greetText.length - 6;
 
 con.clear();
 con.color_pair(253,255);
-print('  ');con.addch(17);con.curs_right();
+print('  ');con.addch(17);
 con.color_pair(0,253);
 print(" ".repeat(greetLeftPad)+greetText+" ".repeat(greetRightPad));
 con.color_pair(253,255);
@@ -1751,6 +1751,16 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "GOTOYX" : {argc:2, f:function(lnum, stmtnum, args) {
     return twoArg(lnum, stmtnum, args, (y, x) => {
         con.move(y + (1-INDEX_BASE),x + (1-INDEX_BASE));
+    });
+}},
+"TEXTFORE" : {argc:2, f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, col => {
+        print(String.fromCharCode(27,91)+"38;5;"+(col|0)+"m");
+    });
+}},
+"TEXTBACK" : {argc:2, f:function(lnum, stmtnum, args) {
+    return oneArg(lnum, stmtnum, args, col => {
+        print(String.fromCharCode(27,91)+"48;5;"+(col|0)+"m");
     });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
