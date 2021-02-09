@@ -1842,13 +1842,13 @@ bF._isUnary = function(code) {
     return bF._uos[String.fromCharCode(code)]
 }
 bF._isParenOpen = function(code) {
-    return (code == 0x28 || code == 0x5B) || (code == '(' || code == '[');
+    return (code == 0x28 || code == 0x5B || code == 0x7B) || (code == '(' || code == '[' || code == '{');
 };
 bF._isParenClose = function(code) {
-    return (code == 0x29 || code == 0x5D) || (code == ')' || code == ']');
+    return (code == 0x29 || code == 0x5D || code == 0x7D) || (code == ')' || code == ']' || code == '}');
 };
 bF._isMatchingParen = function(open, close) {
-    return (open == '(' && close == ')' || open == '[' && close == ']');
+    return (open == '(' && close == ')' || open == '[' && close == ']' || open == '{' && close == '}');
 };
 bF._isParen = function(code) {
     return bF._isParenOpen(code) || bF._isParenClose(code);
@@ -2883,7 +2883,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     // ## case for:
     //    | kywd , expr (* kywd = ? words that exists on the list of predefined function that are not operators ? ; *)
     if (bS.builtin[headTkn] && headSta == "lit" && !bF._opPrc[headTkn] &&
-        states[1] != "paren"
+        states[1] != "paren" && tokens[1] != "("
     ) {
         bF.parserPrintdbgline('e', 'Builtin Function Call w/o Paren', lnum, recDepth);
 

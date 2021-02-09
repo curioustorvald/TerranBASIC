@@ -19,7 +19,8 @@ stmt =
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
       lit
-    | "(" , expr , ")"
+    | "(" , [expr] , ")" // TODO code it!
+    | "{" , [expr] , "}" // TODO code it!
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     | kywd , expr - "(" (* also deals with FOR statement *)
