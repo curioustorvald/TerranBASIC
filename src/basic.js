@@ -238,6 +238,7 @@ con.clear();
 con.color_pair(253,255);
 print('  ');con.addch(17);
 con.color_pair(0,253);
+con.move(1,4);
 print(" ".repeat(greetLeftPad)+greetText+" ".repeat(greetRightPad));
 con.color_pair(253,255);
 con.addch(16);con.curs_right();print('  ');
