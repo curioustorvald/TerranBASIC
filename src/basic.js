@@ -2371,9 +2371,14 @@ stmt =
     | expr ; (* if the statement is 'lit' and contains only one word, treat it as function_call
                 e.g. NEXT for FOR loop *)
     
+array_inner = 
+    "{" , expr , "}" , ["," , "{" , expr , "}"] ;
+    
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
-      lit
+      ? empty string ?
+    | lit
+    | array_inner
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
@@ -2617,7 +2622,7 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
         bF.parserPrintdbgline('$', "Trying IF Statement...", lnum, recDepth);
         return bF._parseIfMode(lnum, tokens, states, recDepth + 1, false);
     }
-    // if ParserError is raised, continue to apply other rules
+    // if ParserError is raised, continue applying other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
         bF.parserPrintdbgline('$', 'It was NOT!', lnum, recDepth);
@@ -2749,9 +2754,11 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
 } // END of STMT
 /** Parses following EBNF rule:
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function because everything is global in BASIC *)
-      lit
+      ? empty string ?
+    | lit
+    | array_inner
     | "(" , expr , ")"
-    | tuple
+    | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
     | kywd , expr - "(" (* also deals with FOR statement *)
     (* at this point, if OP is found in paren-level 0, skip function_call *)
@@ -2802,7 +2809,6 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     let parenDepth = 0;
     let parenStart = -1;
     let parenEnd = -1;
-
     let uptkn = "";
     
     // Scan for unmatched parens and mark off the right operator we must deal with
@@ -2818,7 +2824,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
             parenDepth -= 1;
         }
-
+        
         // determine the right operator to deal with
         if (parenDepth == 0) {
             let uptkn = tokens[k].toUpperCase();
@@ -2845,7 +2851,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
         bF.parserPrintdbgline('e', "Trying Tuple...", lnum, recDepth);
         return bF._parseTuple(lnum, tokens, states, recDepth + 1, false);
     }
-    // if ParserError is raised, continue to apply other rules
+    // if ParserError is raised, continue applying other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
         bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
@@ -2854,9 +2860,25 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
 
     // ## case for:
-    //    | "(" , expr , ")"
+    //    | array_inner
+    if (tokens[0] == "{" && states[0] == "paren") {
+        try  {
+            bF.parserPrintdbgline('e', "Trying Array...", lnum, recDepth);
+            return bF._parseArrayLiteral(lnum, tokens, states, recDepth + 1);
+        }
+        // if ParserError is raised, actually give up
+        catch (e) {
+            throw new ParserError(`Expression cannot be parsed in ${lnum} -- reason:${e}\n${e.stack}`);
+        }
+    }
+    
+    /*************************************************************************/
+
+    
+    // ## case for:
+    //    | "(" , [expr] , ")"
     if (parenStart == 0 && parenEnd == tokens.length - 1) {
-        bF.parserPrintdbgline('e', '( Expr )', lnum, recDepth);
+        bF.parserPrintdbgline('e', '( [Expr] )', lnum, recDepth);
 
         return bF._parseExpr(lnum,
             tokens.slice(parenStart + 1, parenEnd),
@@ -2873,7 +2895,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
         bF.parserPrintdbgline('e', "Trying IF Expression...", lnum, recDepth);
         return bF._parseIfMode(lnum, tokens, states, recDepth + 1, false);
     }
-    // if ParserError is raised, continue to apply other rules
+    // if ParserError is raised, continue applying other rules
     catch (e) {
         if (!(e instanceof ParserError)) throw e;
         bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
@@ -2901,7 +2923,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
             bF.parserPrintdbgline('e', "Trying Function Call...", lnum, recDepth);
             return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
         }
-        // if ParserError is raised, continue to apply other rules
+        // if ParserError is raised, continue applying other rules
         catch (e) {
             if (!(e instanceof ParserError)) throw e;
             bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
@@ -2959,8 +2981,54 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
     /*************************************************************************/
 
-    throw new ParserError("Expression cannot be parsed in "+lnum);
+    throw new ParserError(`Expression cannot be parsed in ${lnum} -- reason:${e}\n${e.stack}`);
 } // END of EXPR
+/** Parses following EBNF rule:
+      "{" , expr , "}" , ["," , "{" , expr , "}"] ;
+ * @return: BasicAST
+ */
+bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
+    bF.parserPrintdbg2('{', lnum, tokens, states, recDepth);
+
+    /*************************************************************************/
+    
+    let curlyDepth = 0;
+    let curlyStart = -1;
+    let curlyEnd = -1;
+    let commaPos = [];
+
+    // scan for parens that will be used for several rules
+    // also find nearest THEN and ELSE but also take parens into account
+    for (let k = 0; k < tokens.length; k++) {
+        // increase paren depth and mark paren start position
+        if (tokens[k] == "{" && states[k] != "qot") {
+            curlyDepth += 1;
+            if (curlyStart == -1 && curlyDepth == 1) curlyStart = k;
+        }
+        // decrease paren depth
+        else if (tokens[k] == "}" && states[k] != "qot") {
+            if (curlyEnd == -1 && curlyDepth == 1) curlyEnd = k;
+            curlyDepth -= 1;
+        }
+
+        // commas
+        if (curlyDepth == 1 && tokens[k] == "," && states[k] == "sep") {
+            commaPos.push(k);
+        }
+    }
+
+    // unmatched brackets, duh!
+    if (curlyDepth != 0) throw lang.syntaxfehler(lnum, lang.unmatchedBrackets);
+
+    if (curlyStart == -1) throw new ParserError("not an array");
+    
+    /*************************************************************************/
+
+    bF.parserPrintdbgline('{', `curlyStart=${curlyStart}, curlyEnd=${curlyEnd}, commaPos=${commaPos}`, lnum, recDepth);
+    
+    throw Error("TODO! figure out how to represent arbitrary array (maybe with function calls) into BasicAST");
+    
+}
 /** Parses following EBNF rule:
       "IF" , expr_sans_asgn , "THEN" , stmt , ["ELSE" , stmt]
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
