@@ -2995,7 +2995,7 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
     let curlyDepth = 0;
     let curlyStart = -1;
     let curlyEnd = -1;
-    let commaPos = [];
+    let argSeps = [];
 
     // scan for parens that will be used for several rules
     // also find nearest THEN and ELSE but also take parens into account
@@ -3013,7 +3013,7 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
 
         // commas
         if (curlyDepth == 1 && tokens[k] == "," && states[k] == "sep") {
-            commaPos.push(k);
+            argSeps.push(k);
         }
     }
 
@@ -3024,9 +3024,31 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
     
     /*************************************************************************/
 
-    bF.parserPrintdbgline('{', `curlyStart=${curlyStart}, curlyEnd=${curlyEnd}, commaPos=${commaPos}`, lnum, recDepth);
+    bF.parserPrintdbgline('{', `curlyStart=${curlyStart}, curlyEnd=${curlyEnd}, argSeps=${argSeps}`, lnum, recDepth);
     
-    throw Error("TODO! figure out how to represent arbitrary array (maybe with function calls) into BasicAST");
+    let argStartPos = [1].concat(argSeps.map(k => k+1));
+    let argPos = argStartPos.map((s,i) => {return{start:s, end:(argSeps[i] || curlyEnd)}}); // use end of token position as separator position
+
+    bF.parserPrintdbgline("{", "argPos = "+argPos.map(it=>`${it.start}/${it.end}`), lnum, recDepth);
+    
+    let treeHead = new BasicAST();
+    treeHead.astLnum = lnum;
+    treeHead.astValue = "ARRAY_CONSTRUCTOR";
+    treeHead.astType = "function";
+    treeHead.astLeaves = argPos.map((x,i) => {
+        bF.parserPrintdbgline("{", 'Array Element #'+(i+1), lnum, recDepth);
+
+        // check for empty tokens
+        if (x.end - x.start <= 0) throw new lang.syntaxfehler(lnum);
+
+        return bF._parseExpr(lnum,
+            tokens.slice(x.start, x.end),
+            states.slice(x.start, x.end),
+            recDepth + 1
+        )}
+    );
+    
+    return treeHead;
     
 }
 /** Parses following EBNF rule:
@@ -3604,6 +3626,7 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
     else if (syntaxTree.astType == "function" || syntaxTree.astType == "op" || callingUsrdefun) {
         if (_debugExec) serial.println(recWedge+"function|operator");
         if (_debugExec) serial.println(recWedge+astToString(syntaxTree));
+        let callerHash = syntaxTree.astHash;
         let funcName = (typeof syntaxTree.astValue.toUpperCase == "function") ? syntaxTree.astValue.toUpperCase() : "(usrdefun)";
         let lambdaBoundVarsAppended = (callingUsrdefun);
         let func = (callingUsrdefun)
@@ -3672,7 +3695,8 @@ bF._executeSyntaxTree = function(lnum, stmtnum, syntaxTree, recDepth) {
             let args = syntaxTree.astLeaves.map(it => bF._executeSyntaxTree(lnum, stmtnum, it, recDepth + 1));
             
             if (_debugExec) {
-                serial.println(recWedge+"fn call name: "+funcName);
+                serial.println(recWedge+`fn caller: "${callerHash}"`);
+                serial.println(recWedge+`fn call name: "${funcName}"`);
                 serial.println(recWedge+"fn call args: "+(args.map(it => (it == undefined) ? it : (it.troType+" "+it.troValue)).join(", ")));
             }
                         
