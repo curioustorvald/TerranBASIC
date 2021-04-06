@@ -1061,6 +1061,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return eval(arraydec);
     });
 }},
+"ARRAY CONSTRUCTOR" : {f:function(lnum, stmtnum, args) {
+    return args.map(v => resolve(v));
+}},
 "PRINT" : {argc:1, f:function(lnum, stmtnum, args, seps) {
     if (args.length == 0)
         println();
@@ -3033,7 +3036,7 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
     
     let treeHead = new BasicAST();
     treeHead.astLnum = lnum;
-    treeHead.astValue = "ARRAY_CONSTRUCTOR";
+    treeHead.astValue = "ARRAY CONSTRUCTOR";
     treeHead.astType = "function";
     treeHead.astLeaves = argPos.map((x,i) => {
         bF.parserPrintdbgline("{", 'Array Element #'+(i+1), lnum, recDepth);
