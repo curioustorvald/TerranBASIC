@@ -2245,7 +2245,7 @@ bF._parserElaboration = function(lnum, ltokens, lstates) {
         else if (states[k] == "lit" && bF._opPrc[tokens[k].toUpperCase()] !== undefined)
             states[k] = "op";
         // turn TRUE and FALSE into boolean
-        else if ((tokens[k].toUpperCase() == "TRUE" || tokens[k].toUpperCase() == "FALSE") && states[k] != "qot")
+        else if ((tokens[k].toUpperCase() == "TRUE" || tokens[k].toUpperCase() == "FALSE") && states[k] == "paren")
             states[k] = "bool";
         
         // decimalise hex/bin numbers (because Nashorn does not support binary literal)
@@ -2469,7 +2469,7 @@ LAMBDA (type: op, value: "~>")
 // @returns BasicAST
 bF._EquationIllegalTokens = ["IF","THEN","ELSE","DEFUN","ON"];
 bF.isSemanticLiteral = function(token, state) {
-    return undefined == token || "]" == token || ")" == token ||
+    return undefined == token || "]" == token || ")" == token || "}" == token ||
             "qot" == state || "num" == state || "bool" == state || "lit" == state;
 }
 bF.parserDoDebugPrint = (!PROD) && true;
@@ -2511,12 +2511,12 @@ bF._parseTokens = function(lnum, tokens, states) {
     // scan for parens and (:)s
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "(" && states[k] != "qot") {
+        if (tokens[k] == "(" && states[k] == "paren") {
             parenDepth += 1;
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
         // decrease paren depth
-        else if (tokens[k] == ")" && states[k] != "qot") {
+        else if (tokens[k] == ")" && states[k] == "paren") {
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
             parenDepth -= 1;
         }
@@ -2592,12 +2592,12 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
     // also find nearest THEN and ELSE but also take parens into account
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "(" && states[k] != "qot") {
+        if (tokens[k] == "(" && states[k] == "paren") {
             parenDepth += 1;
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
         // decrease paren depth
-        else if (tokens[k] == ")" && states[k] != "qot") {
+        else if (tokens[k] == ")" && states[k] == "paren") {
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
             parenDepth -= 1;
         }
@@ -2812,24 +2812,37 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     let parenDepth = 0;
     let parenStart = -1;
     let parenEnd = -1;
+    let curlyDepth = 0;
+    let curlyStart = -1;
+    let curlyEnd = -1;
     let uptkn = "";
     
     // Scan for unmatched parens and mark off the right operator we must deal with
     // every function_call need to re-scan because it is recursively called
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "(" && states[k] != "qot") {
+        if (tokens[k] == "(" && states[k] == "paren") {
             parenDepth += 1;
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
+        // increase curly depth and mark curly start position
+        else if (tokens[k] == "{" && states[k] == "paren") {
+            curlyDepth += 1;
+            if (curlyStart == -1 && curlyDepth == 1) curlyStart = k;
+        }
         // decrease paren depth
-        else if (tokens[k] == ")" && states[k] != "qot") {
+        else if (tokens[k] == ")" && states[k] == "paren") {
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
             parenDepth -= 1;
         }
+        // decrease curly depth
+        else if (tokens[k] == "}" && states[k] == "paren") {
+            if (curlyEnd == -1 && curlyDepth == 1) curlyEnd = k;
+            curlyDepth -= 1;
+        }
         
         // determine the right operator to deal with
-        if (parenDepth == 0) {
+        if (parenDepth == 0 && curlyDepth == 0) {
             let uptkn = tokens[k].toUpperCase();
             
             if (states[k] == "op" && bF.isSemanticLiteral(tokens[k-1], states[k-1]) &&
@@ -2845,6 +2858,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
     // unmatched brackets, duh!
     if (parenDepth != 0) throw lang.syntaxfehler(lnum, lang.unmatchedBrackets);
+    if (curlyDepth != 0) throw lang.syntaxfehler(lnum, lang.unmatchedBrackets);
 
     /*************************************************************************/
     
@@ -2864,15 +2878,9 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
     // ## case for:
     //    | array_inner
-    if (tokens[0] == "{" && states[0] == "paren") {
-        try  {
-            bF.parserPrintdbgline('e', "Trying Array...", lnum, recDepth);
-            return bF._parseArrayLiteral(lnum, tokens, states, recDepth + 1);
-        }
-        // if ParserError is raised, actually give up
-        catch (e) {
-            throw new ParserError(`Expression cannot be parsed in ${lnum} -- reason:${e}\n${e.stack}`);
-        }
+    if (curlyStart == 0 && curlyEnd == tokens.length - 1) {
+        bF.parserPrintdbgline('e', "Array", lnum, recDepth);
+        return bF._parseArrayLiteral(lnum, tokens, states, recDepth + 1);
     }
     
     /*************************************************************************/
@@ -2984,7 +2992,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
 
     /*************************************************************************/
 
-    throw new ParserError(`Expression cannot be parsed in ${lnum} -- reason:${e}\n${e.stack}`);
+    throw new ParserError(`Expression "${tokens.join(" ")}" cannot be parsed in ${lnum}`);
 } // END of EXPR
 /** Parses following EBNF rule:
       "{" , expr , "}" , ["," , "{" , expr , "}"] ;
@@ -3003,13 +3011,13 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
     // scan for parens that will be used for several rules
     // also find nearest THEN and ELSE but also take parens into account
     for (let k = 0; k < tokens.length; k++) {
-        // increase paren depth and mark paren start position
-        if (tokens[k] == "{" && states[k] != "qot") {
+        // increase curly depth and mark curly start position
+        if (tokens[k] == "{" && states[k] == "paren") {
             curlyDepth += 1;
             if (curlyStart == -1 && curlyDepth == 1) curlyStart = k;
         }
-        // decrease paren depth
-        else if (tokens[k] == "}" && states[k] != "qot") {
+        // decrease curly depth
+        else if (tokens[k] == "}" && states[k] == "paren") {
             if (curlyEnd == -1 && curlyDepth == 1) curlyEnd = k;
             curlyDepth -= 1;
         }
@@ -3022,7 +3030,6 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
 
     // unmatched brackets, duh!
     if (curlyDepth != 0) throw lang.syntaxfehler(lnum, lang.unmatchedBrackets);
-
     if (curlyStart == -1) throw new ParserError("not an array");
     
     /*************************************************************************/
@@ -3080,12 +3087,12 @@ bF._parseIfMode = function(lnum, tokens, states, recDepth, exprMode) {
     // also find nearest THEN and ELSE but also take parens into account
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "(" && states[k] != "qot") {
+        if (tokens[k] == "(" && states[k] == "paren") {
             parenDepth += 1;
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
         // decrease paren depth
-        else if (tokens[k] == ")" && states[k] != "qot") {
+        else if (tokens[k] == ")" && states[k] == "paren") {
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
             parenDepth -= 1;
         }
@@ -3155,12 +3162,12 @@ bF._parseTuple = function(lnum, tokens, states, recDepth) {
     // every function_call need to re-scan because it is recursively called
     for (let k = 0; k < tokens.length; k++) {
         // increase paren depth and mark paren start position
-        if (tokens[k] == "[" && states[k] != "qot") {
+        if (tokens[k] == "[" && states[k] == "paren") {
             parenDepth += 1;
             if (parenStart == -1 && parenDepth == 1) parenStart = k;
         }
         // decrease paren depth
-        else if (tokens[k] == "]" && states[k] != "qot") {
+        else if (tokens[k] == "]" && states[k] == "paren") {
             if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
             parenDepth -= 1;
         }

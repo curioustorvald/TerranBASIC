@@ -17,7 +17,7 @@ stmt =
                 e.g. NEXT for FOR loop *)
     
 array_inner = 
-    "{" , expr , "}" , ["," , "{" , expr , "}"] ;
+    "{" , expr , "}" , {"," , "{" , expr , "}"} ;
     
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
