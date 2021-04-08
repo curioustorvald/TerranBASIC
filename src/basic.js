@@ -3058,18 +3058,24 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
     treeHead.astLnum = lnum;
     treeHead.astValue = "ARRAY CONSTRUCTOR";
     treeHead.astType = "function";
-    treeHead.astLeaves = argPos.map((x,i) => {
-        bF.parserPrintdbgline("{", 'Array Element #'+(i+1), lnum, recDepth);
+    
+    if (curlyStart == 0 && curlyEnd == 1) {
+        treeHead.astLeaves = [];
+    }
+    else {
+        treeHead.astLeaves = argPos.map((x,i) => {
+            bF.parserPrintdbgline("{", 'Array Element #'+(i+1), lnum, recDepth);
 
-        // check for empty tokens
-        if (x.end - x.start <= 0) throw new lang.syntaxfehler(lnum);
-
-        return bF._parseExpr(lnum,
-            tokens.slice(x.start, x.end),
-            states.slice(x.start, x.end),
-            recDepth + 1
-        )}
-    );
+            // check for empty tokens
+            if (x.end - x.start < 0) throw new lang.syntaxfehler(lnum);
+            
+            return bF._parseExpr(lnum,
+                tokens.slice(x.start, x.end),
+                states.slice(x.start, x.end),
+                recDepth + 1
+            )}
+        );
+    }
     
     return treeHead;
     
