@@ -3003,6 +3003,9 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
 
     /*************************************************************************/
     
+    let parenDepth = 0;
+    let parenStart = -1;
+    let parenEnd = -1;
     let curlyDepth = 0;
     let curlyStart = -1;
     let curlyEnd = -1;
@@ -3011,10 +3014,20 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
     // scan for parens that will be used for several rules
     // also find nearest THEN and ELSE but also take parens into account
     for (let k = 0; k < tokens.length; k++) {
+        // increase paren depth and mark paren start position
+        if (tokens[k] == "(" && states[k] == "paren") {
+            parenDepth += 1;
+            if (parenStart == -1 && parenDepth == 1) parenStart = k;
+        }
         // increase curly depth and mark curly start position
-        if (tokens[k] == "{" && states[k] == "paren") {
+        else if (tokens[k] == "{" && states[k] == "paren") {
             curlyDepth += 1;
             if (curlyStart == -1 && curlyDepth == 1) curlyStart = k;
+        }
+        // decrease paren depth
+        else if (tokens[k] == ")" && states[k] == "paren") {
+            if (parenEnd == -1 && parenDepth == 1) parenEnd = k;
+            parenDepth -= 1;
         }
         // decrease curly depth
         else if (tokens[k] == "}" && states[k] == "paren") {
@@ -3023,7 +3036,7 @@ bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
         }
 
         // commas
-        if (curlyDepth == 1 && tokens[k] == "," && states[k] == "sep") {
+        if (parenDepth == 0 && curlyDepth == 1 && tokens[k] == "," && states[k] == "sep") {
             argSeps.push(k);
         }
     }
