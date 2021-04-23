@@ -4120,7 +4120,7 @@ if (exec_args !== undefined && exec_args[1] !== undefined) {
     }
     catch (e) {
         serial.printerr(`${e}\n${e.stack || "Stack trace undefined"}`);
-        println(e);
+        println(`${e}`);
     }
 }
 
@@ -4146,7 +4146,7 @@ while (!tbasexit) {
             }
             catch (e) {
                 serial.printerr(`${e}\n${e.stack || "Stack trace undefined"}`);
-                println(e);
+                println(`${e}`);
             }
         }
 
