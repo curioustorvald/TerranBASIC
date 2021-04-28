@@ -1221,7 +1221,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "TEST" : {argc:1, f:function(lnum, stmtnum, args) {
     if (args.length != 1) throw lang.syntaxfehler(lnum, args.length+lang.aG);
-    return resolve(args[0]);
+    return !!resolve(args[0]);
 }},
 "FOREACH" : {f:function(lnum, stmtnum, args) { // list comprehension model
     var asgnObj = resolve(args[0]);
