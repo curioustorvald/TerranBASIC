@@ -270,23 +270,23 @@ Functions are a form of expression that may take input arguments surrounded by p
         \index{DO (function)}\codeline{\textbf{DO(} EXPR0 [\textbf{;} EXPR1]\ldots\ \textbf{)}}\par
         Executes \code{EXPRn}s sequentially.
     \subsection{FILTER}
-        \index{FILTER (function)}\codeline{NEWLIST \textbf{= FILTER(} FUNCTION \textbf{,} ITERABLE \textbf{)}}\par
-        Returns an array of values from the \code{ITERABLE} that passes the given function. i.e. values that makes \code{FUNCTION(VALUE\_FROM\_ITERABLE)} true.
+        \index{FILTER (function)}\codeline{NEWLIST \textbf{= FILTER(} FUNCTION \textbf{,} FUNCTOR \textbf{)}}\par
+        Returns an array of values from the \code{FUNCTOR} that passes the given function. i.e. values that makes \code{FUNCTION(VALUE\_FROM\_FUNCTOR)} true.
         \subsubsection*{Parameters}
         \begin{itemlist}
         \item \code{FUNCTION} is a user-defined or builtin function with single parameter.
-        \item \code{ITERABLE} is either an array or a generator.
+        \item \code{FUNCTOR} is either an array or a generator.
         \end{itemlist}
     \subsection{FOLD}
-        \index{FOLD (function)}\codeline{NEWVALUE \textbf{= FOLD(} FUNCTION \textbf{,} INIT\_VALUE \textbf{,} ITERABLE \textbf{)}}\par
-        Iteratively applies given function with accumulator and the value from the \code{ITERABLE}, returning the final accumulator. Accumulator will be set to \code{INIT\_VALUE} before iterating over the iterable. In the first execution, the accumulator will be set to \code{ACC=FUNCTION(ACC,ITERABLE(0))}, and the execution will continue to remaining values within the iterable until all values are consumed. The \code{ITERABLE} will not be modified after the execution.
+        \index{FOLD (function)}\codeline{NEWVALUE \textbf{= FOLD(} FUNCTION \textbf{,} INIT\_VALUE \textbf{,} FUNCTOR \textbf{)}}\par
+        Iteratively applies given function with accumulator and the value from the \code{FUNCTOR}, returning the final accumulator. Accumulator will be set to \code{INIT\_VALUE} before iterating over the functor. In the first execution, the accumulator will be set to \code{ACC=FUNCTION(ACC,FUNCTOR(0))}, and the execution will continue to remaining values within the functor until all values are consumed. The \code{FUNCTOR} will not be modified after the execution.
         \subsubsection*{Parameters}
         \begin{itemlist}
         \item \code{FUNCTION} is a user-defined function with two parameters: first parameter being accumulator and second being a value.
         \end{itemlist}
     \subsection{MAP}
-        \index{MAP (function)}\codeline{NEWLIST \textbf{= MAP(} FUNCTION \textbf{,} ITERABLE \textbf{)}}\par
-        Applies given function onto the every element in the iterable, and returns an array that contains such items. i.e. returns tranformation of \code{ITERABLE} of which the transformation is \code{FUNCTION}. The \code{ITERABLE} will not be modified after the execution.
+        \index{MAP (function)}\codeline{NEWLIST \textbf{= MAP(} FUNCTION \textbf{,} FUNCTOR \textbf{)}}\par
+        Applies given function onto the every element in the functor, and returns an array that contains such items. i.e. returns tranformation of \code{FUNCTOR} of which the transformation is \code{FUNCTION}. The \code{FUNCTOR} will not be modified after the execution.
         \subsubsection*{Parameters}
         \begin{itemlist}
         \item \code{FUNCTION} is a user-defined or builtin function with single parameter.

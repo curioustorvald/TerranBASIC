@@ -21,11 +21,17 @@ There are eight basic types: \emph{number}, \emph{boolean}, \emph{string}, \emph
 
 \emph{Generator}\index{generator (type)} represents a value that automatically counts up/down whenever they have been called in FOR--NEXT loop.
 
-\emph{Functions}\index{function (type)} are, well\ldots\ functions, especially user-defined ones. Functions are \emph{type} because some built-in functions will actually take \emph{functions} as arguments.
+\emph{Function}\index{function (type)} is, well\ldots\ a function, especially user-defined one. Functions are \emph{type} because some built-in functions will actually take \emph{functions} as arguments.
 
-\emph{Monads}\index{monad (type)} are a type that contains some value and follows monad laws. The term Monad refers to any object that satisfies these requirements, however, in \tbas, only one monad type does that (and is useful to you): value-monad.
+\emph{Monad}\index{monad (type)} is a type that contains some value and follows monad laws. The term Monad refers to any object that satisfies these requirements, however, in \tbas, only one monad type does that (and is useful to you): value-monad.
 
 \emph{Undefined}\index{undefined (type)} represents a value that holds nothing. A function's unspecified arguments, when examined, have this type and are equal to \code{UNDEFINED}. User-defined functions are free to have \code{UNDEFINED} as its arguments, but only the highly limited set of built-in functions will accept one.
+
+\subsection{Supertypes}
+
+Some types are so simillar, it is helpful to classify them into one greater type.
+
+\emph{Functor}\index{functor (supertype)} is a collection of values that can be \code{MAP}ped. Functors include Arrays and Generators.
 
 \section{Control Flow}
 
