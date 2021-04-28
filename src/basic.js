@@ -431,8 +431,11 @@ let resolve = function(variable) {
     else if (literalTypes.includes(variable.troType) || variable.troType.startsWith("internal_"))
         return variable.troValue;
     else if (variable.troType == "lit") {
+        if (isNumable(variable.troValue)) { // rarely we get a number as a variable name, notably on (&)
+            return tonum(variable.troValue);
+        }
         // when program tries to call builtin function (e.g. SIN), return usrdefun-wrapped version
-        if (bS.builtin[variable.troValue] !== undefined) {
+        else if (bS.builtin[variable.troValue] !== undefined) {
             return bS.wrapBuiltinToUsrdefun(variable.troValue);
         }
         // else, it's just a plain-old variable :p
@@ -1626,6 +1629,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         return bF._executeSyntaxTree(lnum, stmtnum, newTree, 0);
     }
 }},
+"&" : {argc:2, f:function(lnum, stmtnum, args) {
+    return bS.builtin["$"].f(lnum, stmtnum, [args[1], args[0]].concat(args.slice(2)));
+}},
 "REDUCE" : {noprod:1, argc:1, f:function(lnum, stmtnum, args) {
     return oneArg(lnum, stmtnum, args, bv => {
         if (isAST(bv)) {            
@@ -1769,7 +1775,7 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         print(String.fromCharCode(27,91)+"48;5;"+(col|0)+"m");
     });
 }},
-/** type: (list of function) <*> (list of functor)
+/** type: (list of function) <*> (a functor)
  * Sequnetial application
  * 
  * Can be implemented on pure TerranBASIC using:
@@ -1783,15 +1789,34 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         if (isGenerator(functor)) functor = genToArray(functor);
 
         let ret = [];
-        fns.forEach(fn => ret.push(functor.map(it => bS.getDefunThunk(fn)(lnum, stmtnum, [it]))));
+        fns.forEach(fn => ret = ret.concat(functor.map(it => bS.getDefunThunk(fn)(lnum, stmtnum, [it]))));
         return ret;
     });
 }},
-/** type: (a function) <*> (list of functor)
+/** type: (a function) <*> (a functor)
  * Infix MAP
  */
 "<$>" : {argc:2, f:function(lnum, stmtnum, args) {
     return bS.builtin.MAP.f(lnum, stmtnum, args);
+}},
+/** type: (a function/list of functions) <~> (a functor)
+ * SEQUENTIAL CURRY-MAP
+ * 
+ * returns a list of functions curried with each element of the functor
+ */
+"<~>" : {argc:2, f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (fns, functor) => {
+        if (!isRunnable(fns) && !(Array.isArray(fns) && isRunnable(fns[0]))) throw lang.badFunctionCallFormat(lnum, "first argument is not a function: got "+JStoBASICtype(fns));
+        if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, "not a mappable type: "+functor+((typeof functor == "object") ? Object.entries(functor) : ""));
+        // generator?
+        if (isGenerator(functor)) functor = genToArray(functor);
+        // single function?
+        if (!Array.isArray(fns)) fns = [fns];
+                  
+        let ret = [];
+        fns.forEach(fn => ret = ret.concat(functor.map(it => bS.builtin["~<"].f(lnum, stmtnum, [fn, it]))));
+        return ret;
+    });
 }},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
@@ -1905,22 +1930,24 @@ bF._opPrc = {
     "BOR":202,
     "AND":300,
     "OR":301,
-    "TO":400,
-    "STEP":401,
-    "!":500,"~":501, // array CONS and PUSH
+    "TO":400,"STEP":401,
+    "!":500,
+    "~":501, // array CONS and PUSH
     "#":502, // array concat
     ".": 600, // compo operator
     "$": 600, // apply operator
+    "&": 600, // pipe operator
     "~<": 601, // curry operator
-    "<*>": 602, // sequential application operator
     "<$>": 602, // infix map operator
+    "<*>": 602, // sequential application operator
+    "<~>": 602, // infix curry-map operator
     "@":700, // MRET
     "~>": 1000, // closure operator
     ">>~": 1000, // monad sequnce operator
     ">>=": 1000, // monad bind operator
     "=":9999,"IN":9999
 }; // when to ops have same index of prc but different in associativity, right associative op gets higher priority (at least for the current parser implementation)
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1,"@":1,"`":1,"<*>":1,"<$>":1}; // ~< and ~> cannot have same associativity
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1,"@":1,"`":1,"<$>":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {
     var _debugprintStateTransition = false;

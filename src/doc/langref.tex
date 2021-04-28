@@ -109,11 +109,11 @@ Order & Op & Associativity \\
 10 & \basicmin\quad\basicmax & Left \\
 11 & \basicband & Left \\
 12 & \basicbxor & Left \\
+13 & \basicbor & Left \\
 \end{tabulary}
 \begin{tabulary}{\textwidth}{cCc}
 Order & Op & Associativity \\
 \hline
-13 & \basicbor & Left \\
 14 & \basicand & Left \\
 15 & \basicor & Left \\
 16 & \basicto\quad\basicstep & Left \\
@@ -121,11 +121,13 @@ Order & Op & Associativity \\
 18 & \basicpush & Left\\
 19 & \basicconcat & Left \\
 20 & \basiccompo\quad\basicapply & Right \\
-21 & \basiccurry & Left \\
-22 & \basicseqapp\quad\basicinfixmap & Right \\
-23 & \basicmret & Right \\
-24 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
-25 & \basicasgn & Right \\
+21 & \basicpipe & Left \\
+22 & \basiccurry & Left \\
+23 & \basicinfixmap & Right \\
+24 & \basicseqapp\quad\basiccurrymap & Left \\
+25 & \basicmret & Right \\
+26 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
+27 & \basicasgn & Right \\
 %\ & \ & \ \\
 \end{tabulary}
 \end{longtable}
@@ -261,6 +263,7 @@ Code & Operation & Result \\
 \hline
 \emph{f} \basiccurry\ \emph{x} & Curry & Partially apply \emph{x} into the first parameter of the function \emph{f} and returns the resulting function \\
 \emph{f} \basicapply\ \emph{x} & Apply & Evaluates single-parameter function $ f(x) $ and returns the value \\
+\emph{x} \basicpipe\ \emph{f} & Pipe & Reversed version of the (\basicapply) \\
 \emph{f} \basiccompo\ \emph{g} & Compo & Creates a new function $ f \circ g $  where function \emph{g} is pipelined into the function \emph{f} \\
 {[}\emph{x},\,\emph{y}\ldots{]} \basicclosure\ \emph{e} & Closure & Creates a closure (anonymous function) from one or more parameters \emph{x},\,\emph{y}\ldots\ and an expression \emph{e} \\
 \end{tabulary}
@@ -270,6 +273,8 @@ Code & Operation & Result \\
 is an operation which returns new function that has given value applied to the original function's first parameter. See \ref{currying101} for tutorials.
 
 \emph{Applying}\index{apply (operator)}\index{\basicapply} is, as the name suggests, applies the right-hand value onto the function on the left-hand, and returns the result of that operation.
+
+\emph{Pipe}\index{pipe (operator)}\index{\basicpipe} ``pipes'' the left-hand value into the right-hand function, effectively working as the reversed \emph{Apply}.
 
 Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
@@ -281,12 +286,38 @@ Functor operators\index{functor operators} operate on one or more functions and 
 
 \begin{tabulary}{\textwidth}{clL}
 \index{map (operator)}\index{\basicinfixmap}
-\index{sequential application (operator)}\index{\basicseqapp}
+\index{ap (operator)}\index{\basicseqapp}
+\index{curry map (operator)}\index{\basiccurrymap}
 Code & Operation & Result \\
 \hline
-\emph{f} \basicinfixmap\ \emph{xs} & Infix MAP & Executes built-in MAP function on a function \emph{f} and list of values \emph{xs} \\
-\emph{fs} \basicseqapp\ \emph{xs} & Sequential Application & MAPs the list of values \emph{xs} for each function in a list of functions \emph{fs}, and concatenates the results \\
+\emph{f} \basicinfixmap\ \emph{xs} & Map & Executes built-in MAP function on a function \emph{f} and the list of values \emph{xs} \\
+\emph{fs} \basiccurrymap\ \emph{xs} & Curry Map & Curries \emph{xs} to the each function in a list of function \emph{fs}, and concatenates the results \\
+\emph{fs} \basicseqapp\ \emph{xs} & Ap & MAPs the list of values \emph{xs} for each function in a list of functions \emph{fs}, and concatenates the results \\
 \end{tabulary}
+
+Curry Map can be used to map two or more arguments into a function, take this example code:
+
+\begin{lstlisting}
+1 STRINGIFY=[X,Y]~>X + " x " + Y + " = " + (X*Y)
+10 K=STRINGIFY <~> 2 TO 9 <*> 1 TO 9
+20 FOREACH S IN K : PRINT K : NEXT
+\end{lstlisting}
+
+\code{STRINGIFY} will print a row in the multiplication table and \code{\basiccurrymap} and \code{\basicseqapp} is used to map \code{2 TO 9} and \code{1 TO 9} into the \code{STRINGIFY}. Do not mistakenly assume that, in this code, \code{\basicseqapp} magically combines two generators and pass them to the function; it's the \code{\basiccurrymap} that gets evaluated first.
+
+But if you want to map three- or more, the syntax gets less obvious:
+
+\begin{lstlisting}
+1 CAT3=[X,Y,Z]~>X + "/" + Y + "/" + Z
+10 PRINT(CAT3 <~> 1 TO 3 <~> 4 TO 6 <*> 7 TO 9)
+\end{lstlisting}
+
+Note that \code{\basiccurrymap} is used in between \code{1 TO 3} and \code{4 TO 6} because we're \emph{currying}.
+
+\subsubsection*{Notes}
+\begin{itemlist}
+\item Curry Map may receive just a function for its left-hand value.
+\end{itemlist}
 
 \subsection{Monad Operators}
 
