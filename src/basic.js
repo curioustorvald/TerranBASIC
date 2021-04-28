@@ -1587,6 +1587,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 "CLS" : {argc:0, f:function(lnum, stmtnum, args) {
     con.clear();
 }},
+"CLPX" : {argc:0, f:function(lnum, stmtnum, args) {
+    graphics.clearPixels(255);
+}},
 "$" : {argc:2, f:function(lnum, stmtnum, args) {
     let fn = resolve(args[0]);
     let value = resolve(args[1]); // FIXME undefined must be allowed as we cannot distinguish between tree-with-value-of-undefined and just undefined
