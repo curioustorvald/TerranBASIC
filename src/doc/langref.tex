@@ -122,10 +122,11 @@ Order & Op & Associativity \\
 19 & \basicconcat & Left \\
 20 & \basiccompo\quad\basicapply & Right \\
 21 & \basiccurry & Left \\
-22 & \basicmret & Right \\
-23 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
-24 & \basicasgn & Right \\
-\ & \ & \ \\
+22 & \basicseqapp\quad\basicinfixmap & Right \\
+23 & \basicmret & Right \\
+24 & \basicclosure\enskip\basicmseq\enskip\basicmbind & Right \\
+25 & \basicasgn & Right \\
+%\ & \ & \ \\
 \end{tabulary}
 \end{longtable}
 
@@ -253,7 +254,7 @@ Arbitrary arrays can be constructed using empty-array constant \codebf{NIL}.
 
 \subsection{Function Operators}
 
-Function operators\index{function operators} operate on functions and some values.
+Function operators\index{function operators} operate on a function and some values.
 
 \begin{tabulary}{\textwidth}{clL}
 Code & Operation & Result \\
@@ -273,6 +274,21 @@ is an operation which returns new function that has given value applied to the o
 Function \emph{Compo}sition\index{compo (operator)}\index{\basiccompo} is an operation which pipelines the result from one function into the input of another function, creating entirely a new function. 
 
 \emph{Closure}\index{closure}\index{\basicclosure} defines anonymous function with given parameters and the expression, and returns the function.
+
+\subsection{Functor Operators}
+
+Functor operators\index{functor operators} operate on one or more functions and list of values (or, \emph{functors}).
+
+\emph{Functor} is just a fancy name for the collection of values that can be \code{MAP}ped.
+
+\begin{tabulary}{\textwidth}{clL}
+\index{map (operator)}\index{\basicinfixmap}
+\index{sequential application (operator)}\index{\basicseqapp}
+Code & Operation & Result \\
+\hline
+\emph{f} \basicinfixmap\ \emph{xs} & Infix MAP & Executes built-in MAP function on a function \emph{f} and list of values \emph{xs} \\
+\emph{fs} \basicseqapp\ \emph{xs} & Sequential Application & MAPs the list of values \emph{xs} for each function in a list of functions \emph{fs}, and concatenates the results \\
+\end{tabulary}
 
 \subsection{Monad Operators}
 

@@ -244,7 +244,7 @@ con.color_pair(253,255);
 con.addch(16);con.curs_right();print('  ');
 con.move(3,1);
 
-con.color_pair(239,255);
+con.color_pair(253,255);
 println(prompt);
 
 // variable object constructor
@@ -1463,7 +1463,6 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         functor.forEach(it => {
             akku = bS.getDefunThunk(fn)(lnum, stmtnum, [akku, it]);
         });
-
         return akku;
     });
 }},
@@ -1767,6 +1766,30 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
         print(String.fromCharCode(27,91)+"48;5;"+(col|0)+"m");
     });
 }},
+/** type: (list of function) <*> (list of functor)
+ * Sequnetial application
+ * 
+ * Can be implemented on pure TerranBASIC using:
+ * APL = [FS, XS, ARR] ~> IF (LEN(FS) == 0) THEN ARR ELSE APL(TAIL(FS), XS, (IF (ARR == UNDEFINED) THEN {} ELSE ARR) # MAP(HEAD(FS), XS))
+ */
+"<*>" : {argc:2, f:function(lnum, stmtnum, args) {
+    return twoArg(lnum, stmtnum, args, (fns, functor) => {
+        if (!Array.isArray(fns) || !isRunnable(fns[0])) throw lang.badFunctionCallFormat(lnum, "first argument is not a function: got "+JStoBASICtype(fns));
+        if (!isGenerator(functor) && !Array.isArray(functor)) throw lang.syntaxfehler(lnum, "not a mappable type: "+functor+((typeof functor == "object") ? Object.entries(functor) : ""));
+        // generator?
+        if (isGenerator(functor)) functor = genToArray(functor);
+
+        let ret = [];
+        fns.forEach(fn => ret.push(functor.map(it => bS.getDefunThunk(fn)(lnum, stmtnum, [it]))));
+        return ret;
+    });
+}},
+/** type: (a function) <*> (list of functor)
+ * Infix MAP
+ */
+"<$>" : {argc:2, f:function(lnum, stmtnum, args) {
+    return bS.builtin.MAP.f(lnum, stmtnum, args);
+}},
 "OPTIONDEBUG" : {f:function(lnum, stmtnum, args) {
     oneArgNum(lnum, stmtnum, args, (lh) => {
         if (lh != 0 && lh != 1) throw lang.syntaxfehler(line);
@@ -1886,13 +1909,15 @@ bF._opPrc = {
     ".": 600, // compo operator
     "$": 600, // apply operator
     "~<": 601, // curry operator
+    "<*>": 602, // sequential application operator
+    "<$>": 602, // infix map operator
     "@":700, // MRET
     "~>": 1000, // closure operator
     ">>~": 1000, // monad sequnce operator
     ">>=": 1000, // monad bind operator
     "=":9999,"IN":9999
 }; // when to ops have same index of prc but different in associativity, right associative op gets higher priority (at least for the current parser implementation)
-bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1,"@":1,"`":1}; // ~< and ~> cannot have same associativity
+bF._opRh = {"^":1,"=":1,"!":1,"IN":1,"~>":1,"$":1,".":1,">>=":1,">>~":1,">!>":1,"@":1,"`":1,"<*>":1,"<$>":1}; // ~< and ~> cannot have same associativity
 // these names appear on executeSyntaxTree as "exceptional terms" on parsing (regular function calls are not "exceptional terms")
 bF._tokenise = function(lnum, cmd) {
     var _debugprintStateTransition = false;
