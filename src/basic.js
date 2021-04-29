@@ -325,11 +325,7 @@ let theLambdaBoundVars = function() {
     })
     return sb;
 }
-let makeBase32Hash = function() {
-    let e = "YBNDRFG8EJKMCPQXOTLVWIS2A345H769";
-    let m = e.length;
-    return e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)] + e[Math.floor(Math.random()*m)]
-}
+let makeBase32Hash = ()=>[1,2,3,4,5].map(i=>"YBNDRFG8EJKMCPQXOTLVWIS2A345H769"[Math.random()*32|0]).join('');
 let BasicAST = function() {
     this.astLnum = 0;
     this.astLeaves = [];
@@ -639,17 +635,7 @@ let varArgNum = function(lnum, stmtnum, args, action) {
     return action(rsvArg);
 }
 let makeIdFun = () => {
-    let i = new BasicAST();
-    i.astValue = [0,0];
-    i.astType = "defun_args";
-    i.astLnum = "**";
-    
-    let a = new BasicAST();
-    a.astValue = i;
-    a.astType = "usrdefun";
-    a.astLnum = "**";
-    
-    return a;
+    return JSON.parse(`{"astLnum":"**","astLeaves":[],"astSeps":[],"astValue":[0,0],"astType":"defun_args","astHash":"IDFUN"}`);
 }
 let _basicConsts = {
    "NIL": new BasicVar([], "array"),
@@ -1867,7 +1853,10 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
 }},
 "UNRESOLVE0" : {debugonly:1, argc:1, f:function(lnum, stmtnum, args) {
     println(Object.entries(args[0]));
-}}
+}},
+"TOJSON" : {debugonly:1, argc:1, f:function(lnum, stmtnum, args) {
+    println(JSON.stringify(resolve(args[0])));
+}},
 };
 Object.freeze(bS.builtin);
 let bF = {}; // BASIC functions
