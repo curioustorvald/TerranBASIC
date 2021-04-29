@@ -2807,11 +2807,10 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
-    | kywd , expr - "(" (* also deals with FOR statement *)
-    (* at this point, if OP is found in paren-level 0, skip function_call *)
-    | function_call
     | expr , op , expr
-    | op_uni , expr ;
+    | op_uni , expr
+    | kywd , expr - "(" (* also deals with FOR statement *)
+    | function_call ;
 
  * @return: BasicAST
  */
@@ -2959,35 +2958,6 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
 
     // ## case for:
-    //    | kywd , expr (* kywd = ? words that exists on the list of predefined function that are not operators ? ; *)
-    if (bS.builtin[headTkn] && headSta == "lit" && !bF._opPrc[headTkn] &&
-        states[1] != "paren" && tokens[1] != "("
-    ) {
-        bF.parserPrintdbgline('e', 'Builtin Function Call w/o Paren', lnum, recDepth);
-
-        return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
-    }
-
-    /*************************************************************************/
-
-    // ## case for:
-    //    (* at this point, if OP is found in paren-level 0, skip function_call *)
-    //    | function_call ;
-    if (topmostOp === undefined) { // don't remove this IF statement!
-        try {
-            bF.parserPrintdbgline('e', "Trying Function Call...", lnum, recDepth);
-            return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
-        }
-        // if ParserError is raised, continue applying other rules
-        catch (e) {
-            if (!(e instanceof ParserError)) throw e;
-            bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
-        }
-    }
-
-    /*************************************************************************/
-
-    // ## case for:
     //    | expr , op, expr
     //    | op_uni , expr
     // if operator is found, split by the operator and recursively parse the LH and RH
@@ -3032,6 +3002,35 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
         }
 
         return treeHead;
+    }
+    
+    /*************************************************************************/
+
+    // ## case for:
+    //    | kywd , expr (* kywd = ? words that exists on the list of predefined function that are not operators ? ; *)
+    if (bS.builtin[headTkn] && headSta == "lit" && !bF._opPrc[headTkn] &&
+        states[1] != "paren" && tokens[1] != "("
+    ) {
+        bF.parserPrintdbgline('e', 'Builtin Function Call w/o Paren', lnum, recDepth);
+
+        return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
+    }
+
+    /*************************************************************************/
+
+    // ## case for:
+    //    (* at this point, if OP is found in paren-level 0, skip function_call *)
+    //    | function_call ;
+    if (topmostOp === undefined) { // don't remove this IF statement!
+        try {
+            bF.parserPrintdbgline('e', "Trying Function Call...", lnum, recDepth);
+            return bF._parseFunctionCall(lnum, tokens, states, recDepth + 1);
+        }
+        // if ParserError is raised, continue applying other rules
+        catch (e) {
+            if (!(e instanceof ParserError)) throw e;
+            bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
+        }
     }
 
     /*************************************************************************/
