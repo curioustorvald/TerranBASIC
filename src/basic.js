@@ -2419,7 +2419,7 @@ stmt =
                 e.g. NEXT for FOR loop *)
     
 array_inner = 
-    "{" , expr , "}" , ["," , "{" , expr , "}"] ;
+    "{" , expr , "}" , {"," , "{" , expr , "}"} ;
     
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
@@ -2429,11 +2429,11 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
-    | kywd , expr - "(" (* also deals with FOR statement *)
-    (* at this point, if OP is found in paren-level 0, skip function_call *)
-    | function_call
+    | "FOR" , expr
     | expr , op , expr
-    | op_uni , expr ;
+    | op_uni , expr
+    | kywd , expr - "("
+    | function_call ;
     
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
         
@@ -2449,10 +2449,11 @@ kywd = ? words that exists on the list of predefined function that are not opera
 argsep = "," | ";" ;
 ident = alph , [digits] ; (* variable and function names *)
 lit = alph , [digits] | num | string ; (* ident + numbers and string literals *)
-op = "^" | "*" | "/" | "MOD" | "+" | "-" | "<<" | ">>" | "<" | ">" | "<="
-    | "=<" | ">=" | "=>" | "==" | "<>" | "><" | "BAND" | "BXOR" | "BOR"
-    | "AND" | "OR" | "TO" | "STEP" | "!" | "~" | "#" | "=" ;
-op_uni = "-" | "+" ;
+op = "^" | "*" | "/" | "\" | "MOD" | "+" | "-" | "<<" | ">>" | "<" | ">"
+    | "<=" | "=<" | ">=" | "=>" | "==" | "<>" | "><" | "MIN" | "MAX" | "BAND" | "BXOR" | "BOR"
+    | "AND" | "OR" | "TO" | "STEP" | "!" | "~" | "#" | "." | "$" | "&" | "~<" | "<$>" | "<*>"
+    | "<~>" | "~>" | ">>~" | ">>=" | "=" ;
+op_uni = "-" | "+" | "NOT" | "BNOT" | "`" | "@" ;
 
 alph = letter | letter , alph ;
 digits = digit | digit , digits ;
@@ -2462,7 +2463,7 @@ num = digits | digits , "." , [digits] | "." , digits
     | ("0x"|"0X") , hexdigits 
     | ("0b"|"0B") , bindigits ; (* sorry, no e-notation! *)
 visible = ? ASCII 0x20 to 0x7E ? ;
-string = '"' , (visible | visible , stringlit) , '"' ;
+string = '"' , {visible} , '"' ;
 
 letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N"
     | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
@@ -2509,6 +2510,11 @@ LAMBDA (type: op, value: "~>")
     [2. arg1]
     [3. argN...]
 2. stmt
+
+ARRAY CONSTRUCTOR (type: function, value: undefined)
+1. 0th element of the array
+2. 1st element of the array
+[3. Nth element of the array...]
  */
 // @returns BasicAST
 bF._EquationIllegalTokens = ["IF","THEN","ELSE","DEFUN","ON"];

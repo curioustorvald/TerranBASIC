@@ -27,7 +27,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
-    | "FOR" , expr // TODO
+    | "FOR" , expr
     | expr , op , expr
     | op_uni , expr
     | kywd , expr - "("
@@ -47,9 +47,10 @@ kywd = ? words that exists on the list of predefined function that are not opera
 argsep = "," | ";" ;
 ident = alph , [digits] ; (* variable and function names *)
 lit = alph , [digits] | num | string ; (* ident + numbers and string literals *)
-op = "^" | "*" | "/" | "MOD" | "+" | "-" | "<<" | ">>" | "<" | ">" | "<="
-    | "=<" | ">=" | "=>" | "==" | "<>" | "><" | "BAND" | "BXOR" | "BOR" | "AND" | "OR"
-    | "TO" | "STEP" | "!" | "~" | "#" | "=" | "$" | "." | ">>=" | ">>~" ;
+op = "^" | "*" | "/" | "\" | "MOD" | "+" | "-" | "<<" | ">>" | "<" | ">"
+    | "<=" | "=<" | ">=" | "=>" | "==" | "<>" | "><" | "MIN" | "MAX" | "BAND" | "BXOR" | "BOR"
+    | "AND" | "OR" | "TO" | "STEP" | "!" | "~" | "#" | "." | "$" | "&" | "~<" | "<$>" | "<*>"
+    | "<~>" | "~>" | ">>~" | ">>=" | "=" ;
 op_uni = "-" | "+" | "NOT" | "BNOT" | "`" | "@" ;
 
 alph = letter | letter , alph ;
@@ -60,7 +61,7 @@ num = digits | digits , "." , [digits] | "." , digits
     | ("0x"|"0X") , hexdigits 
     | ("0b"|"0B") , bindigits ; (* sorry, no e-notation! *)
 visible = ? ASCII 0x20 to 0x7E ? ;
-string = '"' , (visible | visible , stringlit) , '"' ;
+string = '"' , {visible} , '"' ;
 
 letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N"
     | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
