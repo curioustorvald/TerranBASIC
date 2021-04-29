@@ -2807,9 +2807,10 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
+    | ("FOR"|"FOREACH") , expr
     | expr , op , expr
     | op_uni , expr
-    | kywd , expr - "(" (* also deals with FOR statement *)
+    | kywd , expr - "("
     | function_call ;
 
  * @return: BasicAST
@@ -2958,6 +2959,20 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
 
     // ## case for:
+    //    | ("FOR"|"FOREACH") , expr
+    try {
+        bF.parserPrintdbgline('e', "Trying FOR Expression...", lnum, recDepth);
+        return bF._parseForLoop(lnum, tokens, states, recDepth + 1);
+    }
+    // if ParserError is raised, continue applying other rules
+    catch (e) {
+        if (!(e instanceof ParserError)) throw e;
+        bF.parserPrintdbgline('e', 'It was NOT!', lnum, recDepth);
+    }
+    
+    /*************************************************************************/
+
+    // ## case for:
     //    | expr , op, expr
     //    | op_uni , expr
     // if operator is found, split by the operator and recursively parse the LH and RH
@@ -3007,7 +3022,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
 
     // ## case for:
-    //    | kywd , expr (* kywd = ? words that exists on the list of predefined function that are not operators ? ; *)
+    //    | kywd , expr - "("
     if (bS.builtin[headTkn] && headSta == "lit" && !bF._opPrc[headTkn] &&
         states[1] != "paren" && tokens[1] != "("
     ) {
@@ -3019,7 +3034,6 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
 
     // ## case for:
-    //    (* at this point, if OP is found in paren-level 0, skip function_call *)
     //    | function_call ;
     if (topmostOp === undefined) { // don't remove this IF statement!
         try {
@@ -3206,6 +3220,40 @@ bF._parseIfMode = function(lnum, tokens, states, recDepth, exprMode) {
 
     throw new ParserError("not an IF "+(exprMode) ? "expression" : "statement");
 } // END of IF
+/** Parses following EBNF rule:
+      ("FOR"|"FOREACH") , expr
+ * @return: BasicAST
+ */
+bF._parseForLoop = function(lnum, tokens, states, recDepth) {
+    bF.parserPrintdbg2('\\', lnum, tokens, states, recDepth);
+
+    /*************************************************************************/
+
+    let headTkn = tokens[0].toUpperCase();
+    let headSta = states[0];
+    
+    let treeHead = new BasicAST();
+    treeHead.astLnum = lnum;
+
+    // ## case for:
+    //    ("FOR"|"FOREACH") , expr
+    if (("FOR" == headTkn || "FOREACH" == headTkn) && "lit" == headSta) {
+        
+        treeHead.astValue = headTkn;
+        treeHead.astType = "function";
+        
+        treeHead.astLeaves[0] = bF._parseExpr(lnum,
+            tokens.slice(1),                                  
+            states.slice(1),
+            recDepth + 1
+        );
+        
+        return treeHead;
+    }
+
+    throw new ParserError("not an FOR/FOREACH expression");
+    
+} // END of FOR
 /** Parses following EBNF rule:
 ident_tuple = "[" , ident , ["," , ident] , "]" ;
  * @return: BasicAST

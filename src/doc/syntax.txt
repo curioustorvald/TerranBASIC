@@ -27,9 +27,10 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
+    | "FOR" , expr // TODO
     | expr , op , expr
     | op_uni , expr
-    | kywd , expr - "(" (* also deals with FOR statement *)
+    | kywd , expr - "("
     | function_call ;
     
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
