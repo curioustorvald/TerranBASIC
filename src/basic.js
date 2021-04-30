@@ -312,6 +312,14 @@ let monadToString = function(monad, depth) {
     }*/
     return sb;
 }
+let arrayToString = function(a) {
+    let acc = "";
+    for (let k = 0; k < a.length; k++) {
+        if (k > 0) acc += ",";
+        acc += (Array.isArray(a[k])) ? arrayToString(a[k]) : a[k];
+    }
+    return "{"+acc+"}";
+}
 let theLambdaBoundVars = function() {
     let sb = "";
     lambdaBoundVars.forEach((it,i) => {
@@ -1071,7 +1079,9 @@ if no arg text were given (e.g. "10 NEXT"), args will have zero length
             //serial.println(`${lnum} PRINT ${lang.ord(llll)} arg: ${Object.entries(args[llll])}, resolved: ${rsvArg}`);
 
             let printstr = "";
-            if (rsvArg === undefined || rsvArg === "")
+            if (Array.isArray(rsvArg))
+                printstr = arrayToString(rsvArg);
+            else if (rsvArg === undefined || rsvArg === "")
                 printstr = "";
             else if (rsvArg.toString !== undefined)
                 printstr = rsvArg.toString();
@@ -2418,18 +2428,15 @@ stmt =
     | expr ; (* if the statement is 'lit' and contains only one word, treat it as function_call
                 e.g. NEXT for FOR loop *)
     
-array_inner = 
-    "{" , expr , "}" , {"," , "{" , expr , "}"} ;
-    
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
       ? empty string ?
     | lit
-    | array_inner
+    | "{" , [expr , {"," , expr}] , "}"
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
-    | "FOR" , expr
+    | ("FOR"|"FOREACH") , expr
     | expr , op , expr
     | op_uni , expr
     | kywd , expr - "("
@@ -2437,7 +2444,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
         
-ident_tuple = "[" , ident , ["," , ident] , "]" ;
+ident_tuple = "[" , ident , {"," , ident} , "]" ;
     
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
@@ -2809,7 +2816,7 @@ bF._parseStmt = function(lnum, tokens, states, recDepth) {
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function because everything is global in BASIC *)
       ? empty string ?
     | lit
-    | array_inner
+    | "{" , [expr , {"," , expr}] , "}"
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
@@ -2927,7 +2934,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     /*************************************************************************/
 
     // ## case for:
-    //    | array_inner
+    //    | "{" , [expr , {"," , expr}] , "}"
     if (curlyStart == 0 && curlyEnd == tokens.length - 1) {
         bF.parserPrintdbgline('e', "Array", lnum, recDepth);
         return bF._parseArrayLiteral(lnum, tokens, states, recDepth + 1);
@@ -3058,7 +3065,7 @@ bF._parseExpr = function(lnum, tokens, states, recDepth, ifMode) {
     throw new ParserError(`Expression "${tokens.join(" ")}" cannot be parsed in ${lnum}`);
 } // END of EXPR
 /** Parses following EBNF rule:
-      "{" , expr , "}" , ["," , "{" , expr , "}"] ;
+      "{" , [expr , {"," , expr}] , "}"
  * @return: BasicAST
  */
 bF._parseArrayLiteral = function(lnum, tokens, states, recDepth) {
@@ -3399,7 +3406,7 @@ bF._parseFunctionCall = function(lnum, tokens, states, recDepth) {
 
     // recursively parse function arguments
     treeHead.astLeaves = argPos.map((x,i) => {
-        bF.parserPrintdbgline("F", 'Function Arguments #'+(i+1), lnum, recDepth);
+        bF.parserPrintdbgline("F", `Function Arguments #${i+1} of ${argPos.length}`, lnum, recDepth);
 
         // check for empty tokens
         if (x.end - x.start < 0) throw new ParserError("not a function call because it's malformed");

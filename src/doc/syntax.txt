@@ -16,18 +16,15 @@ stmt =
     | expr ; (* if the statement is 'lit' and contains only one word, treat it as function_call
                 e.g. NEXT for FOR loop *)
     
-array_inner = 
-    "{" , expr , "}" , {"," , "{" , expr , "}"} ;
-    
 expr = (* this basically blocks some funny attemps such as using DEFUN as anon function
           because everything is global in BASIC *)
       ? empty string ?
     | lit
-    | array_inner
+    | "{" , [expr , {"," , expr}] , "}"
     | "(" , expr , ")"
     | ident_tuple
     | "IF" , expr_sans_asgn , "THEN" , expr , ["ELSE" , expr]
-    | "FOR" , expr
+    | ("FOR"|"FOREACH") , expr
     | expr , op , expr
     | op_uni , expr
     | kywd , expr - "("
@@ -35,7 +32,7 @@ expr = (* this basically blocks some funny attemps such as using DEFUN as anon f
     
 expr_sans_asgn = ? identical to expr except errors out whenever "=" is found ? ;
         
-ident_tuple = "[" , ident , ["," , ident] , "]" ;
+ident_tuple = "[" , ident , {"," , ident} , "]" ;
     
 function_call =
       ident , "(" , [expr , {argsep , expr} , [argsep]] , ")"
