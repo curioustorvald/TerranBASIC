@@ -1,6 +1,7 @@
 // Created by CuriousTorvald on 2020-05-19
 // Version 1.0 Release Date 2020-12-28
 // Version 1.1 Release Date 2021-01-28
+// Version 1.2 Release Date 2021-05-05
 
 /*
 Copyright (c) 2020-2021 CuriousTorvald
@@ -30,9 +31,9 @@ if (exec_args !== undefined && exec_args[1] !== undefined && exec_args[1].starts
     return 0
 }
 
-const THEVERSION = "1.2-dev"
+const THEVERSION = "1.2"
 
-const PROD = false
+const PROD = true
 let INDEX_BASE = 0
 let TRACEON = (!PROD) && true
 let DBGON = (!PROD) && true
