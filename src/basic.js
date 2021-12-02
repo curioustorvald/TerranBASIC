@@ -2,7 +2,7 @@
 // Version 1.0 Release Date 2020-12-28
 // Version 1.1 Release Date 2021-01-28
 // Version 1.2 Release Date 2021-05-05
-// Version 1.2.1 Release Date 2021-12-01
+// Version 1.2.1 Release Date 2021-12-02
 
 /*
 Copyright (c) 2020-2021 CuriousTorvald
@@ -1953,7 +1953,7 @@ bF._opPrc = {
     // function call in itself has highest precedence
     "`":10, // MJOIN
     "^":20,
-    "*":30,"/":30,"\\":20,
+    "*":30,"/":30,"\\":30,
     "MOD":40,
     "+":50,"-":50,
     "NOT":60,"BNOT":60,
