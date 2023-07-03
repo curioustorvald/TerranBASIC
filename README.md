@@ -75,4 +75,4 @@ But with Terran BASIC you can do, I don't know, recursion:
 
 ## Open-Source Acknowledgement
 
-The reference implementation of the Terran BASIC runs on the [TSVM](https://github.com/curioustorvald/tsvm), which runs on Java Version 8 **only** with graphics processor capable of OpenGL 2+.
+The reference implementation of the Terran BASIC runs on the [TSVM](https://github.com/curioustorvald/tsvm), which is also happened to be my work ;)
